@@ -49,20 +49,22 @@ func (t transactionItem) FilterValue() string {
 }
 
 func (m model) Init() tea.Cmd {
-	return func() tea.Msg {
-		ctx := context.Background()
+	return m.getTransactions
+}
 
-		ts, err := m.lmc.GetTransactions(ctx, nil)
-		if err != nil {
-			log.Printf("error getting transactions: %v", err)
-			return err
-		}
+func (m model) getTransactions() tea.Msg {
+	ctx := context.Background()
 
-		// reverse the slice so the most recent transactions are at the top
-		slices.Reverse(ts)
-
-		return transactionsResp{ts: ts}
+	ts, err := m.lmc.GetTransactions(ctx, nil)
+	if err != nil {
+		log.Printf("error getting transactions: %v", err)
+		return err
 	}
+
+	// reverse the slice so the most recent transactions are at the top
+	slices.Reverse(ts)
+
+	return transactionsResp{ts: ts}
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
