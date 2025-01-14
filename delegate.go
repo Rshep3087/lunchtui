@@ -23,7 +23,7 @@ func (m model) newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 				log.Printf("%s transaction", action)
 				if ti, ok := listModel.SelectedItem().(transactionItem); ok {
 					ti.t.Status = action
-					return m.updateTransactionStatus(listModel, ti.t)
+					return m.updateTransactionStatus(ti.t)
 				}
 				log.Println("no transaction selected")
 			}
@@ -31,7 +31,7 @@ func (m model) newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 		return nil
 	}
 
-	help := []key.Binding{keys.review}
+	help := []key.Binding{keys.review, keys.unreview}
 
 	d.ShortHelpFunc = func() []key.Binding {
 		return help

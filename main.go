@@ -17,8 +17,11 @@ import (
 var docStyle = lipgloss.NewStyle().Margin(1, 2)
 
 type model struct {
-	ts list.Model
-
+	// transactions is a bubbletea list model of financial transactions
+	transactions list.Model
+	// categories is a map of category ID to category
+	categories map[int64]*lm.Category
+	// lmc is the Lunch Money client
 	lmc *lm.Client
 }
 
@@ -27,7 +30,8 @@ type transactionsResp struct {
 }
 
 type transactionItem struct {
-	t *lm.Transaction
+	t        *lm.Transaction
+	category *lm.Category
 }
 
 func (t transactionItem) Title() string {
@@ -41,7 +45,7 @@ func (t transactionItem) Description() string {
 		return fmt.Sprintf("error parsing amount: %v", err)
 	}
 
-	return fmt.Sprintf("%s %s %s", t.t.Date, amount.Display(), t.t.Status)
+	return fmt.Sprintf("%s %s %s %s", t.t.Date, t.category.Name, amount.Display(), t.t.Status)
 }
 
 func (t transactionItem) FilterValue() string {
@@ -49,10 +53,29 @@ func (t transactionItem) FilterValue() string {
 }
 
 func (m model) Init() tea.Cmd {
-	return m.getTransactions
+	return m.getCategories
+}
+
+type getCategoriesMsg struct {
+	categories []*lm.Category
+}
+
+func (m model) getCategories() tea.Msg {
+	log.Println("getting categories")
+	ctx := context.Background()
+
+	cs, err := m.lmc.GetCategories(ctx)
+	if err != nil {
+		log.Printf("error getting categories: %v", err)
+		return nil
+	}
+	log.Printf("got %d categories", len(cs))
+
+	return getCategoriesMsg{categories: cs}
 }
 
 func (m model) getTransactions() tea.Msg {
+	log.Println("getting transactions")
 	ctx := context.Background()
 
 	ts, err := m.lmc.GetTransactions(ctx, nil)
@@ -67,7 +90,11 @@ func (m model) getTransactions() tea.Msg {
 	return transactionsResp{ts: ts}
 }
 
-func (m model) updateTransactionStatus(listModel *list.Model, t *lm.Transaction) tea.Cmd {
+type updateTransactionStatusMsg struct {
+	t *lm.Transaction
+}
+
+func (m model) updateTransactionStatus(t *lm.Transaction) tea.Cmd {
 	return func() tea.Msg {
 		log.Printf("clearing transaction for id: %d", t.ID)
 		ctx := context.Background()
@@ -83,7 +110,7 @@ func (m model) updateTransactionStatus(listModel *list.Model, t *lm.Transaction)
 			return nil
 		}
 
-		return listModel.SetItem(listModel.Index(), transactionItem{t: t})
+		return updateTransactionStatusMsg{t: t}
 	}
 }
 
@@ -97,27 +124,43 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.WindowSizeMsg:
 		h, v := docStyle.GetFrameSize()
-		m.ts.SetSize(msg.Width-h, msg.Height-v)
+		m.transactions.SetSize(msg.Width-h, msg.Height-v)
+
+	case updateTransactionStatusMsg:
+		return m, m.transactions.SetItem(m.transactions.Index(), transactionItem{t: msg.t, category: m.categories[msg.t.CategoryID]})
+
+	// set the categories on the model,
+	// send a cmd to get transactions
+	case getCategoriesMsg:
+		m.categories = make(map[int64]*lm.Category, len(msg.categories))
+		for _, c := range msg.categories {
+			m.categories[c.ID] = c
+		}
+
+		return m, m.getTransactions
 
 	case transactionsResp:
 		log.Printf("got %d transactions", len(msg.ts))
 
 		var items = make([]list.Item, len(msg.ts))
 		for i, t := range msg.ts {
-			items[i] = transactionItem{t: t}
+			items[i] = transactionItem{
+				t:        t,
+				category: m.categories[t.CategoryID],
+			}
 		}
-		cmd := m.ts.SetItems(items)
+		cmd := m.transactions.SetItems(items)
 		return m, cmd
 	}
 
 	var cmd tea.Cmd
-	m.ts, cmd = m.ts.Update(msg)
+	m.transactions, cmd = m.transactions.Update(msg)
 
 	return m, cmd
 }
 
 func (m model) View() string {
-	return docStyle.Render(m.ts.View())
+	return docStyle.Render(m.transactions.View())
 }
 
 func main() {
@@ -157,7 +200,7 @@ func main() {
 			transactionList := list.New([]list.Item{}, delegate, 0, 0)
 			transactionList.Title = "Transactions"
 
-			model.ts = transactionList
+			model.transactions = transactionList
 			p := tea.NewProgram(model, tea.WithAltScreen())
 			if _, err := p.Run(); err != nil {
 				return err
