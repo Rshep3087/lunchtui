@@ -91,7 +91,8 @@ func (m model) getTransactions() tea.Msg {
 }
 
 type updateTransactionStatusMsg struct {
-	t *lm.Transaction
+	t            *lm.Transaction
+	fieldUpdated string
 }
 
 func (m model) updateTransactionStatus(t *lm.Transaction) tea.Cmd {
@@ -110,7 +111,7 @@ func (m model) updateTransactionStatus(t *lm.Transaction) tea.Cmd {
 			return nil
 		}
 
-		return updateTransactionStatusMsg{t: t}
+		return updateTransactionStatusMsg{t: t, fieldUpdated: "status"}
 	}
 }
 
@@ -127,7 +128,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.transactions.SetSize(msg.Width-h, msg.Height-v)
 
 	case updateTransactionStatusMsg:
-		return m, m.transactions.SetItem(m.transactions.Index(), transactionItem{t: msg.t, category: m.categories[msg.t.CategoryID]})
+		setItemCmd := m.transactions.SetItem(m.transactions.Index(), transactionItem{t: msg.t, category: m.categories[msg.t.CategoryID]})
+		statusCmd := m.transactions.NewStatusMessage(fmt.Sprintf("Updated %s for transaction: %s", msg.fieldUpdated, msg.t.Payee))
+		return m, tea.Batch(setItemCmd, statusCmd)
 
 	// set the categories on the model,
 	// send a cmd to get transactions
