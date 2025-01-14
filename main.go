@@ -49,19 +49,41 @@ func (t transactionItem) FilterValue() string {
 }
 
 func (m model) Init() tea.Cmd {
+	return m.getTransactions
+}
+
+func (m model) getTransactions() tea.Msg {
+	ctx := context.Background()
+
+	ts, err := m.lmc.GetTransactions(ctx, nil)
+	if err != nil {
+		log.Printf("error getting transactions: %v", err)
+		return err
+	}
+
+	// reverse the slice so the most recent transactions are at the top
+	slices.Reverse(ts)
+
+	return transactionsResp{ts: ts}
+}
+
+func (m model) updateTransactionStatus(listModel *list.Model, t *lm.Transaction) tea.Cmd {
 	return func() tea.Msg {
+		log.Printf("clearing transaction for id: %d", t.ID)
 		ctx := context.Background()
 
-		ts, err := m.lmc.GetTransactions(ctx, nil)
+		resp, err := m.lmc.UpdateTransaction(ctx, t.ID, &lm.UpdateTransaction{Status: &t.Status})
 		if err != nil {
-			log.Printf("error getting transactions: %v", err)
+			log.Printf("error clearing transaction: %v", err)
 			return err
 		}
 
-		// reverse the slice so the most recent transactions are at the top
-		slices.Reverse(ts)
+		if !resp.Updated {
+			log.Printf("transaction not updated")
+			return nil
+		}
 
-		return transactionsResp{ts: ts}
+		return listModel.SetItem(listModel.Index(), transactionItem{t: t})
 	}
 }
 
@@ -129,10 +151,14 @@ func main() {
 				return err
 			}
 
-			p := tea.NewProgram(model{
-				ts:  list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0),
-				lmc: lmc,
-			}, tea.WithAltScreen())
+			model := model{lmc: lmc}
+
+			delegate := model.newItemDelegate(newDeleteKeyMap())
+			transactionList := list.New([]list.Item{}, delegate, 0, 0)
+			transactionList.Title = "Transactions"
+
+			model.ts = transactionList
+			p := tea.NewProgram(model, tea.WithAltScreen())
 			if _, err := p.Run(); err != nil {
 				return err
 			}
