@@ -67,6 +67,26 @@ func (m model) getTransactions() tea.Msg {
 	return transactionsResp{ts: ts}
 }
 
+func (m model) updateTransactionStatus(listModel *list.Model, t *lm.Transaction) tea.Cmd {
+	return func() tea.Msg {
+		log.Printf("clearing transaction for id: %d", t.ID)
+		ctx := context.Background()
+
+		resp, err := m.lmc.UpdateTransaction(ctx, t.ID, &lm.UpdateTransaction{Status: &t.Status})
+		if err != nil {
+			log.Printf("error clearing transaction: %v", err)
+			return err
+		}
+
+		if !resp.Updated {
+			log.Printf("transaction not updated")
+			return nil
+		}
+
+		return listModel.SetItem(listModel.Index(), transactionItem{t: t})
+	}
+}
+
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -131,10 +151,14 @@ func main() {
 				return err
 			}
 
-			p := tea.NewProgram(model{
-				ts:  list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0),
-				lmc: lmc,
-			}, tea.WithAltScreen())
+			model := model{lmc: lmc}
+
+			delegate := model.newItemDelegate(newDeleteKeyMap())
+			transactionList := list.New([]list.Item{}, delegate, 0, 0)
+			transactionList.Title = "Transactions"
+
+			model.ts = transactionList
+			p := tea.NewProgram(model, tea.WithAltScreen())
 			if _, err := p.Run(); err != nil {
 				return err
 			}
