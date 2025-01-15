@@ -16,6 +16,7 @@ import (
 )
 
 var docStyle = lipgloss.NewStyle().Margin(1, 2)
+var uncategorized *lm.Category = &lm.Category{ID: 0, Name: "Uncategorized", Description: "Transactions without a category"}
 
 type sessionState int
 
@@ -159,7 +160,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// set the categories on the model,
 	// send a cmd to get transactions
 	case getCategoriesMsg:
-		m.categories = make(map[int64]*lm.Category, len(msg.categories))
+		m.categories = make(map[int64]*lm.Category, len(msg.categories)+1)
+		// set the uncategorized category which does not come from the API
+		m.categories[uncategorized.ID] = uncategorized
+
 		for _, c := range msg.categories {
 			m.categories[c.ID] = c
 		}
