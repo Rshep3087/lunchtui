@@ -4,7 +4,7 @@ go 1.23.4
 
 require (
 	github.com/charmbracelet/bubbletea v1.2.4
-	github.com/rshep3087/lunchmoney v0.0.11
+	github.com/rshep3087/lunchmoney v0.0.12
 )
 
 require (
