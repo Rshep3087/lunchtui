@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"slices"
+	"time"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
@@ -23,6 +24,7 @@ type sessionState int
 const (
 	overview sessionState = iota
 	transactions
+	categorizeTransaction
 )
 
 type model struct {
@@ -32,39 +34,14 @@ type model struct {
 	sessionState sessionState
 	// transactions is a bubbletea list model of financial transactions
 	transactions list.Model
+	// categiorizeTransactions is a bubbletea list model of categories
+	categorizeTransactions list.Model
 	// categories is a map of category ID to category
-	categories map[int64]*lm.Category
+	categories map[int]*lm.Category
 	// user is the current user
 	user *lm.User
 	// lmc is the Lunch Money client
 	lmc *lm.Client
-}
-
-type transactionsResp struct {
-	ts []*lm.Transaction
-}
-
-type transactionItem struct {
-	t        *lm.Transaction
-	category *lm.Category
-}
-
-func (t transactionItem) Title() string {
-	return t.t.Payee
-}
-
-func (t transactionItem) Description() string {
-	amount, err := t.t.ParsedAmount()
-	if err != nil {
-		log.Printf("error parsing amount: %v", err)
-		return fmt.Sprintf("error parsing amount: %v", err)
-	}
-
-	return fmt.Sprintf("%s %s %s %s", t.t.Date, t.category.Name, amount.Display(), t.t.Status)
-}
-
-func (t transactionItem) FilterValue() string {
-	return t.t.Payee
 }
 
 func (m model) Init() tea.Cmd {
@@ -87,6 +64,10 @@ func (m model) getCategories() tea.Msg {
 	log.Printf("got %d categories", len(cs))
 
 	return getCategoriesMsg{categories: cs}
+}
+
+type transactionsResp struct {
+	ts []*lm.Transaction
 }
 
 func (m model) getTransactions() tea.Msg {
@@ -160,24 +141,26 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// set the categories on the model,
 	// send a cmd to get transactions
 	case getCategoriesMsg:
-		m.categories = make(map[int64]*lm.Category, len(msg.categories)+1)
+		m.categories = make(map[int]*lm.Category, len(msg.categories)+1)
 		// set the uncategorized category which does not come from the API
 		m.categories[uncategorized.ID] = uncategorized
 
+		var categoryItems = make([]list.Item, 0, len(msg.categories))
 		for _, c := range msg.categories {
 			m.categories[c.ID] = c
+			categoryItems = append(categoryItems, categoryItem{c: c})
 		}
 
-		return m, m.getTransactions
+		setItemsCmd := m.categorizeTransactions.SetItems(categoryItems)
+
+		return m, tea.Batch(setItemsCmd, m.getTransactions)
 
 	case transactionsResp:
-		log.Printf("got %d transactions", len(msg.ts))
-
 		var items = make([]list.Item, len(msg.ts))
 		for i, t := range msg.ts {
 			items[i] = transactionItem{
 				t:        t,
-				category: m.categories[t.CategoryID],
+				category: m.categories[int(t.CategoryID)],
 			}
 		}
 		cmd := m.transactions.SetItems(items)
@@ -189,9 +172,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if m.sessionState == overview {
 		return updateOverview(msg, m)
+	} else if m.sessionState == categorizeTransaction {
+		return updateCategorizeTransaction(msg, &m)
+	} else if m.sessionState == transactions {
+		return updateTransactions(msg, m)
+	} else {
+		return m, nil
 	}
-
-	return updateTransactions(msg, m)
 }
 
 func updateOverview(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
@@ -207,42 +194,16 @@ func updateOverview(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		h, v := docStyle.GetFrameSize()
-		m.transactions.SetSize(msg.Width-h, msg.Height-v)
-		return m, nil
-
-	case updateTransactionStatusMsg:
-		setItemCmd := m.transactions.SetItem(m.transactions.Index(), transactionItem{t: msg.t, category: m.categories[msg.t.CategoryID]})
-		statusCmd := m.transactions.NewStatusMessage(fmt.Sprintf("Updated %s for transaction: %s", msg.fieldUpdated, msg.t.Payee))
-		return m, tea.Batch(setItemCmd, statusCmd)
-
-	case tea.KeyMsg:
-		// if the list is filtering, don't process key events
-		if m.transactions.FilterState() == list.Filtering {
-			break
-		}
-
-		if key.Matches(msg, m.transactionsListKeys.overview) {
-			m.sessionState = overview
-			return m, nil
-		}
-	}
-
-	var cmd tea.Cmd
-	m.transactions, cmd = m.transactions.Update(msg)
-
-	return m, cmd
-}
-
 func (m model) View() string {
 	var s string
+
 	if m.sessionState == overview {
 		s = overviewView(m)
-	} else {
+	} else if m.sessionState == transactions {
 		s = transactionsView(m)
+	} else if m.sessionState == categorizeTransaction {
+		log.Println("categorize transaction view")
+		s = categorizeTransactionView(m)
 	}
 
 	return docStyle.Render("\n" + s + "\n\n")
@@ -255,23 +216,6 @@ func overviewView(m model) string {
 
 	msg := fmt.Sprintf("Welcome %s!", m.user.UserName)
 	return lipgloss.NewStyle().Width(80).Render(msg)
-}
-
-func transactionsView(m model) string {
-	return m.transactions.View()
-}
-
-type transactionListKeyMap struct {
-	overview key.Binding
-}
-
-func newTransactionListKeyMap() *transactionListKeyMap {
-	return &transactionListKeyMap{
-		overview: key.NewBinding(
-			key.WithKeys("o"),
-			key.WithHelp("o", "overview"),
-		),
-	}
 }
 
 func main() {
@@ -316,13 +260,16 @@ func main() {
 
 			transactionList := list.New([]list.Item{}, delegate, 0, 0)
 			transactionList.Title = "Transactions"
+			transactionList.StatusMessageLifetime = 3 * time.Second
 			transactionList.AdditionalFullHelpKeys = func() []key.Binding {
 				return []key.Binding{
 					tlKeyMap.overview,
 				}
 			}
-
 			m.transactions = transactionList
+
+			m.categorizeTransactions = newCategorizeTransactionModel()
+
 			p := tea.NewProgram(m, tea.WithAltScreen())
 			if _, err := p.Run(); err != nil {
 				return err
