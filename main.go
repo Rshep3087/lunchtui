@@ -132,7 +132,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// always check for quit key first
 	if msg, ok := msg.(tea.KeyMsg); ok {
 		k := msg.String()
-		if k == "q" || k == "ctrl+c" {
+		if (k == "q" || k == "ctrl+c") && m.sessionState == overview {
 			return m, tea.Quit
 		}
 	}
@@ -206,7 +206,7 @@ func (m model) View() string {
 		s = categorizeTransactionView(m)
 	}
 
-	return docStyle.Render("\n" + s + "\n\n")
+	return docStyle.Render(s)
 }
 
 func overviewView(m model) string {

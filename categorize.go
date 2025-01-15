@@ -12,6 +12,8 @@ import (
 func newCategorizeTransactionModel() list.Model {
 	m := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
 	m.Title = "Categorize Transaction"
+	// on the esc we want to go back to the transactions view
+	m.DisableQuitKeybindings()
 	return m
 }
 
@@ -69,7 +71,11 @@ func updateCategorizeTransaction(msg tea.Msg, m *model) (tea.Model, tea.Cmd) {
 				ti.t.CategoryID = int64(ci.c.ID)
 				return updateTransactionStatusMsg{t: ti.t, fieldUpdated: "category"}
 			}
+		}
 
+		if k == "esc" {
+			m.sessionState = transactions
+			return m, nil
 		}
 
 	}
