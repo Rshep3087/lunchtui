@@ -83,9 +83,9 @@ type model struct {
 	// plaidAccounts are individual bank accounts that you have linked to Lunch Money via Plaid.
 	// You may link one bank but one bank might contain 4 accounts.
 	// Each of these accounts is a Plaid Account.
-	plaidAccounts []*lm.PlaidAccount
+	plaidAccounts map[int64]*lm.PlaidAccount
 	// assets are manually managed assets
-	assets []*lm.Asset
+	assets map[int64]*lm.Asset
 	// user is the current user
 	user *lm.User
 	// lmc is the Lunch Money client
@@ -237,8 +237,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(setItemsCmd, m.getTransactions)
 
 	case getAccountsMsg:
-		m.plaidAccounts = msg.plaidAccounts
-		m.assets = msg.assets
+		m.plaidAccounts = make(map[int64]*lm.PlaidAccount, len(msg.plaidAccounts))
+		for _, pa := range msg.plaidAccounts {
+			m.plaidAccounts[pa.ID] = pa
+		}
+
+		m.assets = make(map[int64]*lm.Asset, len(msg.assets))
+		for _, a := range msg.assets {
+			m.assets[a.ID] = a
+		}
 
 		return m, nil
 
@@ -246,8 +253,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var items = make([]list.Item, len(msg.ts))
 		for i, t := range msg.ts {
 			items[i] = transactionItem{
-				t:        t,
-				category: m.categories[int(t.CategoryID)],
+				t:            t,
+				category:     m.categories[int(t.CategoryID)],
+				plaidAccount: m.plaidAccounts[t.PlaidAccountID],
+				asset:        m.assets[t.AssetID],
 			}
 		}
 

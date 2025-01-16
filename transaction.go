@@ -10,8 +10,10 @@ import (
 )
 
 type transactionItem struct {
-	t        *lm.Transaction
-	category *lm.Category
+	t            *lm.Transaction
+	category     *lm.Category
+	plaidAccount *lm.PlaidAccount
+	asset        *lm.Asset
 }
 
 func (t transactionItem) Title() string {
@@ -24,7 +26,14 @@ func (t transactionItem) Description() string {
 		return fmt.Sprintf("error parsing amount: %v", err)
 	}
 
-	return fmt.Sprintf("%s %s %s %s", t.t.Date, t.category.Name, amount.Display(), t.t.Status)
+	var account string
+	if t.plaidAccount != nil {
+		account = t.plaidAccount.Name
+	} else if t.asset != nil {
+		account = t.asset.Name
+	}
+
+	return fmt.Sprintf("%s | %s | %s | %s | %s", t.t.Date, t.category.Name, amount.Display(), account, t.t.Status)
 }
 
 func (t transactionItem) FilterValue() string {
