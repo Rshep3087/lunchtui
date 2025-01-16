@@ -3,17 +3,18 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"slices"
 	"time"
 
+	"github.com/Rhymond/go-money"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	lm "github.com/rshep3087/lunchmoney"
 	"github.com/urfave/cli/v2"
+	"golang.org/x/sync/errgroup"
 )
 
 var docStyle = lipgloss.NewStyle().Margin(1, 2)
@@ -27,7 +28,46 @@ const (
 	categorizeTransaction
 )
 
+type summary struct {
+	totalIncomeEarned *money.Money
+	totalSpent        *money.Money
+	netIncome         *money.Money
+}
+
+func (m model) newSummary() *summary {
+	var totalIncomeEarned, totalSpent = money.New(0, "USD"), money.New(0, "USD")
+
+	for _, t := range m.transactions.Items() {
+		t := t.(transactionItem).t
+		category := m.categories[int(t.CategoryID)]
+		if category.ExcludeFromTotals {
+			continue
+		}
+
+		amount, err := t.ParsedAmount()
+		if err != nil {
+			continue
+		}
+
+		if m.categories[int(t.CategoryID)].IsIncome {
+			totalIncomeEarned, _ = totalIncomeEarned.Add(amount)
+		} else {
+			totalSpent, _ = totalSpent.Add(amount)
+		}
+
+	}
+
+	netIncome, _ := totalIncomeEarned.Add(totalSpent)
+
+	return &summary{
+		totalIncomeEarned: totalIncomeEarned,
+		totalSpent:        totalSpent,
+		netIncome:         netIncome,
+	}
+}
+
 type model struct {
+	summary *summary
 	// transactionsListKeys is the keybindings for the transactions list
 	transactionsListKeys *transactionListKeyMap
 	// sessionState is the current state of the session
@@ -40,6 +80,12 @@ type model struct {
 	categorizeTransactions list.Model
 	// categories is a map of category ID to category
 	categories map[int]*lm.Category
+	// plaidAccounts are individual bank accounts that you have linked to Lunch Money via Plaid.
+	// You may link one bank but one bank might contain 4 accounts.
+	// Each of these accounts is a Plaid Account.
+	plaidAccounts []*lm.PlaidAccount
+	// assets are manually managed assets
+	assets []*lm.Asset
 	// user is the current user
 	user *lm.User
 	// lmc is the Lunch Money client
@@ -47,7 +93,44 @@ type model struct {
 }
 
 func (m model) Init() tea.Cmd {
-	return tea.Batch(m.getCategories, m.getUser)
+	return tea.Batch(m.getCategories, m.getUser, m.getAccounts)
+}
+
+type getAccountsMsg struct {
+	plaidAccounts []*lm.PlaidAccount
+	assets        []*lm.Asset
+}
+
+func (m model) getAccounts() tea.Msg {
+	ctx := context.Background()
+
+	var errGroup errgroup.Group
+	var plaidAccounts []*lm.PlaidAccount
+	var assets []*lm.Asset
+
+	errGroup.Go(func() error {
+		pas, err := m.lmc.GetPlaidAccounts(ctx)
+		if err != nil {
+			return err
+		}
+		plaidAccounts = pas
+		return nil
+	})
+
+	errGroup.Go(func() error {
+		as, err := m.lmc.GetAssets(ctx)
+		if err != nil {
+			return err
+		}
+		assets = as
+		return nil
+	})
+
+	if err := errGroup.Wait(); err != nil {
+		return err
+	}
+
+	return getAccountsMsg{plaidAccounts: plaidAccounts, assets: assets}
 }
 
 type getCategoriesMsg struct {
@@ -72,9 +155,15 @@ type transactionsResp struct {
 func (m model) getTransactions() tea.Msg {
 	ctx := context.Background()
 
-	log.Printf("debitsAsNegative: %v", m.debitsAsNegative)
-	filters := &lm.TransactionFilters{DebitAsNegative: &m.debitsAsNegative}
-	ts, err := m.lmc.GetTransactions(ctx, filters)
+	now := time.Now()
+	nowFormatted := now.Format("2006-01-02")
+	firstOfTheMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location()).Format("2006-01-02")
+
+	ts, err := m.lmc.GetTransactions(ctx, &lm.TransactionFilters{
+		DebitAsNegative: &m.debitsAsNegative,
+		StartDate:       &firstOfTheMonth,
+		EndDate:         &nowFormatted,
+	})
 	if err != nil {
 		return err
 	}
@@ -147,6 +236,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		return m, tea.Batch(setItemsCmd, m.getTransactions)
 
+	case getAccountsMsg:
+		m.plaidAccounts = msg.plaidAccounts
+		m.assets = msg.assets
+
+		return m, nil
+
 	case transactionsResp:
 		var items = make([]list.Item, len(msg.ts))
 		for i, t := range msg.ts {
@@ -155,7 +250,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				category: m.categories[int(t.CategoryID)],
 			}
 		}
+
 		cmd := m.transactions.SetItems(items)
+
+		m.summary = m.newSummary()
+
 		return m, cmd
 
 	case getUserMsg:
@@ -173,19 +272,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 }
 
-func updateOverview(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		k := msg.String()
-		if k == "t" {
-			m.sessionState = transactions
-			return m, tea.WindowSize()
-		}
-	}
-
-	return m, nil
-}
-
 func (m model) View() string {
 	var s string
 
@@ -198,15 +284,6 @@ func (m model) View() string {
 	}
 
 	return docStyle.Render(s)
-}
-
-func overviewView(m model) string {
-	if m.user == nil {
-		return "Loading..."
-	}
-
-	msg := fmt.Sprintf("Welcome %s!", m.user.UserName)
-	return lipgloss.NewStyle().Width(80).Render(msg)
 }
 
 func main() {
