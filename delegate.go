@@ -1,8 +1,6 @@
 package main
 
 import (
-	"log"
-
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -20,12 +18,10 @@ func (m model) newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 				if key.Matches(msg, keys.unreview) {
 					action = "uncleared"
 				}
-				log.Printf("%s transaction", action)
 				if ti, ok := listModel.SelectedItem().(transactionItem); ok {
 					ti.t.Status = action
 					return m.updateTransactionStatus(ti.t)
 				}
-				log.Println("no transaction selected")
 			}
 		}
 		return nil

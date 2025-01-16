@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
@@ -22,7 +21,6 @@ func (t transactionItem) Title() string {
 func (t transactionItem) Description() string {
 	amount, err := t.t.ParsedAmount()
 	if err != nil {
-		log.Printf("error parsing amount: %v", err)
 		return fmt.Sprintf("error parsing amount: %v", err)
 	}
 

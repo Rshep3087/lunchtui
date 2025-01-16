@@ -34,6 +34,8 @@ type model struct {
 	sessionState sessionState
 	// transactions is a bubbletea list model of financial transactions
 	transactions list.Model
+	// debitsAsNegative is a flag to show debits as negative numbers
+	debitsAsNegative bool
 	// categiorizeTransactions is a bubbletea list model of categories
 	categorizeTransactions list.Model
 	// categories is a map of category ID to category
@@ -53,15 +55,12 @@ type getCategoriesMsg struct {
 }
 
 func (m model) getCategories() tea.Msg {
-	log.Println("getting categories")
 	ctx := context.Background()
 
 	cs, err := m.lmc.GetCategories(ctx)
 	if err != nil {
-		log.Printf("error getting categories: %v", err)
 		return nil
 	}
-	log.Printf("got %d categories", len(cs))
 
 	return getCategoriesMsg{categories: cs}
 }
@@ -71,12 +70,12 @@ type transactionsResp struct {
 }
 
 func (m model) getTransactions() tea.Msg {
-	log.Println("getting transactions")
 	ctx := context.Background()
 
-	ts, err := m.lmc.GetTransactions(ctx, nil)
+	log.Printf("debitsAsNegative: %v", m.debitsAsNegative)
+	filters := &lm.TransactionFilters{DebitAsNegative: &m.debitsAsNegative}
+	ts, err := m.lmc.GetTransactions(ctx, filters)
 	if err != nil {
-		log.Printf("error getting transactions: %v", err)
 		return err
 	}
 
@@ -91,12 +90,8 @@ type getUserMsg struct {
 }
 
 func (m model) getUser() tea.Msg {
-	log.Println("getting user")
-	ctx := context.Background()
-
-	u, err := m.lmc.GetUser(ctx)
+	u, err := m.lmc.GetUser(context.Background())
 	if err != nil {
-		log.Printf("error getting user: %v", err)
 		return nil
 	}
 
@@ -110,17 +105,14 @@ type updateTransactionStatusMsg struct {
 
 func (m model) updateTransactionStatus(t *lm.Transaction) tea.Cmd {
 	return func() tea.Msg {
-		log.Printf("clearing transaction for id: %d", t.ID)
 		ctx := context.Background()
 
 		resp, err := m.lmc.UpdateTransaction(ctx, t.ID, &lm.UpdateTransaction{Status: &t.Status})
 		if err != nil {
-			log.Printf("error clearing transaction: %v", err)
 			return err
 		}
 
 		if !resp.Updated {
-			log.Printf("transaction not updated")
 			return nil
 		}
 
@@ -202,7 +194,6 @@ func (m model) View() string {
 	} else if m.sessionState == transactions {
 		s = transactionsView(m)
 	} else if m.sessionState == categorizeTransaction {
-		log.Println("categorize transaction view")
 		s = categorizeTransactionView(m)
 	}
 
@@ -229,6 +220,11 @@ func main() {
 				EnvVars:  []string{"LUNCHMONEY_API_TOKEN"},
 				Required: true,
 			},
+			// debits-as-negative flag
+			&cli.BoolFlag{
+				Name:  "debits-as-negative",
+				Usage: "Show debits as negative numbers",
+			},
 			&cli.BoolFlag{
 				Name:  "debug",
 				Usage: "Enable debug logging",
@@ -254,6 +250,7 @@ func main() {
 				sessionState:         overview,
 				lmc:                  lmc,
 				transactionsListKeys: tlKeyMap,
+				debitsAsNegative:     c.Bool("debits-as-negative"),
 			}
 
 			delegate := m.newItemDelegate(newDeleteKeyMap())

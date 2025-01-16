@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -45,25 +44,21 @@ func updateCategorizeTransaction(msg tea.Msg, m *model) (tea.Model, tea.Cmd) {
 				// get the selected transaction
 				ti, ok := m.transactions.SelectedItem().(transactionItem)
 				if !ok {
-					log.Println("no transaction selected")
 					return nil
 				}
 
 				// get the selected category
 				ci, ok := m.categorizeTransactions.SelectedItem().(categoryItem)
 				if !ok {
-					log.Println("no category selected")
 					return nil
 				}
 
 				resp, err := m.lmc.UpdateTransaction(context.TODO(), ti.t.ID, &lm.UpdateTransaction{CategoryID: &ci.c.ID})
 				if err != nil {
-					log.Printf("error updating transaction: %v", err)
 					return err
 				}
 
 				if !resp.Updated {
-					log.Println("transaction not updated")
 					return nil
 				}
 
@@ -79,8 +74,6 @@ func updateCategorizeTransaction(msg tea.Msg, m *model) (tea.Model, tea.Cmd) {
 		}
 
 	}
-
-	log.Printf("categorize transaction msg: %v", msg)
 
 	var cmd tea.Cmd
 	m.categorizeTransactions, cmd = m.categorizeTransactions.Update(msg)
