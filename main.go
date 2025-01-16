@@ -34,6 +34,16 @@ type summary struct {
 	netIncome         *money.Money
 }
 
+func (s summary) View() string {
+	var msg string
+
+	msg += fmt.Sprintf("Income: %s\n", s.totalIncomeEarned.Display())
+	msg += fmt.Sprintf("Spent: %s\n", s.totalSpent.Display())
+	msg += fmt.Sprintf("Net Income: %s\n", s.netIncome.Display())
+
+	return msg
+}
+
 func (m model) newSummary() *summary {
 	var totalIncomeEarned, totalSpent = money.New(0, "USD"), money.New(0, "USD")
 

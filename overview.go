@@ -29,9 +29,8 @@ func overviewView(m model) string {
 	msg += "\n\n"
 
 	// show the user summary
-	msg += m.summary.totalIncomeEarned.Display() + "\n"
-	msg += m.summary.totalSpent.Display() + "\n"
-	msg += m.summary.netIncome.Display() + "\n\n"
+	msg += m.summary.View() + "\n\n"
 	msg += "Press 't' to view transactions."
+
 	return lipgloss.NewStyle().Width(80).Render(msg)
 }
