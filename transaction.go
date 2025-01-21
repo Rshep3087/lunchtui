@@ -66,7 +66,16 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case updateTransactionStatusMsg:
-		setItemCmd := m.transactions.SetItem(m.transactions.Index(), transactionItem{t: msg.t, category: m.categories[int(msg.t.CategoryID)]})
+		// create a copy of the transaction and update the status
+		// this keep the category, assets, plaidAccount, etc. intact
+		t, ok := m.transactions.SelectedItem().(transactionItem)
+		if !ok {
+			return m, nil
+		}
+
+		t.t = msg.t
+
+		setItemCmd := m.transactions.SetItem(m.transactions.Index(), t)
 		statusCmd := m.transactions.NewStatusMessage(fmt.Sprintf("Updated %s for transaction: %s", msg.fieldUpdated, msg.t.Payee))
 		return m, tea.Batch(setItemCmd, statusCmd)
 
