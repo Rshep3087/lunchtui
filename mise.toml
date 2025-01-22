@@ -1,4 +1,10 @@
+[env]
+'_'.file =  '.env'
 
 [tasks.run_dev]
 run = "go run . --debug --debits-as-negative"
+description = "Run the application in debug mode with debits as negative"
+
+[tasks.run_debug]
+run = "dlv debug --headless --api-version=2 --listen=127.0.0.1:43000 . -- --debug --debits-as-negative"
 description = "Run the application in debug mode with debits as negative"
