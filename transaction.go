@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"log"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
@@ -65,7 +67,7 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 		m.transactions.SetSize(msg.Width-h, msg.Height-v)
 		return m, nil
 
-	case updateTransactionStatusMsg:
+	case updateTransactionMsg:
 		// create a copy of the transaction and update the status
 		// this keep the category, assets, plaidAccount, etc. intact
 		t, ok := m.transactions.SelectedItem().(transactionItem)
@@ -74,6 +76,10 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 		}
 
 		t.t = msg.t
+		// must set the new category on the transaction item
+		// in case that is what changed
+		// in future, we could check the fieldUpdated to see what changed
+		t.category = m.categories[int(t.t.CategoryID)]
 
 		setItemCmd := m.transactions.SetItem(m.transactions.Index(), t)
 		statusCmd := m.transactions.NewStatusMessage(fmt.Sprintf("Updated %s for transaction: %s", msg.fieldUpdated, msg.t.Payee))
@@ -91,6 +97,32 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 		}
 
 		if key.Matches(msg, m.transactionsListKeys.categorizeTransaction) {
+			// we know which transaction we're categorizing because we're
+			// updating the category for the transaction at the current index
+			t := m.transactions.Items()[m.transactions.Index()].(transactionItem).t
+			m.categoryForm.SubmitCmd = func() tea.Msg {
+				cid := m.categoryForm.GetInt("category")
+				log.Printf("category id selected: %d", cid)
+
+				resp, err := m.lmc.UpdateTransaction(context.TODO(), t.ID, &lm.UpdateTransaction{CategoryID: &cid})
+				if err != nil {
+					return err
+				}
+
+				if !resp.Updated {
+					return nil
+				}
+
+				newT, err := m.lmc.GetTransaction(context.TODO(), int64(t.ID), &lm.TransactionFilters{
+					DebitAsNegative: &m.debitsAsNegative,
+				})
+				if err != nil {
+					return err
+				}
+
+				return updateTransactionMsg{t: newT, fieldUpdated: "category"}
+			}
+
 			m.sessionState = categorizeTransaction
 			return m, tea.WindowSize()
 		}

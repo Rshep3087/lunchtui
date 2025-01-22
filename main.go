@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
 	lm "github.com/rshep3087/lunchmoney"
 	"github.com/urfave/cli/v2"
@@ -86,8 +87,8 @@ type model struct {
 	transactions list.Model
 	// debitsAsNegative is a flag to show debits as negative numbers
 	debitsAsNegative bool
-	// categiorizeTransactions is a bubbletea list model of categories
-	categorizeTransactions list.Model
+
+	categoryForm *huh.Form
 	// categories is a map of category ID to category
 	categories map[int]*lm.Category
 	// plaidAccounts are individual bank accounts that you have linked to Lunch Money via Plaid.
@@ -197,7 +198,7 @@ func (m model) getUser() tea.Msg {
 	return getUserMsg{user: u}
 }
 
-type updateTransactionStatusMsg struct {
+type updateTransactionMsg struct {
 	t            *lm.Transaction
 	fieldUpdated string
 }
@@ -215,7 +216,7 @@ func (m model) updateTransactionStatus(t *lm.Transaction) tea.Cmd {
 			return nil
 		}
 
-		return updateTransactionStatusMsg{t: t, fieldUpdated: "status"}
+		return updateTransactionMsg{t: t, fieldUpdated: "status"}
 	}
 }
 
@@ -236,15 +237,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// set the uncategorized category which does not come from the API
 		m.categories[uncategorized.ID] = uncategorized
 
-		var categoryItems = make([]list.Item, 0, len(msg.categories))
 		for _, c := range msg.categories {
 			m.categories[c.ID] = c
-			categoryItems = append(categoryItems, categoryItem{c: c})
 		}
 
-		setItemsCmd := m.categorizeTransactions.SetItems(categoryItems)
+		m.categoryForm = newCategorizeTransactionForm(msg.categories)
 
-		return m, tea.Batch(setItemsCmd, m.getTransactions)
+		return m, tea.Batch(m.getTransactions, m.categoryForm.Init())
 
 	case getAccountsMsg:
 		m.plaidAccounts = make(map[int64]*lm.PlaidAccount, len(msg.plaidAccounts))
@@ -360,8 +359,6 @@ func main() {
 				}
 			}
 			m.transactions = transactionList
-
-			m.categorizeTransactions = newCategorizeTransactionModel()
 
 			p := tea.NewProgram(m, tea.WithAltScreen())
 			if _, err := p.Run(); err != nil {
