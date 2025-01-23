@@ -37,12 +37,21 @@ type summary struct {
 	netIncome         *money.Money
 }
 
+var (
+	incomeStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#00ff00"))
+	spentStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("#ff0000"))
+)
+
 func (s summary) View() string {
 	var msg string
 
-	msg += fmt.Sprintf("Income: %s\n", s.totalIncomeEarned.Display())
-	msg += fmt.Sprintf("Spent: %s\n", s.totalSpent.Display())
-	msg += fmt.Sprintf("Net Income: %s\n", s.netIncome.Display())
+	msg += fmt.Sprintf("Income: %s\n", incomeStyle.Render(s.totalIncomeEarned.Display()))
+	msg += fmt.Sprintf("Spent: %s\n", spentStyle.Render(s.totalSpent.Display()))
+	if s.netIncome.IsNegative() {
+		msg += fmt.Sprintf("Net Income: %s\n", spentStyle.Render(s.netIncome.Display()))
+	} else {
+		msg += fmt.Sprintf("Net Income: %s\n", incomeStyle.Render(s.netIncome.Display()))
+	}
 
 	return msg
 }

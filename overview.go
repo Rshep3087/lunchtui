@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
@@ -26,6 +27,7 @@ func updateOverview(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 }
 
 func overviewView(m model) string {
+	doc := strings.Builder{}
 	if m.user == nil || len(m.transactions.Items()) == 0 {
 		loadingStyle := lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#ffd644"))
@@ -35,13 +37,12 @@ func overviewView(m model) string {
 			loadingStyle.Render("Loading..."),
 		)
 	}
-
-	msg := fmt.Sprintf("Welcome %s!", m.user.UserName)
-	msg += "\n\n"
+	doc.WriteString(fmt.Sprintf("Welcome %s!\n\n", m.user.UserName))
 
 	// show the user summary
-	msg += m.summary.View() + "\n\n"
-	msg += "Press 't' to view transactions."
+	doc.WriteString(lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Render(m.summary.View()))
+	doc.WriteString("\n\n")
+	doc.WriteString("Press 't' to view transactions.")
 
-	return lipgloss.NewStyle().Width(80).Render(msg)
+	return lipgloss.NewStyle().Render(doc.String())
 }
