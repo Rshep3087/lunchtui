@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"slices"
 	"time"
@@ -89,6 +90,8 @@ type model struct {
 	sessionState sessionState
 	// transactions is a bubbletea list model of financial transactions
 	transactions list.Model
+
+	transactionsStats *transactionsStats
 	// debitsAsNegative is a flag to show debits as negative numbers
 	debitsAsNegative bool
 
@@ -147,6 +150,7 @@ func (m model) getAccounts() tea.Msg {
 	})
 
 	if err := errGroup.Wait(); err != nil {
+		log.Println(err)
 		return err
 	}
 
@@ -162,6 +166,7 @@ func (m model) getCategories() tea.Msg {
 
 	cs, err := m.lmc.GetCategories(ctx)
 	if err != nil {
+		log.Println(err)
 		return nil
 	}
 
@@ -185,6 +190,7 @@ func (m model) getTransactions() tea.Msg {
 		EndDate:         &nowFormatted,
 	})
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 
@@ -201,6 +207,7 @@ type getUserMsg struct {
 func (m model) getUser() tea.Msg {
 	u, err := m.lmc.GetUser(context.Background())
 	if err != nil {
+		log.Println(err)
 		return nil
 	}
 
@@ -268,6 +275,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case transactionsResp:
+		ts := transactionsStats{}
 		var items = make([]list.Item, len(msg.ts))
 		for i, t := range msg.ts {
 			items[i] = transactionItem{
@@ -276,11 +284,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				plaidAccount: m.plaidAccounts[t.PlaidAccountID],
 				asset:        m.assets[t.AssetID],
 			}
+
+			switch t.Status {
+			case "cleared":
+				ts.cleared++
+			case "pending":
+				ts.pending++
+			case "uncleared":
+				ts.uncleared++
+			}
 		}
 
 		cmd := m.transactions.SetItems(items)
 
 		m.summary = m.newSummary()
+		m.transactionsStats = &ts
 
 		return m, cmd
 

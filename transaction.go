@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	lm "github.com/rshep3087/lunchmoney"
 )
 
@@ -64,7 +65,7 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		h, v := docStyle.GetFrameSize()
-		m.transactions.SetSize(msg.Width-h, msg.Height-v)
+		m.transactions.SetSize(msg.Width-h, msg.Height-v-2)
 		return m, nil
 
 	case updateTransactionMsg:
@@ -135,5 +136,27 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 }
 
 func transactionsView(m model) string {
-	return m.transactions.View()
+	return lipgloss.JoinVertical(lipgloss.Left,
+		m.transactions.View(),
+		m.transactionsStats.View(),
+	)
+}
+
+type transactionsStats struct {
+	pending   int
+	uncleared int
+	cleared   int
+}
+
+// View renders the transactions stats in a single line
+func (t transactionsStats) View() string {
+	pending := lipgloss.NewStyle().Foreground(lipgloss.Color("#7f7d78")).MarginRight(2).Render(fmt.Sprintf("%d pending", t.pending))
+	uncleared := lipgloss.NewStyle().Foreground(lipgloss.Color("#e05951")).MarginRight(2).Render(fmt.Sprintf("%d uncleared", t.uncleared))
+	cleared := lipgloss.NewStyle().Foreground(lipgloss.Color("#22ba46")).MarginRight(2).Render(fmt.Sprintf("%d cleared", t.cleared))
+
+	transactionStatus := lipgloss.JoinHorizontal(lipgloss.Left, pending, uncleared, cleared)
+	return lipgloss.NewStyle().
+		MarginTop(1).
+		MarginLeft(2).
+		Render(transactionStatus)
 }
