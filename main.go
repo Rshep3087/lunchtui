@@ -10,6 +10,7 @@ import (
 	"github.com/Rhymond/go-money"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
@@ -78,6 +79,9 @@ func (m model) newSummary() *summary {
 }
 
 type model struct {
+	// loadingSpinner is a spinner model for the initial loading state
+	loadingSpinner spinner.Model
+
 	summary *summary
 	// transactionsListKeys is the keybindings for the transactions list
 	transactionsListKeys *transactionListKeyMap
@@ -104,7 +108,12 @@ type model struct {
 }
 
 func (m model) Init() tea.Cmd {
-	return tea.Batch(m.getCategories, m.getUser, m.getAccounts)
+	return tea.Batch(
+		m.getCategories,
+		m.getUser,
+		m.getAccounts,
+		m.loadingSpinner.Tick,
+	)
 }
 
 type getAccountsMsg struct {
@@ -346,6 +355,9 @@ func main() {
 				lmc:                  lmc,
 				transactionsListKeys: tlKeyMap,
 				debitsAsNegative:     c.Bool("debits-as-negative"),
+				loadingSpinner: spinner.New(
+					spinner.WithSpinner(spinner.Dot),
+				),
 			}
 
 			delegate := m.newItemDelegate(newDeleteKeyMap())
