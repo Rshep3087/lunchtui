@@ -275,7 +275,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case transactionsResp:
-		ts := transactionsStats{}
 		var items = make([]list.Item, len(msg.ts))
 		for i, t := range msg.ts {
 			items[i] = transactionItem{
@@ -284,21 +283,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				plaidAccount: m.plaidAccounts[t.PlaidAccountID],
 				asset:        m.assets[t.AssetID],
 			}
-
-			switch t.Status {
-			case "cleared":
-				ts.cleared++
-			case "pending":
-				ts.pending++
-			case "uncleared":
-				ts.uncleared++
-			}
 		}
 
 		cmd := m.transactions.SetItems(items)
 
 		m.summary = m.newSummary()
-		m.transactionsStats = &ts
+		m.transactionsStats = newTransactionStats(items)
 
 		return m, cmd
 

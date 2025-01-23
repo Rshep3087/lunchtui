@@ -84,6 +84,9 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 
 		setItemCmd := m.transactions.SetItem(m.transactions.Index(), t)
 		statusCmd := m.transactions.NewStatusMessage(fmt.Sprintf("Updated %s for transaction: %s", msg.fieldUpdated, msg.t.Payee))
+
+		m.transactionsStats = newTransactionStats(m.transactions.Items())
+
 		return m, tea.Batch(setItemCmd, statusCmd)
 
 	case tea.KeyMsg:
@@ -140,6 +143,32 @@ func transactionsView(m model) string {
 		m.transactions.View(),
 		m.transactionsStats.View(),
 	)
+}
+
+func newTransactionStats(ts []list.Item) *transactionsStats {
+	stats := transactionsStats{}
+
+	for _, t := range ts {
+		ti, ok := t.(transactionItem)
+		if !ok {
+			continue
+		}
+
+		if ti.t == nil {
+			continue
+		}
+
+		switch ti.t.Status {
+		case "pending":
+			stats.pending++
+		case "uncleared":
+			stats.uncleared++
+		case "cleared":
+			stats.cleared++
+		}
+	}
+
+	return &stats
 }
 
 type transactionsStats struct {
