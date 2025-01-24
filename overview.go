@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss/tree"
+	lm "github.com/rshep3087/lunchmoney"
 )
 
 func updateOverview(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
@@ -17,10 +18,6 @@ func updateOverview(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 			m.sessionState = transactions
 			return m, tea.WindowSize()
 		}
-	case spinner.TickMsg:
-		var cmd tea.Cmd
-		m.loadingSpinner, cmd = m.loadingSpinner.Update(msg)
-		return m, cmd
 	}
 
 	return m, nil
@@ -37,12 +34,57 @@ func overviewView(m model) string {
 			loadingStyle.Render("Loading..."),
 		)
 	}
+
 	doc.WriteString(fmt.Sprintf("Welcome %s!\n\n", m.user.UserName))
 
 	// show the user summary
-	doc.WriteString(lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Render(m.summary.View()))
+	layer := lipgloss.JoinVertical(lipgloss.Top,
+		m.accountView,
+		m.summary.View(),
+	)
+
+	doc.WriteString(layer)
 	doc.WriteString("\n\n")
 	doc.WriteString("Press 't' to view transactions.")
 
 	return lipgloss.NewStyle().Render(doc.String())
+}
+
+func accountView(m model) string {
+	t := tree.Root("Accounts").Enumerator(tree.RoundedEnumerator)
+
+	// organize the assets by the type into a map
+	assets := make(map[string][]lm.Asset)
+	for _, a := range m.assets {
+		assets[a.TypeName] = append(assets[a.TypeName], *a)
+	}
+
+	// add a child for each asset
+	for typeName, assets := range assets {
+		assetTree := tree.New().Root(typeName)
+		for _, a := range assets {
+			nameAndMoney := fmt.Sprintf("%s (%s)", a.Name, a.Balance)
+			assetTree.Child(nameAndMoney)
+		}
+
+		t.Child(assetTree)
+	}
+
+	// // organize the plaid accounts by the type into a map
+	plaidAccounts := make(map[string][]lm.PlaidAccount)
+	for _, a := range m.plaidAccounts {
+		plaidAccounts[a.Type] = append(plaidAccounts[a.Type], *a)
+	}
+
+	for typeName, accounts := range plaidAccounts {
+		accountTree := tree.New().Root(typeName)
+		for _, a := range accounts {
+			nameAndMoney := fmt.Sprintf("%s (%s)", a.Name, a.Balance)
+			accountTree.Child(nameAndMoney)
+		}
+
+		t.Child(accountTree)
+	}
+
+	return lipgloss.NewStyle().MarginRight(2).Render(t.String())
 }

@@ -29,6 +29,7 @@ const (
 	overview sessionState = iota
 	transactions
 	categorizeTransaction
+	loading
 )
 
 type summary struct {
@@ -113,6 +114,9 @@ type model struct {
 	plaidAccounts map[int64]*lm.PlaidAccount
 	// assets are manually managed assets
 	assets map[int64]*lm.Asset
+	// accountView is the view of the user's accounts
+	// it must be kept as a string instead of generated each time
+	accountView string
 	// user is the current user
 	user *lm.User
 	// lmc is the Lunch Money client
@@ -255,6 +259,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	switch msg := msg.(type) {
+	case spinner.TickMsg:
+		if m.sessionState != loading {
+			return m, nil
+		}
+
+		var cmd tea.Cmd
+		m.loadingSpinner, cmd = m.loadingSpinner.Update(msg)
+		return m, cmd
+
 	// set the categories on the model,
 	// send a cmd to get transactions
 	case getCategoriesMsg:
@@ -281,6 +294,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.assets[a.ID] = a
 		}
 
+		m.accountView = accountView(m)
+
 		return m, nil
 
 	case transactionsResp:
@@ -302,6 +317,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 
 	case getUserMsg:
+		m.sessionState = overview
 		m.user = msg.user
 	}
 
@@ -368,7 +384,7 @@ func main() {
 
 			tlKeyMap := newTransactionListKeyMap()
 			m := model{
-				sessionState:         overview,
+				sessionState:         loading,
 				lmc:                  lmc,
 				transactionsListKeys: tlKeyMap,
 				debitsAsNegative:     c.Bool("debits-as-negative"),
