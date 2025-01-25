@@ -58,10 +58,7 @@ type model struct {
 	plaidAccounts map[int64]*lm.PlaidAccount
 	// assets are manually managed assets
 	assets map[int64]*lm.Asset
-	// accountView is the view of the user's accounts
-	// it must be kept as a string instead of generated each time
-	accountView string
-	// user is the current user
+	// user is the current user determined by the API token
 	user *lm.User
 	// lmc is the Lunch Money client
 	lmc *lm.Client

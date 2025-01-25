@@ -20,8 +20,6 @@ var titleCaser = cases.Title(language.English)
 
 // Model deines the state for the overview widget for LunchTUI
 type Model struct {
-	// height is the what is available to us for rendering
-	height        int
 	KeyMap        KeyMap
 	Help          help.Model
 	Styles        Styles
