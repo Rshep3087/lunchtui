@@ -96,7 +96,7 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 		}
 
 		if key.Matches(msg, m.transactionsListKeys.overview) {
-			m.sessionState = overview
+			m.sessionState = overviewState
 			return m, nil
 		}
 

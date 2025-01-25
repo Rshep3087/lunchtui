@@ -8,7 +8,8 @@ import (
 	"slices"
 	"time"
 
-	"github.com/Rhymond/go-money"
+	"github.com/rshep3087/lunchtui/overview"
+
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
@@ -26,74 +27,17 @@ var uncategorized *lm.Category = &lm.Category{ID: 0, Name: "Uncategorized", Desc
 type sessionState int
 
 const (
-	overview sessionState = iota
+	overviewState sessionState = iota
 	transactions
 	categorizeTransaction
 	loading
 )
 
-type summary struct {
-	totalIncomeEarned *money.Money
-	totalSpent        *money.Money
-	netIncome         *money.Money
-}
-
-var (
-	incomeStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#00ff00"))
-	spentStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("#ff0000"))
-)
-
-func (s summary) View() string {
-	var msg string
-
-	msg += fmt.Sprintf("Income: %s\n", incomeStyle.Render(s.totalIncomeEarned.Display()))
-	msg += fmt.Sprintf("Spent: %s\n", spentStyle.Render(s.totalSpent.Display()))
-	if s.netIncome.IsNegative() {
-		msg += fmt.Sprintf("Net Income: %s\n", spentStyle.Render(s.netIncome.Display()))
-	} else {
-		msg += fmt.Sprintf("Net Income: %s\n", incomeStyle.Render(s.netIncome.Display()))
-	}
-
-	return msg
-}
-
-func (m model) newSummary() *summary {
-	var totalIncomeEarned, totalSpent = money.New(0, "USD"), money.New(0, "USD")
-
-	for _, t := range m.transactions.Items() {
-		t := t.(transactionItem).t
-		category := m.categories[int(t.CategoryID)]
-		if category.ExcludeFromTotals {
-			continue
-		}
-
-		amount, err := t.ParsedAmount()
-		if err != nil {
-			continue
-		}
-
-		if m.categories[int(t.CategoryID)].IsIncome {
-			totalIncomeEarned, _ = totalIncomeEarned.Add(amount)
-		} else {
-			totalSpent, _ = totalSpent.Add(amount)
-		}
-
-	}
-
-	netIncome, _ := totalIncomeEarned.Add(totalSpent)
-
-	return &summary{
-		totalIncomeEarned: totalIncomeEarned,
-		totalSpent:        totalSpent,
-		netIncome:         netIncome,
-	}
-}
-
 type model struct {
 	// loadingSpinner is a spinner model for the initial loading state
 	loadingSpinner spinner.Model
 
-	summary *summary
+	overview overview.Model
 	// transactionsListKeys is the keybindings for the transactions list
 	transactionsListKeys *transactionListKeyMap
 	// sessionState is the current state of the session
@@ -253,12 +197,22 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// always check for quit key first
 	if msg, ok := msg.(tea.KeyMsg); ok {
 		k := msg.String()
-		if (k == "q" || k == "ctrl+c") && m.sessionState == overview {
+		if (k == "q" || k == "ctrl+c") && m.sessionState == overviewState {
 			return m, tea.Quit
+		}
+
+		if k == "t" {
+			m.sessionState = transactions
+			return m, nil
 		}
 	}
 
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		h, v := docStyle.GetFrameSize()
+		m.overview.SetSize(msg.Width-h, msg.Height-v-2)
+		m.transactions.SetSize(msg.Width-h, msg.Height-v-2)
+
 	case spinner.TickMsg:
 		if m.sessionState != loading {
 			return m, nil
@@ -280,6 +234,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		m.categoryForm = newCategorizeTransactionForm(msg.categories)
+		m.overview.SetCategories(m.categories)
+
+		m.sessionState = m.checkIfLoading()
 
 		return m, tea.Batch(m.getTransactions, m.categoryForm.Init())
 
@@ -294,7 +251,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.assets[a.ID] = a
 		}
 
-		m.accountView = accountView(m)
+		m.overview.SetAccounts(m.assets, m.plaidAccounts)
+
+		m.sessionState = m.checkIfLoading()
 
 		return m, nil
 
@@ -311,18 +270,24 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		cmd := m.transactions.SetItems(items)
 
-		m.summary = m.newSummary()
 		m.transactionsStats = newTransactionStats(items)
+		m.overview.SetTransactions(msg.ts)
+
+		m.sessionState = m.checkIfLoading()
 
 		return m, cmd
 
 	case getUserMsg:
-		m.sessionState = overview
 		m.user = msg.user
+		m.overview.SetUser(msg.user)
+		m.sessionState = m.checkIfLoading()
+		return m, nil
 	}
 
-	if m.sessionState == overview {
-		return updateOverview(msg, m)
+	if m.sessionState == overviewState {
+		var cmd tea.Cmd
+		m.overview, cmd = m.overview.Update(msg)
+		return m, cmd
 	} else if m.sessionState == categorizeTransaction {
 		return updateCategorizeTransaction(msg, &m)
 	} else if m.sessionState == transactions {
@@ -335,8 +300,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	var s string
 
-	if m.sessionState == overview {
-		s = overviewView(m)
+	if m.sessionState == overviewState {
+		s = m.overview.View()
 	} else if m.sessionState == transactions {
 		s = transactionsView(m)
 	} else if m.sessionState == categorizeTransaction {
@@ -391,6 +356,7 @@ func main() {
 				loadingSpinner: spinner.New(
 					spinner.WithSpinner(spinner.Dot),
 				),
+				overview: overview.New(),
 			}
 
 			delegate := m.newItemDelegate(newDeleteKeyMap())
@@ -418,4 +384,16 @@ func main() {
 		fmt.Printf("lunchtui ran into an error: %v", err)
 		os.Exit(1)
 	}
+}
+
+func (m model) checkIfLoading() sessionState {
+	if m.user == nil || m.categories == nil || m.plaidAccounts == nil || m.assets == nil {
+		return loading
+	}
+
+	if len(m.transactions.Items()) == 0 {
+		return loading
+	}
+
+	return overviewState
 }
