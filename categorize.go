@@ -3,13 +3,18 @@ package main
 import (
 	"maps"
 	"slices"
+	"sort"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	lm "github.com/rshep3087/lunchmoney"
 )
 
-func newCategorizeTransactionForm(categories []*lm.Category) *huh.Form {
+func newCategorizeTransactionForm(categories []*lm.Category) *huh.Form { // Sort categories by Name
+	sort.Slice(categories, func(i, j int) bool {
+		return categories[i].Name < categories[j].Name
+	})
+
 	opts := make([]huh.Option[int], len(categories))
 	for i, c := range categories {
 		opts[i] = huh.NewOption(c.Name, c.ID)
@@ -21,7 +26,7 @@ func newCategorizeTransactionForm(categories []*lm.Category) *huh.Form {
 			Description("Select a new category for the transaction").
 			Options(opts...).
 			Key("category"),
-	)).WithWidth(40).WithHeight(30)
+	))
 }
 
 func updateCategorizeTransaction(msg tea.Msg, m *model) (tea.Model, tea.Cmd) {
@@ -36,7 +41,7 @@ func updateCategorizeTransaction(msg tea.Msg, m *model) (tea.Model, tea.Cmd) {
 	if m.categoryForm.State == huh.StateCompleted {
 		m.sessionState = transactions
 		m.categoryForm = newCategorizeTransactionForm(slices.Collect(maps.Values(m.categories)))
-		cmds = append(cmds, m.categoryForm.Init())
+		cmds = append(cmds, m.categoryForm.Init(), tea.WindowSize())
 	}
 
 	return m, tea.Batch(cmds...)
