@@ -63,11 +63,6 @@ func newTransactionListKeyMap() *transactionListKeyMap {
 
 func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		h, v := docStyle.GetFrameSize()
-		m.transactions.SetSize(msg.Width-h, msg.Height-v-2)
-		return m, nil
-
 	case updateTransactionMsg:
 		// create a copy of the transaction and update the status
 		// this keep the category, assets, plaidAccount, etc. intact

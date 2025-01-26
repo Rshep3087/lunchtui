@@ -10,6 +10,7 @@ import (
 
 	"github.com/rshep3087/lunchtui/overview"
 
+	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
@@ -23,6 +24,20 @@ import (
 
 var docStyle = lipgloss.NewStyle().Margin(1, 2)
 var uncategorized *lm.Category = &lm.Category{ID: 0, Name: "Uncategorized", Description: "Transactions without a category"}
+var keys = keyMap{
+	transactions: key.NewBinding(
+		key.WithKeys("t"),
+		key.WithHelp("t", "transactions"),
+	),
+	overview: key.NewBinding(
+		key.WithKeys("o"),
+		key.WithHelp("o", "overview"),
+	),
+	quit: key.NewBinding(
+		key.WithKeys("q", "ctrl+c"),
+		key.WithHelp("q", "quit"),
+	),
+}
 
 type sessionState int
 
@@ -33,9 +48,36 @@ const (
 	loading
 )
 
+type keyMap struct {
+	transactions key.Binding
+	overview     key.Binding
+	quit         key.Binding
+}
+
+func (km keyMap) ShortHelp() []key.Binding {
+	return []key.Binding{
+		km.transactions,
+		km.overview,
+		km.quit,
+	}
+}
+
+func (km keyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{
+			km.transactions,
+			km.overview,
+			km.quit,
+		},
+	}
+}
+
 type model struct {
 	// loadingSpinner is a spinner model for the initial loading state
 	loadingSpinner spinner.Model
+
+	keys keyMap
+	help help.Model
 
 	overview overview.Model
 	// transactionsListKeys is the keybindings for the transactions list
@@ -207,8 +249,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		h, v := docStyle.GetFrameSize()
-		m.overview.SetSize(msg.Width-h, msg.Height-v-2)
-		m.transactions.SetSize(msg.Width-h, msg.Height-v-2)
+		m.overview.SetSize(msg.Width-h, msg.Height-v-5)
+		m.transactions.SetSize(msg.Width-h, msg.Height-v-5)
+		m.help.Width = msg.Width
 
 	case spinner.TickMsg:
 		if m.sessionState != loading {
@@ -305,6 +348,8 @@ func (m model) View() string {
 		s = categorizeTransactionView(m)
 	}
 
+	s += "\n\n" + m.help.View(m.keys)
+
 	return docStyle.Render(s)
 }
 
@@ -346,6 +391,8 @@ func main() {
 
 			tlKeyMap := newTransactionListKeyMap()
 			m := model{
+				keys:                 keys,
+				help:                 help.New(),
 				sessionState:         loading,
 				lmc:                  lmc,
 				transactionsListKeys: tlKeyMap,
