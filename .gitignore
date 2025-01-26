@@ -1,3 +1,5 @@
 lunchtui.log
 .env
 .vscode
+# Added by goreleaser init:
+dist/
