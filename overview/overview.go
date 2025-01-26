@@ -5,8 +5,6 @@ import (
 	"log"
 
 	"github.com/Rhymond/go-money"
-	"github.com/charmbracelet/bubbles/help"
-	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -20,8 +18,6 @@ var titleCaser = cases.Title(language.English)
 
 // Model deines the state for the overview widget for LunchTUI
 type Model struct {
-	KeyMap        KeyMap
-	Help          help.Model
 	Styles        Styles
 	viewport      viewport.Model
 	summary       Summary
@@ -37,10 +33,6 @@ type Summary struct {
 	totalIncomeEarned money.Money
 	totalSpent        money.Money
 	netIncome         money.Money
-}
-
-type KeyMap struct {
-	Quit key.Binding
 }
 
 type Styles struct {
@@ -93,8 +85,6 @@ func (m *Model) SetUser(user *lm.User) {
 
 func New(opts ...Option) Model {
 	m := Model{
-		KeyMap:   defaultKeyMap(),
-		Help:     help.New(),
 		Styles:   defaultStyles(),
 		viewport: viewport.New(0, 20),
 		summary: Summary{
@@ -126,13 +116,7 @@ func (m Model) View() string {
 	)
 
 	sections = append(sections, m.viewport.View())
-	sections = append(sections, m.helpView())
 	return lipgloss.JoinVertical(lipgloss.Left, sections...)
-}
-
-func (m Model) helpView() string {
-	return m.Help.View(m.KeyMap)
-
 }
 
 func (m *Model) SetSize(width, height int) {
@@ -142,7 +126,6 @@ func (m *Model) SetSize(width, height int) {
 func (m *Model) setSize(width, height int) {
 	m.viewport.Width = width
 	m.viewport.Height = height
-	m.Help.Width = width
 }
 
 func (m *Model) UpdateViewport() {
@@ -161,27 +144,6 @@ func (m *Model) headerView() string {
 	}
 
 	return fmt.Sprintf("Welcome - %s!", m.user.UserName)
-}
-
-func defaultKeyMap() KeyMap {
-	return KeyMap{
-		Quit: key.NewBinding(
-			key.WithKeys("q", "esc"),
-			key.WithHelp("q", "quit"),
-		),
-	}
-}
-
-func (km KeyMap) ShortHelp() []key.Binding {
-	return []key.Binding{
-		km.Quit,
-	}
-}
-
-func (km KeyMap) FullHelp() [][]key.Binding {
-	return [][]key.Binding{
-		{km.Quit},
-	}
 }
 
 func (m Model) summaryView() string {
