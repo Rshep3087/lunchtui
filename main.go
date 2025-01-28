@@ -257,8 +257,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		h, v := docStyle.GetFrameSize()
-		m.overview.SetSize(msg.Width-h, msg.Height-v-8)
-		m.transactions.SetSize(msg.Width-h, msg.Height-v-8)
+		m.overview.SetSize(msg.Width-h, msg.Height-v-5)
+		m.transactions.SetSize(msg.Width-h, msg.Height-v-5)
 		m.help.Width = msg.Width
 		m.overview.Viewport.Width = msg.Width
 		m.overview.Viewport.Height = msg.Height - 5
