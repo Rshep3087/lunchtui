@@ -227,6 +227,7 @@ func (m *Model) UpdateViewport() {
 	mainContent := lipgloss.JoinHorizontal(lipgloss.Top,
 		m.summaryView(),
 		accountTreeContent,
+		spendingBreakdown.View(),
 	)
 
 	m.Viewport.SetContent(
