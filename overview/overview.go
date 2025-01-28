@@ -215,14 +215,22 @@ func (m *Model) UpdateViewport() {
 			),
 		)
 
-	spendingBreakdown := table.New(
-		table.WithColumns([]table.Column{
-			{Title: "Category", Width: 20},
-			{Title: "Total Spent", Width: 15},
-			{Title: "% of Total", Width: 10},
-		}),
-		table.WithRows(m.calculateSpendingBreakdown()),
-	)
+	spendingBreakdown := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		Padding(1, 2).
+		Render(
+			lipgloss.JoinVertical(lipgloss.Top,
+				lipgloss.NewStyle().Bold(true).Render("Spending Breakdown"),
+				table.New(
+					table.WithColumns([]table.Column{
+						{Title: "Category", Width: 20},
+						{Title: "Total Spent", Width: 15},
+						{Title: "% of Total", Width: 10},
+					}),
+					table.WithRows(m.calculateSpendingBreakdown()),
+				).View(),
+			),
+		)
 
 	mainContent := lipgloss.JoinHorizontal(lipgloss.Top,
 		m.summaryView(),
