@@ -119,6 +119,14 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 					return err
 				}
 
+				// Adjust the transaction amount if debitsAsNegative is true
+				if m.debitsAsNegative && newT.IsDebit() {
+					amount, err := newT.ParsedAmount()
+					if err == nil {
+						newT.Amount = amount.Negative().Display()
+					}
+				}
+
 				return updateTransactionMsg{t: newT, fieldUpdated: "category"}
 			}
 
