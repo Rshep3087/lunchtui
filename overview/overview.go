@@ -139,7 +139,7 @@ func defaultStyles() Styles {
 		AssetTypeStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#bbbbbb")),
 		AccountStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color("#d29b1d")),
 
-		SummaryStyle: lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(1, 2),
+		SummaryStyle: lipgloss.NewStyle().Border(lipgloss.RoundedBorder()),
 	}
 }
 
@@ -222,7 +222,6 @@ func (m *Model) UpdateViewport() {
 		lipgloss.NewStyle().Bold(true).Render("Accounts Overview"),
 		lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
-			Padding(1, 2).
 			Render(
 				lipgloss.JoinVertical(lipgloss.Top,
 					m.accountTree.String(),
@@ -235,7 +234,6 @@ func (m *Model) UpdateViewport() {
 		lipgloss.NewStyle().Bold(true).Render("Spending Breakdown"),
 		lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
-			Padding(1, 2).
 			Render(
 				table.New(
 					table.WithColumns([]table.Column{
