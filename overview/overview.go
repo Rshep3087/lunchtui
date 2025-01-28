@@ -30,6 +30,30 @@ type Model struct {
 	user          *lm.User
 }
 
+func (m *Model) calculateNetWorth() *money.Money {
+	netWorth := money.New(0, "USD")
+
+	for _, asset := range m.assets {
+		amount, err := asset.ParsedAmount()
+		if err != nil {
+			log.Printf("error parsing asset amount: %v", err)
+			continue
+		}
+		netWorth, _ = netWorth.Add(amount)
+	}
+
+	for _, account := range m.plaidAccounts {
+		amount, err := account.ParsedAmount()
+		if err != nil {
+			log.Printf("error parsing account amount: %v", err)
+			continue
+		}
+		netWorth, _ = netWorth.Add(amount)
+	}
+
+	return netWorth
+}
+
 type Summary struct {
 	totalIncomeEarned money.Money
 	totalSpent        money.Money
@@ -135,11 +159,13 @@ func (m *Model) setSize(width, height int) {
 }
 
 func (m *Model) UpdateViewport() {
+	netWorth := m.calculateNetWorth()
 	m.viewport.SetContent(
 		lipgloss.JoinVertical(lipgloss.Top,
 			m.headerView(),
 			m.summaryView(),
 			m.accountTree.String(),
+			fmt.Sprintf("Estimated Net Worth: %s", m.Styles.IncomeStyle.Render(netWorth.Display())),
 		),
 	)
 }
