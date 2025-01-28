@@ -333,7 +333,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case getUserMsg:
 		m.user = msg.user
-		m.overview.SetUser(msg.user)
 		m.sessionState = m.checkIfLoading()
 		return m, nil
 	}

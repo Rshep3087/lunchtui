@@ -29,7 +29,6 @@ type Model struct {
 	assets        map[int64]*lm.Asset
 	plaidAccounts map[int64]*lm.PlaidAccount
 	accountTree   *tree.Tree
-	user          *lm.User
 }
 
 type categoryTotal struct {
@@ -174,12 +173,6 @@ func (m *Model) SetAccounts(assets map[int64]*lm.Asset, plaidAccounts map[int64]
 	m.UpdateViewport()
 }
 
-func (m *Model) SetUser(user *lm.User) {
-	log.Println("Setting user")
-	m.user = user
-	m.UpdateViewport()
-}
-
 func New(opts ...Option) Model {
 	m := Model{
 		Styles:   defaultStyles(),
@@ -260,20 +253,7 @@ func (m *Model) UpdateViewport() {
 		spendingBreakdown,
 	)
 
-	m.Viewport.SetContent(
-		lipgloss.JoinVertical(lipgloss.Top,
-			m.headerView(),
-			mainContent,
-		),
-	)
-}
-
-func (m *Model) headerView() string {
-	if m.user == nil {
-		return "Overview"
-	}
-
-	return fmt.Sprintf("Welcome - %s!", m.user.UserName)
+	m.Viewport.SetContent(mainContent)
 }
 
 func (m Model) summaryView() string {
