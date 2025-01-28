@@ -225,8 +225,8 @@ func (m *Model) UpdateViewport() {
 			Padding(0, 1).
 			Render(
 				lipgloss.JoinVertical(lipgloss.Top,
-					m.accountTree.String(),
-					fmt.Sprintf("Estimated Net Worth: %s", m.Styles.IncomeStyle.Render(netWorth.Display())),
+					lipgloss.NewStyle().MarginBottom(1).Render(m.accountTree.String()),
+					lipgloss.NewStyle().MarginTop(1).Render(fmt.Sprintf("Estimated Net Worth: %s", m.Styles.IncomeStyle.Render(netWorth.Display()))),
 				),
 			),
 	)
