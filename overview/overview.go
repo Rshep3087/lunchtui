@@ -3,6 +3,7 @@ package overview
 import (
 	"fmt"
 	"log"
+	"slices"
 	"strings"
 
 	"github.com/Rhymond/go-money"
