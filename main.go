@@ -409,13 +409,13 @@ func main() {
 			helpModel := help.New()
 			helpModel.ShortSeparator = " + "
 			helpModel.Styles = help.Styles{
-				Ellipsis:       lipgloss.NewStyle(),
-				ShortKey:       lipgloss.NewStyle(),
-				ShortDesc:      lipgloss.NewStyle(),
-				ShortSeparator: lipgloss.NewStyle(),
-				FullKey:        lipgloss.NewStyle(),
-				FullDesc:       lipgloss.NewStyle(),
-				FullSeparator:  lipgloss.NewStyle(),
+				Ellipsis:       lipgloss.NewStyle().Foreground(lipgloss.Color("#888888")),
+				ShortKey:       lipgloss.NewStyle().Foreground(lipgloss.Color("#00ff00")).Bold(true),
+				ShortDesc:      lipgloss.NewStyle().Foreground(lipgloss.Color("#ffffff")),
+				ShortSeparator: lipgloss.NewStyle().Foreground(lipgloss.Color("#888888")),
+				FullKey:        lipgloss.NewStyle().Foreground(lipgloss.Color("#00ff00")).Bold(true),
+				FullDesc:       lipgloss.NewStyle().Foreground(lipgloss.Color("#ffffff")),
+				FullSeparator:  lipgloss.NewStyle().Foreground(lipgloss.Color("#888888")),
 			}
 
 			tlKeyMap := newTransactionListKeyMap()
