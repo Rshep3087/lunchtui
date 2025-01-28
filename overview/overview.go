@@ -32,9 +32,13 @@ type Model struct {
 	user          *lm.User
 }
 
+type categoryTotal struct {
+	category string
+	total    *money.Money
+}
+
 func (m *Model) calculateSpendingBreakdown() []table.Row {
 	var rows []table.Row
-	totalSpent := m.summary.totalSpent
 
 	categoryTotals := make(map[string]*money.Money)
 
@@ -58,17 +62,23 @@ func (m *Model) calculateSpendingBreakdown() []table.Row {
 		categoryTotals[category.Name], _ = categoryTotals[category.Name].Add(amount)
 	}
 
+	var sortedTotals []categoryTotal
 	for category, total := range categoryTotals {
-		percentage := float64(total.Amount()) / float64(totalSpent.Amount()) * 100
-		rows = append(rows, table.Row{category, total.Display(), fmt.Sprintf("%.2f%%", percentage)})
+		sortedTotals = append(sortedTotals, categoryTotal{category: category, total: total})
 	}
 
-	// Sort rows by total spent in descending order
-	slices.SortStableFunc(rows, func(a, b table.Row) bool {
-		amountA, _ := money.NewFromString(a[1].(string), "USD")
-		amountB, _ := money.NewFromString(b[1].(string), "USD")
-		return amountA.GreaterThan(amountB)
+	// sort the categories by the total spent
+	slices.SortFunc(sortedTotals, func(a categoryTotal, b categoryTotal) int {
+		x, _ := a.total.Compare(b.total)
+		return -x
 	})
+
+	for _, total := range sortedTotals {
+		rows = append(rows, table.Row{
+			total.category,
+			total.total.Display(),
+		})
+	}
 
 	return rows
 }
@@ -235,7 +245,6 @@ func (m *Model) UpdateViewport() {
 					table.WithColumns([]table.Column{
 						{Title: "Category", Width: 20},
 						{Title: "Total Spent", Width: 15},
-						{Title: "% of Total", Width: 10},
 					}),
 					table.WithRows(m.calculateSpendingBreakdown()),
 				).View(),
