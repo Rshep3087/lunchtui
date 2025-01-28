@@ -170,12 +170,21 @@ func (m *Model) setSize(width, height int) {
 
 func (m *Model) UpdateViewport() {
 	netWorth := m.calculateNetWorth()
+	accountTreeContent := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		Padding(1, 2).
+		Render(
+			lipgloss.JoinVertical(lipgloss.Top,
+				m.accountTree.String(),
+				fmt.Sprintf("Estimated Net Worth: %s", m.Styles.IncomeStyle.Render(netWorth.Display())),
+			),
+		)
+
 	m.viewport.SetContent(
 		lipgloss.JoinVertical(lipgloss.Top,
 			m.headerView(),
 			m.summaryView(),
-			m.accountTree.String(),
-			fmt.Sprintf("Estimated Net Worth: %s", m.Styles.IncomeStyle.Render(netWorth.Display())),
+			accountTreeContent,
 		),
 	)
 }
