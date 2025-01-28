@@ -40,7 +40,7 @@ func (t transactionItem) Description() string {
 }
 
 func (t transactionItem) FilterValue() string {
-	return t.t.Payee
+	return fmt.Sprintf("%s %s %s", t.t.Payee, t.category.Name, t.t.Status)
 }
 
 type transactionListKeyMap struct {

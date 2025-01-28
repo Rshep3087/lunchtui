@@ -250,7 +250,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 
-		if k == "t" {
+		if k == "t" && m.sessionState != transactions {
 			m.sessionState = transactions
 			return m, nil
 		}
