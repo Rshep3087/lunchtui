@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/Rhymond/go-money"
+	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -28,6 +29,38 @@ type Model struct {
 	plaidAccounts map[int64]*lm.PlaidAccount
 	accountTree   *tree.Tree
 	user          *lm.User
+}
+
+func (m *Model) calculateSpendingBreakdown() []table.Row {
+	var rows []table.Row
+	totalSpent := m.summary.totalSpent
+
+	categoryTotals := make(map[string]*money.Money)
+
+	for _, t := range m.transactions {
+		category := m.categories[int(t.CategoryID)]
+		if category.ExcludeFromTotals || category.IsIncome {
+			continue
+		}
+
+		amount, err := t.ParsedAmount()
+		if err != nil {
+			continue
+		}
+
+		if _, exists := categoryTotals[category.Name]; !exists {
+			categoryTotals[category.Name] = money.New(0, "USD")
+		}
+
+		categoryTotals[category.Name], _ = categoryTotals[category.Name].Add(amount)
+	}
+
+	for category, total := range categoryTotals {
+		percentage := float64(total.Amount()) / float64(totalSpent.Amount()) * 100
+		rows = append(rows, table.Row{category, total.Display(), fmt.Sprintf("%.2f%%", percentage)})
+	}
+
+	return rows
 }
 
 func (m *Model) calculateNetWorth() *money.Money {
@@ -182,7 +215,16 @@ func (m *Model) UpdateViewport() {
 			),
 		)
 
-	mainContent := lipgloss.JoinHorizontal(lipgloss.Left,
+	spendingBreakdown := table.New(
+		table.WithColumns([]table.Column{
+			{Title: "Category", Width: 20},
+			{Title: "Total Spent", Width: 15},
+			{Title: "% of Total", Width: 10},
+		}),
+		table.WithRows(m.calculateSpendingBreakdown()),
+	)
+
+	mainContent := lipgloss.JoinHorizontal(lipgloss.Top,
 		m.summaryView(),
 		accountTreeContent,
 	)
