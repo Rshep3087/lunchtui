@@ -326,6 +326,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		m.transactionsStats = newTransactionStats(items)
 		m.overview.SetTransactions(msg.ts)
+		m.overview.period = fmt.Sprintf("%s to %s", firstOfTheMonth, nowFormatted)
 
 		m.sessionState = m.checkIfLoading()
 
