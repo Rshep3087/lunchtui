@@ -238,12 +238,12 @@ func (m *Model) UpdateViewport() {
 			),
 	)
 
-	spendingBreakdown := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		Padding(1, 2).
-		Render(
-			lipgloss.JoinVertical(lipgloss.Top,
-				lipgloss.NewStyle().Bold(true).Render("Spending Breakdown"),
+	spendingBreakdown := lipgloss.JoinVertical(lipgloss.Top,
+		lipgloss.NewStyle().Bold(true).Render("Spending Breakdown"),
+		lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			Padding(1, 2).
+			Render(
 				table.New(
 					table.WithColumns([]table.Column{
 						{Title: "Category", Width: 20},
@@ -252,7 +252,7 @@ func (m *Model) UpdateViewport() {
 					table.WithRows(m.calculateSpendingBreakdown()),
 				).View(),
 			),
-		)
+	)
 
 	mainContent := lipgloss.JoinHorizontal(lipgloss.Top,
 		m.summaryView(),
