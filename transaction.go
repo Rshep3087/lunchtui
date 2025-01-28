@@ -119,15 +119,11 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 					return err
 				}
 
-				// Adjust the transaction amount if debitsAsNegative is true
-				if m.debitsAsNegative && newT.IsDebit() {
-					amount, err := newT.ParsedAmount()
-					if err == nil {
-						newT.Amount = amount.Negative().Display()
-					}
-				}
-
-				return updateTransactionMsg{t: newT, fieldUpdated: "category"}
+				// the transaction we get back from the API does not
+				// respect the debitAsNegative setting, so we will use
+				// the original transaction to update the category
+				t.CategoryID = newT.CategoryID
+				return updateTransactionMsg{t: t, fieldUpdated: "category"}
 			}
 
 			m.sessionState = categorizeTransaction
