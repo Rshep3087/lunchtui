@@ -260,6 +260,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.overview.SetSize(msg.Width-h, msg.Height-v-8)
 		m.transactions.SetSize(msg.Width-h, msg.Height-v-8)
 		m.help.Width = msg.Width
+		m.overview.Viewport.Width = msg.Width
+		m.overview.Viewport.Height = msg.Height - 5
 
 		if m.categoryForm != nil {
 			m.categoryForm = m.categoryForm.WithHeight(msg.Height - 5).WithWidth(msg.Width)

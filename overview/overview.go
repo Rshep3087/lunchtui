@@ -20,7 +20,7 @@ var titleCaser = cases.Title(language.English)
 // Model deines the state for the overview widget for LunchTUI
 type Model struct {
 	Styles        Styles
-	viewport      viewport.Model
+	Viewport      viewport.Model
 	summary       Summary
 	transactions  []*lm.Transaction
 	categories    map[int]*lm.Category
@@ -130,7 +130,7 @@ func (m *Model) SetUser(user *lm.User) {
 func New(opts ...Option) Model {
 	m := Model{
 		Styles:   defaultStyles(),
-		viewport: viewport.New(0, 20),
+		Viewport: viewport.New(0, 20),
 		summary: Summary{
 			// setting them to 0 so that the currency is set,
 			// otherwise it's nil and blows up
@@ -153,19 +153,21 @@ func New(opts ...Option) Model {
 }
 
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
-	return m, nil
+	var cmd tea.Cmd
+	m.Viewport, cmd = m.Viewport.Update(msg)
+	return m, cmd
 }
 
 func (m Model) View() string {
-	return m.viewport.View()
+	return m.Viewport.View()
 }
 func (m *Model) SetSize(width, height int) {
 	m.setSize(width, height)
 }
 
 func (m *Model) setSize(width, height int) {
-	m.viewport.Width = width
-	m.viewport.Height = height
+	m.Viewport.Width = width
+	m.Viewport.Height = height
 }
 
 func (m *Model) UpdateViewport() {
@@ -185,7 +187,7 @@ func (m *Model) UpdateViewport() {
 		accountTreeContent,
 	)
 
-	m.viewport.SetContent(
+	m.Viewport.SetContent(
 		lipgloss.JoinVertical(lipgloss.Top,
 			m.headerView(),
 			mainContent,
