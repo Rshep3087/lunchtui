@@ -64,7 +64,7 @@ func (m *Model) calculateSpendingBreakdown() []table.Row {
 	}
 
 	// Sort rows by total spent in descending order
-	slices.SortFunc(rows, func(a, b table.Row) bool {
+	slices.SortStableFunc(rows, func(a, b table.Row) bool {
 		amountA, _ := money.NewFromString(a[1].(string), "USD")
 		amountB, _ := money.NewFromString(b[1].(string), "USD")
 		return amountA.GreaterThan(amountB)
