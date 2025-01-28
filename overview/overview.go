@@ -180,11 +180,15 @@ func (m *Model) UpdateViewport() {
 			),
 		)
 
+	mainContent := lipgloss.JoinHorizontal(lipgloss.Left,
+		m.summaryView(),
+		accountTreeContent,
+	)
+
 	m.viewport.SetContent(
 		lipgloss.JoinVertical(lipgloss.Top,
 			m.headerView(),
-			m.summaryView(),
-			accountTreeContent,
+			mainContent,
 		),
 	)
 }
@@ -203,9 +207,9 @@ func (m Model) summaryView() string {
 	b.WriteString(fmt.Sprintf("Income: %s\n", m.Styles.IncomeStyle.Render(m.summary.totalIncomeEarned.Display())))
 	b.WriteString(fmt.Sprintf("Spent: %s\n", m.Styles.SpentStyle.Render(m.summary.totalSpent.Display())))
 	if m.summary.netIncome.IsNegative() {
-		b.WriteString(fmt.Sprintf("Net Income: %s\n", m.Styles.SpentStyle.Render(m.summary.netIncome.Display())))
+		b.WriteString(fmt.Sprintf("Net Income: %s", m.Styles.SpentStyle.Render(m.summary.netIncome.Display())))
 	} else {
-		b.WriteString(fmt.Sprintf("Net Income: %s\n", m.Styles.IncomeStyle.Render(m.summary.netIncome.Display())))
+		b.WriteString(fmt.Sprintf("Net Income: %s", m.Styles.IncomeStyle.Render(m.summary.netIncome.Display())))
 	}
 
 	return m.Styles.SummaryStyle.Render(b.String())
