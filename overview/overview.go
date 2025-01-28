@@ -239,8 +239,8 @@ func (m *Model) UpdateViewport() {
 		Border(lipgloss.RoundedBorder()).
 		Padding(1, 2).
 		Render(
+			lipgloss.NewStyle().Bold(true).Render("Spending Breakdown"),
 			lipgloss.JoinVertical(lipgloss.Top,
-				lipgloss.NewStyle().Bold(true).Render("Spending Breakdown"),
 				table.New(
 					table.WithColumns([]table.Column{
 						{Title: "Category", Width: 20},
