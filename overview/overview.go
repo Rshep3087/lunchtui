@@ -3,6 +3,7 @@ package overview
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/Rhymond/go-money"
 	"github.com/charmbracelet/bubbles/viewport"
@@ -36,14 +37,23 @@ type Summary struct {
 }
 
 type Styles struct {
-	IncomeStyle lipgloss.Style
-	SpentStyle  lipgloss.Style
+	IncomeStyle    lipgloss.Style
+	SpentStyle     lipgloss.Style
+	TreeRootStyle  lipgloss.Style
+	AssetTypeStyle lipgloss.Style
+	AccountStyle   lipgloss.Style
+	SummaryStyle   lipgloss.Style
 }
 
 func defaultStyles() Styles {
 	return Styles{
-		IncomeStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#00ff00")),
-		SpentStyle:  lipgloss.NewStyle().Foreground(lipgloss.Color("#ff0000")),
+		IncomeStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#00ff00")),
+		SpentStyle:     lipgloss.NewStyle().Foreground(lipgloss.Color("#ff0000")),
+		TreeRootStyle:  lipgloss.NewStyle().Foreground(lipgloss.Color("#828282")),
+		AssetTypeStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#bbbbbb")),
+		AccountStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color("#d29b1d")),
+
+		SummaryStyle: lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(1, 2),
 	}
 }
 
@@ -94,8 +104,10 @@ func New(opts ...Option) Model {
 			totalSpent:        *money.New(0, "USD"),
 			netIncome:         *money.New(0, "USD"),
 		},
-		accountTree: tree.New().Root("Accounts"),
+		accountTree: tree.New(),
 	}
+
+	m.accountTree.Root(m.Styles.TreeRootStyle.Render("Accounts"))
 
 	for _, opt := range opts {
 		opt(&m)
@@ -111,14 +123,8 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
-	var (
-		sections []string
-	)
-
-	sections = append(sections, m.viewport.View())
-	return lipgloss.JoinVertical(lipgloss.Left, sections...)
+	return m.viewport.View()
 }
-
 func (m *Model) SetSize(width, height int) {
 	m.setSize(width, height)
 }
@@ -147,17 +153,17 @@ func (m *Model) headerView() string {
 }
 
 func (m Model) summaryView() string {
-	var msg string
+	var b strings.Builder
 
-	msg += fmt.Sprintf("Income: %s\n", m.Styles.IncomeStyle.Render(m.summary.totalIncomeEarned.Display()))
-	msg += fmt.Sprintf("Spent: %s\n", m.Styles.SpentStyle.Render(m.summary.totalSpent.Display()))
+	b.WriteString(fmt.Sprintf("Income: %s\n", m.Styles.IncomeStyle.Render(m.summary.totalIncomeEarned.Display())))
+	b.WriteString(fmt.Sprintf("Spent: %s\n", m.Styles.SpentStyle.Render(m.summary.totalSpent.Display())))
 	if m.summary.netIncome.IsNegative() {
-		msg += fmt.Sprintf("Net Income: %s\n", m.Styles.SpentStyle.Render(m.summary.netIncome.Display()))
+		b.WriteString(fmt.Sprintf("Net Income: %s\n", m.Styles.SpentStyle.Render(m.summary.netIncome.Display())))
 	} else {
-		msg += fmt.Sprintf("Net Income: %s\n", m.Styles.IncomeStyle.Render(m.summary.netIncome.Display()))
+		b.WriteString(fmt.Sprintf("Net Income: %s\n", m.Styles.IncomeStyle.Render(m.summary.netIncome.Display())))
 	}
 
-	return msg
+	return m.Styles.SummaryStyle.Render(b.String())
 }
 
 func (m *Model) updateSummary() {
@@ -204,15 +210,16 @@ func (m *Model) updateAccountTree() {
 
 	// add a child for each asset
 	for typeName, assets := range assets {
-		assetTree := tree.New().Root(titleCaser.String(typeName))
+		assetTree := tree.New().Root(titleCaser.String(m.Styles.AssetTypeStyle.Render(typeName)))
 		for _, a := range assets {
-			m, err := a.ParsedAmount()
+			pa, err := a.ParsedAmount()
 			if err != nil {
 				log.Printf("error parsing amount: %v", err)
 				continue
 			}
 
-			assetTree.Child(fmt.Sprintf("%s (%s)", a.Name, m.Display()))
+			text := fmt.Sprintf("%s (%s)", a.Name, pa.Display())
+			assetTree.Child(m.Styles.AccountStyle.Render(text))
 		}
 
 		m.accountTree.Child(assetTree)
@@ -225,15 +232,16 @@ func (m *Model) updateAccountTree() {
 	}
 
 	for typeName, accounts := range plaidAccounts {
-		accountTree := tree.New().Root(titleCaser.String(typeName))
+		accountTree := tree.New().Root(titleCaser.String(m.Styles.AssetTypeStyle.Render(typeName)))
 		for _, a := range accounts {
-			m, err := a.ParsedAmount()
+			pa, err := a.ParsedAmount()
 			if err != nil {
 				log.Printf("error parsing amount: %v", err)
 				continue
 			}
 
-			accountTree.Child(fmt.Sprintf("%s (%s)", a.Name, m.Display()))
+			text := fmt.Sprintf("%s (%s)", a.Name, pa.Display())
+			accountTree.Child(m.Styles.AccountStyle.Render(text))
 		}
 
 		m.accountTree.Child(accountTree)

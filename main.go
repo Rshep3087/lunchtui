@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/rshep3087/lunchtui/overview"
@@ -22,22 +23,29 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-var docStyle = lipgloss.NewStyle().Margin(1, 2)
-var uncategorized *lm.Category = &lm.Category{ID: 0, Name: "Uncategorized", Description: "Transactions without a category"}
-var keys = keyMap{
-	transactions: key.NewBinding(
-		key.WithKeys("t"),
-		key.WithHelp("t", "transactions"),
-	),
-	overview: key.NewBinding(
-		key.WithKeys("o"),
-		key.WithHelp("o", "overview"),
-	),
-	quit: key.NewBinding(
-		key.WithKeys("q", "ctrl+c"),
-		key.WithHelp("q", "quit"),
-	),
-}
+var (
+	// styles
+	// docStyle is the style for the document
+	docStyle = lipgloss.NewStyle().Margin(1, 2)
+	// titleStyle is the style for the main title
+	titleStyle = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#000000", Dark: "#ffd644"}).Bold(true)
+
+	uncategorized *lm.Category = &lm.Category{ID: 0, Name: "Uncategorized", Description: "Transactions without a category"}
+	keys                       = keyMap{
+		transactions: key.NewBinding(
+			key.WithKeys("t"),
+			key.WithHelp("t", "transactions"),
+		),
+		overview: key.NewBinding(
+			key.WithKeys("o"),
+			key.WithHelp("o", "overview"),
+		),
+		quit: key.NewBinding(
+			key.WithKeys("q", "ctrl+c"),
+			key.WithHelp("q", "quit"),
+		),
+	}
+)
 
 type sessionState int
 
@@ -249,8 +257,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		h, v := docStyle.GetFrameSize()
-		m.overview.SetSize(msg.Width-h, msg.Height-v-5)
-		m.transactions.SetSize(msg.Width-h, msg.Height-v-5)
+		m.overview.SetSize(msg.Width-h, msg.Height-v-8)
+		m.transactions.SetSize(msg.Width-h, msg.Height-v-8)
 		m.help.Width = msg.Width
 
 		if m.categoryForm != nil {
@@ -342,19 +350,24 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	var s string
+	var b strings.Builder
 
-	if m.sessionState == overviewState {
-		s = m.overview.View()
-	} else if m.sessionState == transactions {
-		s = transactionsView(m)
-	} else if m.sessionState == categorizeTransaction {
-		s = categorizeTransactionView(m)
+	b.WriteString(titleStyle.Render("lunchtui"))
+	b.WriteString("\n\n")
+
+	switch m.sessionState {
+	case overviewState:
+		b.WriteString(m.overview.View())
+	case transactions:
+		b.WriteString(transactionsView(m))
+	case categorizeTransaction:
+		b.WriteString(categorizeTransactionView(m))
 	}
 
-	s += "\n\n" + m.help.View(m.keys)
+	b.WriteString("\n\n")
+	b.WriteString(m.help.View(m.keys))
 
-	return docStyle.Render(s)
+	return docStyle.Render(b.String())
 }
 
 func main() {
@@ -393,10 +406,13 @@ func main() {
 				return err
 			}
 
+			helpModel := help.New()
+			helpModel.ShortSeparator = " + "
+
 			tlKeyMap := newTransactionListKeyMap()
 			m := model{
 				keys:                 keys,
-				help:                 help.New(),
+				help:                 helpModel,
 				sessionState:         loading,
 				lmc:                  lmc,
 				transactionsListKeys: tlKeyMap,
@@ -410,7 +426,7 @@ func main() {
 			delegate := m.newItemDelegate(newDeleteKeyMap())
 
 			transactionList := list.New([]list.Item{}, delegate, 0, 0)
-			transactionList.Title = "Transactions"
+			transactionList.SetShowTitle(false)
 			transactionList.StatusMessageLifetime = 3 * time.Second
 			transactionList.AdditionalFullHelpKeys = func() []key.Binding {
 				return []key.Binding{
