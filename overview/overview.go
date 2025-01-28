@@ -48,6 +48,8 @@ func (m *Model) calculateSpendingBreakdown() []table.Row {
 			continue
 		}
 
+		amount = amount.Absolute()
+
 		if _, exists := categoryTotals[category.Name]; !exists {
 			categoryTotals[category.Name] = money.New(0, "USD")
 		}
@@ -235,7 +237,7 @@ func (m *Model) UpdateViewport() {
 	mainContent := lipgloss.JoinHorizontal(lipgloss.Top,
 		m.summaryView(),
 		accountTreeContent,
-		spendingBreakdown.View(),
+		spendingBreakdown,
 	)
 
 	m.Viewport.SetContent(
