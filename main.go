@@ -94,6 +94,7 @@ type model struct {
 	sessionState sessionState
 	// transactions is a bubbletea list model of financial transactions
 	transactions list.Model
+	period       string
 
 	transactionsStats *transactionsStats
 	// debitsAsNegative is a flag to show debits as negative numbers
@@ -178,7 +179,8 @@ func (m model) getCategories() tea.Msg {
 }
 
 type transactionsResp struct {
-	ts []*lm.Transaction
+	ts     []*lm.Transaction
+	period string
 }
 
 func (m model) getTransactions() tea.Msg {
@@ -201,7 +203,7 @@ func (m model) getTransactions() tea.Msg {
 	// reverse the slice so the most recent transactions are at the top
 	slices.Reverse(ts)
 
-	return transactionsResp{ts: ts}
+	return transactionsResp{ts: ts, period: fmt.Sprintf("%s - %s", firstOfTheMonth, nowFormatted)}
 }
 
 type getUserMsg struct {
@@ -326,7 +328,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		m.transactionsStats = newTransactionStats(items)
 		m.overview.SetTransactions(msg.ts)
-		m.overview.period = fmt.Sprintf("%s to %s", firstOfTheMonth, nowFormatted)
+		m.period = msg.period
 
 		m.sessionState = m.checkIfLoading()
 
@@ -354,7 +356,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	var b strings.Builder
 
-	b.WriteString(titleStyle.Render("lunchtui"))
+	if m.period == "" {
+		b.WriteString(titleStyle.Render("lunchtui"))
+	} else {
+		b.WriteString(titleStyle.Render(fmt.Sprintf("lunchtui | %s", m.period)))
+	}
+
 	b.WriteString("\n\n")
 
 	switch m.sessionState {

@@ -29,7 +29,6 @@ type Model struct {
 	assets        map[int64]*lm.Asset
 	plaidAccounts map[int64]*lm.PlaidAccount
 	accountTree   *tree.Tree
-	period        string
 }
 
 type categoryTotal struct {
@@ -267,7 +266,6 @@ func (m Model) summaryView() string {
 	}
 
 	return lipgloss.JoinVertical(lipgloss.Top,
-		lipgloss.NewStyle().Bold(true).Render(fmt.Sprintf("Period: %s", m.Styles.SummaryStyle.Render(m.period))),
 		lipgloss.NewStyle().Bold(true).Render("Period Summary"),
 		m.Styles.SummaryStyle.Render(b.String()),
 	)
