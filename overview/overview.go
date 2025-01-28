@@ -282,7 +282,10 @@ func (m Model) summaryView() string {
 		b.WriteString(fmt.Sprintf("Net Income: %s", m.Styles.IncomeStyle.Render(m.summary.netIncome.Display())))
 	}
 
-	return m.Styles.SummaryStyle.Render(b.String())
+	return lipgloss.JoinVertical(lipgloss.Top,
+		lipgloss.NewStyle().Bold(true).Render("Period Summary"),
+		m.Styles.SummaryStyle.Render(b.String()),
+	)
 }
 
 func (m *Model) updateSummary() {
