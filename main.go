@@ -408,6 +408,15 @@ func main() {
 
 			helpModel := help.New()
 			helpModel.ShortSeparator = " + "
+			helpModel.Styles = help.Styles{
+				Ellipsis:       lipgloss.NewStyle(),
+				ShortKey:       lipgloss.NewStyle(),
+				ShortDesc:      lipgloss.NewStyle(),
+				ShortSeparator: lipgloss.NewStyle(),
+				FullKey:        lipgloss.NewStyle(),
+				FullDesc:       lipgloss.NewStyle(),
+				FullSeparator:  lipgloss.NewStyle(),
+			}
 
 			tlKeyMap := newTransactionListKeyMap()
 			m := model{
