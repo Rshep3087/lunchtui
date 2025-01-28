@@ -225,31 +225,29 @@ func (m *Model) setSize(width, height int) {
 
 func (m *Model) UpdateViewport() {
 	netWorth := m.calculateNetWorth()
-	accountTreeContent := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		Padding(1, 2).
-		Render(
-			lipgloss.JoinVertical(lipgloss.Top,
-				m.accountTree.String(),
-				fmt.Sprintf("Estimated Net Worth: %s", m.Styles.IncomeStyle.Render(netWorth.Display())),
+	accountTreeContent := lipgloss.JoinVertical(lipgloss.Top,
+		lipgloss.NewStyle().Bold(true).Render("Accounts Overview"),
+		lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			Padding(1, 2).
+			Render(
+				lipgloss.JoinVertical(lipgloss.Top,
+					m.accountTree.String(),
+					fmt.Sprintf("Estimated Net Worth: %s", m.Styles.IncomeStyle.Render(netWorth.Display())),
+				),
 			),
-		)
+	)
 
-	spendingBreakdown := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		Padding(1, 2).
-		Render(
-			lipgloss.NewStyle().Bold(true).Render("Spending Breakdown"),
-			lipgloss.JoinVertical(lipgloss.Top,
-				table.New(
-					table.WithColumns([]table.Column{
-						{Title: "Category", Width: 20},
-						{Title: "Total Spent", Width: 15},
-					}),
-					table.WithRows(m.calculateSpendingBreakdown()),
-				).View(),
-			),
-		)
+	spendingBreakdown := lipgloss.JoinVertical(lipgloss.Top,
+		lipgloss.NewStyle().Bold(true).Render("Spending Breakdown"),
+		table.New(
+			table.WithColumns([]table.Column{
+				{Title: "Category", Width: 20},
+				{Title: "Total Spent", Width: 15},
+			}),
+			table.WithRows(m.calculateSpendingBreakdown()),
+		).View(),
+	)
 
 	mainContent := lipgloss.JoinHorizontal(lipgloss.Top,
 		m.summaryView(),
