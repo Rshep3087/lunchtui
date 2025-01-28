@@ -364,7 +364,7 @@ func (m model) View() string {
 	case categorizeTransaction:
 		b.WriteString(categorizeTransactionView(m))
 	case loading:
-		return m.loadingSpinner.View()
+		return fmt.Sprintf("%s Loading data...", m.loadingSpinner.View())
 	}
 
 	b.WriteString("\n\n")
