@@ -39,6 +39,11 @@ func (m *Model) calculateNetWorth() *money.Money {
 			log.Printf("error parsing asset amount: %v", err)
 			continue
 		}
+
+		if asset.TypeName == "credit" && asset.SubtypeName == "credit card" {
+			amount = amount.Negative()
+		}
+
 		netWorth, _ = netWorth.Add(amount)
 	}
 
@@ -48,6 +53,11 @@ func (m *Model) calculateNetWorth() *money.Money {
 			log.Printf("error parsing account amount: %v", err)
 			continue
 		}
+
+		if account.Type == "credit" && account.Subtype == "credit card" {
+			amount = amount.Negative()
+		}
+
 		netWorth, _ = netWorth.Add(amount)
 	}
 
