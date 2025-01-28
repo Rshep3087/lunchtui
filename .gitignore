@@ -3,3 +3,4 @@ lunchtui.log
 .vscode
 # Added by goreleaser init:
 dist/
+.aider*
