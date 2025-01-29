@@ -21,13 +21,13 @@ var titleCaser = cases.Title(language.English)
 
 // Model deines the state for the overview widget for LunchTUI
 type Model struct {
-	Styles        Styles
-	Viewport      viewport.Model
-	summary       Summary
-	transactions  []*lm.Transaction
-	categories    map[int]*lm.Category
-	assets        map[int64]*lm.Asset
-	plaidAccounts map[int64]*lm.PlaidAccount
+	Styles            Styles
+	Viewport          viewport.Model
+	summary           Summary
+	transactions      []*lm.Transaction
+	categories        map[int]*lm.Category
+	assets            map[int64]*lm.Asset
+	plaidAccounts     map[int64]*lm.PlaidAccount
 	accountTree       *tree.Tree
 	spendingBreakdown table.Model
 }
@@ -61,13 +61,6 @@ func (m *Model) calculateSpendingBreakdown() []table.Row {
 
 		categoryTotals[category.Name], _ = categoryTotals[category.Name].Add(amount)
 	}
-
-	m.spendingBreakdown = table.New(
-		table.WithColumns([]table.Column{
-			{Title: "Category", Width: 20},
-			{Title: "Total Spent", Width: 15},
-		}),
-	)
 
 	var sortedTotals []categoryTotal
 	for category, total := range categoryTotals {
@@ -197,6 +190,14 @@ func New(opts ...Option) Model {
 
 	m.accountTree.Root(m.Styles.TreeRootStyle.Render("Accounts"))
 
+	m.spendingBreakdown = table.New(
+		table.WithColumns([]table.Column{
+			{Title: "Category", Width: 20},
+			{Title: "Total Spent", Width: 15},
+		}),
+		table.WithFocused(false),
+	)
+
 	for _, opt := range opts {
 		opt(&m)
 	}
@@ -222,6 +223,7 @@ func (m *Model) SetSize(width, height int) {
 func (m *Model) setSize(width, height int) {
 	m.Viewport.Width = width
 	m.Viewport.Height = height
+	m.spendingBreakdown.SetHeight(height - 1)
 }
 
 func (m *Model) UpdateViewport() {
