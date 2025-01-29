@@ -28,7 +28,8 @@ type Model struct {
 	categories    map[int]*lm.Category
 	assets        map[int64]*lm.Asset
 	plaidAccounts map[int64]*lm.PlaidAccount
-	accountTree   *tree.Tree
+	accountTree       *tree.Tree
+	spendingBreakdown table.Model
 }
 
 type categoryTotal struct {
@@ -60,6 +61,13 @@ func (m *Model) calculateSpendingBreakdown() []table.Row {
 
 		categoryTotals[category.Name], _ = categoryTotals[category.Name].Add(amount)
 	}
+
+	m.spendingBreakdown = table.New(
+		table.WithColumns([]table.Column{
+			{Title: "Category", Width: 20},
+			{Title: "Total Spent", Width: 15},
+		}),
+	)
 
 	var sortedTotals []categoryTotal
 	for category, total := range categoryTotals {
@@ -231,20 +239,14 @@ func (m *Model) UpdateViewport() {
 			),
 	)
 
+	m.spendingBreakdown.SetRows(m.calculateSpendingBreakdown())
+
 	spendingBreakdown := lipgloss.JoinVertical(lipgloss.Top,
 		lipgloss.NewStyle().Bold(true).Render("Spending Breakdown"),
 		lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			Padding(0, 1).
-			Render(
-				table.New(
-					table.WithColumns([]table.Column{
-						{Title: "Category", Width: 20},
-						{Title: "Total Spent", Width: 15},
-					}),
-					table.WithRows(m.calculateSpendingBreakdown()),
-				).View(),
-			),
+			Render(m.spendingBreakdown.View()),
 	)
 
 	mainContent := lipgloss.JoinHorizontal(lipgloss.Top,
