@@ -422,10 +422,10 @@ func main() {
 			helpModel.ShortSeparator = " + "
 			helpModel.Styles = help.Styles{
 				Ellipsis:       lipgloss.NewStyle().Foreground(lipgloss.Color("#888888")),
-				ShortKey:       lipgloss.NewStyle().Foreground(lipgloss.Color("#00ff00")).Bold(true),
+				ShortKey:       lipgloss.NewStyle().Foreground(lipgloss.Color("#ffd644")).Bold(true),
 				ShortDesc:      lipgloss.NewStyle().Foreground(lipgloss.Color("#ffffff")),
 				ShortSeparator: lipgloss.NewStyle().Foreground(lipgloss.Color("#888888")),
-				FullKey:        lipgloss.NewStyle().Foreground(lipgloss.Color("#00ff00")).Bold(true),
+				FullKey:        lipgloss.NewStyle().Foreground(lipgloss.Color("#ffd644")).Bold(true),
 				FullDesc:       lipgloss.NewStyle().Foreground(lipgloss.Color("#ffffff")),
 				FullSeparator:  lipgloss.NewStyle().Foreground(lipgloss.Color("#888888")),
 			}
