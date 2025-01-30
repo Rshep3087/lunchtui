@@ -241,7 +241,9 @@ func (m *Model) UpdateViewport() {
 			),
 	)
 
-	m.spendingBreakdown.SetRows(m.calculateSpendingBreakdown())
+	rows := m.calculateSpendingBreakdown()
+	m.spendingBreakdown.SetRows(rows)
+	m.spendingBreakdown.SetHeight(len(rows))
 
 	spendingBreakdown := lipgloss.JoinVertical(lipgloss.Top,
 		lipgloss.NewStyle().Bold(true).Render("Spending Breakdown"),
