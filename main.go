@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"slices"
 	"strings"
@@ -147,11 +146,8 @@ func (m model) getRecurringExpenses() tea.Msg {
 
 	recurringExpenses, err := m.lmc.GetRecurringExpenses(ctx, nil)
 	if err != nil {
-		log.Println(fmt.Errorf("error getting recurring expenses: %w", err))
 		return nil
 	}
-
-	log.Println("got recurring expenses")
 
 	return getRecurringExpensesMsg{recurringExpenses: recurringExpenses}
 }
@@ -187,7 +183,6 @@ func (m model) getAccounts() tea.Msg {
 	})
 
 	if err := errGroup.Wait(); err != nil {
-		log.Println(err)
 		return err
 	}
 
@@ -203,7 +198,6 @@ func (m model) getCategories() tea.Msg {
 
 	cs, err := m.lmc.GetCategories(ctx)
 	if err != nil {
-		log.Println(err)
 		return nil
 	}
 
@@ -228,7 +222,6 @@ func (m model) getTransactions() tea.Msg {
 		EndDate:         &nowFormatted,
 	})
 	if err != nil {
-		log.Println(err)
 		return nil
 	}
 
@@ -245,7 +238,6 @@ type getUserMsg struct {
 func (m model) getUser() tea.Msg {
 	u, err := m.lmc.GetUser(context.Background())
 	if err != nil {
-		log.Println(err)
 		return nil
 	}
 
@@ -484,21 +476,8 @@ func main() {
 				Name:  "debits-as-negative",
 				Usage: "Show debits as negative numbers",
 			},
-			&cli.BoolFlag{
-				Name:  "debug",
-				Usage: "Enable debug logging",
-				Value: false,
-			},
 		},
 		Action: func(c *cli.Context) error {
-			if c.Bool("debug") {
-				f, err := tea.LogToFile("lunchtui.log", "lunchtui")
-				if err != nil {
-					return err
-				}
-				defer f.Close()
-			}
-
 			lmc, err := lm.NewClient(c.String("token"))
 			if err != nil {
 				return err

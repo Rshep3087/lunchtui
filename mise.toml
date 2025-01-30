@@ -2,12 +2,12 @@
 '_'.file = '.env'
 
 [tasks.run_dev]
-run = ["go install", "lunchtui --debug --debits-as-negative"]
-description = "Run the application in debug mode with debits as negative"
+run = ["go install", "lunchtui --debits-as-negative"]
+description = "Run the application with debits as negative"
 
 [tasks.run_debug]
-run = "dlv debug --headless --api-version=2 --listen=127.0.0.1:43000 . -- --debug --debits-as-negative"
-description = "Run the application in debug mode with debits as negative"
+run = "dlv debug --headless --api-version=2 --listen=127.0.0.1:43000 . -- --debits-as-negative"
+description = "Run the dlv with debits as negative"
 
 [tasks.new_release]
 run = "goreleaser release --clean"
