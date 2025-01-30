@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
@@ -91,7 +90,6 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 			t := m.transactions.Items()[m.transactions.Index()].(transactionItem).t
 			m.categoryForm.SubmitCmd = func() tea.Msg {
 				cid := m.categoryForm.GetInt("category")
-				log.Printf("category id selected: %d", cid)
 
 				resp, err := m.lmc.UpdateTransaction(context.TODO(), t.ID, &lm.UpdateTransaction{CategoryID: &cid})
 				if err != nil {

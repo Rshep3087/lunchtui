@@ -2,7 +2,7 @@ package overview
 
 import (
 	"fmt"
-	"log"
+
 	"slices"
 	"strings"
 
@@ -89,7 +89,6 @@ func (m *Model) calculateNetWorth() *money.Money {
 	for _, asset := range m.assets {
 		amount, err := asset.ParsedAmount()
 		if err != nil {
-			log.Printf("error parsing asset amount: %v", err)
 			continue
 		}
 
@@ -103,7 +102,6 @@ func (m *Model) calculateNetWorth() *money.Money {
 	for _, account := range m.plaidAccounts {
 		amount, err := account.ParsedAmount()
 		if err != nil {
-			log.Printf("error parsing account amount: %v", err)
 			continue
 		}
 
@@ -153,21 +151,18 @@ func WithSummary(s Summary) Option {
 }
 
 func (m *Model) SetTransactions(transactions []*lm.Transaction) {
-	log.Println("Setting transactions")
 	m.transactions = transactions
 	m.updateSummary()
 	m.UpdateViewport()
 }
 
 func (m *Model) SetCategories(categories map[int]*lm.Category) {
-	log.Println("Setting categories")
 	m.categories = categories
 	m.updateSummary()
 	m.UpdateViewport()
 }
 
 func (m *Model) SetAccounts(assets map[int64]*lm.Asset, plaidAccounts map[int64]*lm.PlaidAccount) {
-	log.Println("Setting accounts")
 	m.assets = assets
 	m.plaidAccounts = plaidAccounts
 	m.updateAccountTree()
@@ -331,7 +326,6 @@ func (m *Model) updateAccountTree() {
 		for _, a := range assets {
 			pa, err := a.ParsedAmount()
 			if err != nil {
-				log.Printf("error parsing amount: %v", err)
 				continue
 			}
 
@@ -353,7 +347,6 @@ func (m *Model) updateAccountTree() {
 		for _, a := range accounts {
 			pa, err := a.ParsedAmount()
 			if err != nil {
-				log.Printf("error parsing amount: %v", err)
 				continue
 			}
 

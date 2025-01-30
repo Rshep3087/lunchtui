@@ -6,6 +6,7 @@ lunchtui is a command line tool for viewing and interacting with your [Lunch Mon
 ## Features
 
 - View account balances
+- View recurring expenses
 - View transactions
 - Categorize transactions
 - Mark transactions as cleared/uncleared
@@ -25,7 +26,6 @@ go install github.com/Rshep3087/lunchtui@latest
 
 - `--token` - Set the Lunch Money API token or use the `LUNCHMONEY_API_TOKEN` environment variable
 - `--debits-as-negative` - Show debits as negative numbers
-- `--debug` - Log out to a file
 - `--help` - Show help message
 
 
