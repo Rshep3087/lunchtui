@@ -3,24 +3,21 @@ run:
 
 linters:
   enable:
-    - deadcode
     - errcheck
     - gosimple
     - govet
     - ineffassign
     - staticcheck
-    - structcheck
     - typecheck
     - unused
-    - varcheck
     - gocyclo
     - gofmt
     - goimports
-    - golint
     - misspell
     - unconvert
     - goconst
     - gocritic
+    - revive
 
 issues:
   exclude-rules:
