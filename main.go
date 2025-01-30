@@ -64,8 +64,8 @@ type keyMap struct {
 
 func (km keyMap) ShortHelp() []key.Binding {
 	return []key.Binding{
-		km.transactions,
 		km.overview,
+		km.transactions,
 		km.quit,
 	}
 }
@@ -73,8 +73,8 @@ func (km keyMap) ShortHelp() []key.Binding {
 func (km keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{
-			km.transactions,
 			km.overview,
+			km.transactions,
 			km.quit,
 		},
 	}
