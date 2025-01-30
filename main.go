@@ -111,6 +111,8 @@ type model struct {
 	assets map[int64]*lm.Asset
 	// user is the current user determined by the API token
 	user *lm.User
+
+	recurringExpenses []*lm.RecurringExpense
 	// lmc is the Lunch Money client
 	lmc *lm.Client
 }
@@ -121,7 +123,26 @@ func (m model) Init() tea.Cmd {
 		m.getUser,
 		m.getAccounts,
 		m.loadingSpinner.Tick,
+		m.getRecurringExpenses,
 	)
+}
+
+type getRecurringExpensesMsg struct {
+	recurringExpenses []*lm.RecurringExpense
+}
+
+func (m model) getRecurringExpenses() tea.Msg {
+	ctx := context.Background()
+
+	recurringExpenses, err := m.lmc.GetRecurringExpenses(ctx, &lm.RecurringExpenseFilters{
+		DebitAsNegative: m.debitsAsNegative,
+	})
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+
+	return getRecurringExpensesMsg{recurringExpenses: recurringExpenses}
 }
 
 type getAccountsMsg struct {
@@ -347,6 +368,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.user = msg.user
 		m.sessionState = m.checkIfLoading()
 		return m, nil
+
+	case getRecurringExpensesMsg:
+		m.recurringExpenses = msg.recurringExpenses
+		m.sessionState = m.checkIfLoading()
+		return m, nil
 	}
 
 	if m.sessionState == overviewState {
@@ -462,7 +488,8 @@ func main() {
 				loadingSpinner: spinner.New(
 					spinner.WithSpinner(spinner.Dot),
 				),
-				overview: overview.New(),
+				overview:          overview.New(),
+				recurringExpenses: []*lm.RecurringExpense{},
 			}
 
 			delegate := m.newItemDelegate(newDeleteKeyMap())
