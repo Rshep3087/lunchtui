@@ -47,12 +47,16 @@ func (m *Model) SetSize(width, height int) {
 func (m *Model) SetRecurringExpenses(re []*lunchmoney.RecurringExpense) {
 	rows := make([]table.Row, 0)
 	for _, r := range re {
+		money, err := r.ParsedAmount()
+		if err != nil {
+			continue
+		}
 		rows = append(rows, table.Row{
 			r.Payee,
 			r.Description,
 			r.Cadence,
 			r.BillingDate,
-			r.Amount,
+			money.Display(),
 		})
 	}
 
