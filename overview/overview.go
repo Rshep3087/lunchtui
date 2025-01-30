@@ -30,6 +30,7 @@ type Model struct {
 	plaidAccounts     map[int64]*lm.PlaidAccount
 	accountTree       *tree.Tree
 	spendingBreakdown table.Model
+	recurringExpenses table.Model
 }
 
 type categoryTotal struct {
@@ -201,6 +202,18 @@ func New(opts ...Option) Model {
 		table.WithStyles(tableStyle),
 	)
 
+	m.recurringExpenses = table.New(
+		table.WithColumns([]table.Column{
+			{Title: "Merchant", Width: 20},
+			{Title: "Description", Width: 30},
+			{Title: "Repeats", Width: 10},
+			{Title: "Billing Day", Width: 12},
+			{Title: "Amount", Width: 10},
+		}),
+		table.WithFocused(false),
+		table.WithStyles(tableStyle),
+	)
+
 	for _, opt := range opts {
 		opt(&m)
 	}
@@ -261,7 +274,15 @@ func (m *Model) UpdateViewport() {
 		spendingBreakdown,
 	)
 
-	m.Viewport.SetContent(mainContent)
+	recurringExpenses := lipgloss.JoinVertical(lipgloss.Top,
+		lipgloss.NewStyle().Bold(true).Render("Recurring Expenses"),
+		lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			Padding(0, 1).
+			Render(m.recurringExpenses.View()),
+	)
+
+	m.Viewport.SetContent(lipgloss.JoinVertical(lipgloss.Top, mainContent, recurringExpenses))
 }
 
 func (m Model) summaryView() string {
