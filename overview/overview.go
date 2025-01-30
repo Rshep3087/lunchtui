@@ -30,7 +30,6 @@ type Model struct {
 	plaidAccounts     map[int64]*lm.PlaidAccount
 	accountTree       *tree.Tree
 	spendingBreakdown table.Model
-	recurringExpenses table.Model
 }
 
 type categoryTotal struct {
@@ -167,30 +166,6 @@ func (m *Model) SetCategories(categories map[int]*lm.Category) {
 	m.UpdateViewport()
 }
 
-func (m *Model) SetRecurringExpenses(recurringExpenses []*lm.RecurringExpense) {
-	log.Println("Setting recurring expenses")
-	var rows []table.Row
-	for _, r := range recurringExpenses {
-		amount, err := r.ParsedAmount()
-		if err != nil {
-			log.Printf("error parsing amount: %v", err)
-			continue
-		}
-
-		rows = append(rows, table.Row{
-			r.Payee,
-			r.Description,
-			r.Cadence,
-			r.BillingDate,
-			amount.Display(),
-		})
-	}
-
-	m.recurringExpenses.SetRows(rows)
-	m.recurringExpenses.SetHeight(len(rows))
-	m.UpdateViewport()
-}
-
 func (m *Model) SetAccounts(assets map[int64]*lm.Asset, plaidAccounts map[int64]*lm.PlaidAccount) {
 	log.Println("Setting accounts")
 	m.assets = assets
@@ -221,18 +196,6 @@ func New(opts ...Option) Model {
 		table.WithColumns([]table.Column{
 			{Title: "Category", Width: 20},
 			{Title: "Total Spent", Width: 15},
-		}),
-		table.WithFocused(false),
-		table.WithStyles(tableStyle),
-	)
-
-	m.recurringExpenses = table.New(
-		table.WithColumns([]table.Column{
-			{Title: "Merchant", Width: 20},
-			{Title: "Description", Width: 30},
-			{Title: "Repeats", Width: 10},
-			{Title: "Billing Day", Width: 12},
-			{Title: "Amount", Width: 10},
 		}),
 		table.WithFocused(false),
 		table.WithStyles(tableStyle),
@@ -293,20 +256,14 @@ func (m *Model) UpdateViewport() {
 	)
 
 	mainContent := lipgloss.JoinHorizontal(lipgloss.Top,
-		m.summaryView(),
 		accountTreeContent,
-		spendingBreakdown,
+		lipgloss.JoinVertical(lipgloss.Top,
+			m.summaryView(),
+			spendingBreakdown,
+		),
 	)
 
-	recurringExpenses := lipgloss.JoinVertical(lipgloss.Top,
-		lipgloss.NewStyle().Bold(true).Render("Recurring Expenses"),
-		lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			Padding(0, 1).
-			Render(m.recurringExpenses.View()),
-	)
-
-	m.Viewport.SetContent(lipgloss.JoinVertical(lipgloss.Top, mainContent, recurringExpenses))
+	m.Viewport.SetContent(mainContent)
 }
 
 func (m Model) summaryView() string {

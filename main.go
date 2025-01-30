@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/rshep3087/lunchtui/overview"
+	"github.com/rshep3087/lunchtui/recurring"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
@@ -40,6 +41,10 @@ var (
 			key.WithKeys("o"),
 			key.WithHelp("o", "overview"),
 		),
+		recurring: key.NewBinding(
+			key.WithKeys("r"),
+			key.WithHelp("r", "recurring expenses"),
+		),
 		quit: key.NewBinding(
 			key.WithKeys("q", "ctrl+c"),
 			key.WithHelp("q", "quit"),
@@ -54,11 +59,13 @@ const (
 	transactions
 	categorizeTransaction
 	loading
+	recurringExpenses
 )
 
 type keyMap struct {
 	transactions key.Binding
 	overview     key.Binding
+	recurring    key.Binding
 	quit         key.Binding
 }
 
@@ -66,6 +73,7 @@ func (km keyMap) ShortHelp() []key.Binding {
 	return []key.Binding{
 		km.overview,
 		km.transactions,
+		km.recurring,
 		km.quit,
 	}
 }
@@ -75,6 +83,7 @@ func (km keyMap) FullHelp() [][]key.Binding {
 		{
 			km.overview,
 			km.transactions,
+			km.recurring,
 			km.quit,
 		},
 	}
@@ -112,7 +121,8 @@ type model struct {
 	// user is the current user determined by the API token
 	user *lm.User
 
-	recurringExpenses []*lm.RecurringExpense
+	// recurringExpenses is a model for the recurring expenses widget
+	recurringExpenses recurring.Model
 	// lmc is the Lunch Money client
 	lmc *lm.Client
 }
@@ -124,6 +134,7 @@ func (m model) Init() tea.Cmd {
 		m.getAccounts,
 		m.loadingSpinner.Tick,
 		m.getRecurringExpenses,
+		m.recurringExpenses.Init(),
 	)
 }
 
@@ -218,7 +229,7 @@ func (m model) getTransactions() tea.Msg {
 	})
 	if err != nil {
 		log.Println(err)
-		return err
+		return nil
 	}
 
 	// reverse the slice so the most recent transactions are at the top
@@ -280,6 +291,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
+		if k == "r" && m.sessionState != recurringExpenses {
+			m.recurringExpenses.SetFocus(true)
+			m.sessionState = recurringExpenses
+			return m, nil
+		}
+
 		if k == "o" && m.sessionState != overviewState {
 			m.sessionState = overviewState
 			return m, nil
@@ -289,11 +306,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		h, v := docStyle.GetFrameSize()
+
 		m.overview.SetSize(msg.Width-h, msg.Height-v-5)
-		m.transactions.SetSize(msg.Width-h, msg.Height-v-5)
-		m.help.Width = msg.Width
 		m.overview.Viewport.Width = msg.Width
 		m.overview.Viewport.Height = msg.Height - 5
+
+		m.transactions.SetSize(msg.Width-h, msg.Height-v-5)
+		m.recurringExpenses.SetSize(msg.Width-h, msg.Height-v-3)
+
+		m.help.Width = msg.Width
 
 		if m.categoryForm != nil {
 			m.categoryForm = m.categoryForm.WithHeight(msg.Height - 5).WithWidth(msg.Width)
@@ -370,19 +391,25 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case getRecurringExpensesMsg:
-		m.recurringExpenses = msg.recurringExpenses
-		m.overview.SetRecurringExpenses(msg.recurringExpenses)
+		m.recurringExpenses.SetRecurringExpenses(msg.recurringExpenses)
 		return m, nil
 	}
 
-	if m.sessionState == overviewState {
-		var cmd tea.Cmd
+	var cmd tea.Cmd
+	switch m.sessionState {
+	case overviewState:
 		m.overview, cmd = m.overview.Update(msg)
 		return m, cmd
-	} else if m.sessionState == categorizeTransaction {
+
+	case categorizeTransaction:
 		return updateCategorizeTransaction(msg, &m)
-	} else if m.sessionState == transactions {
+
+	case transactions:
 		return updateTransactions(msg, m)
+
+	case recurringExpenses:
+		m.recurringExpenses, cmd = m.recurringExpenses.Update(msg)
+		return m, cmd
 	}
 
 	return m, nil
@@ -391,23 +418,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	var b strings.Builder
 
-	var currentPage string
-	switch m.sessionState {
-	case overviewState:
-		currentPage = "overview"
-	case transactions:
-		currentPage = "transactions"
-	case categorizeTransaction:
-		currentPage = "categorize transaction"
-	case loading:
-		currentPage = "loading"
-	}
-
-	if m.period == "" {
-		b.WriteString(titleStyle.Render(fmt.Sprintf("lunchtui | %s", currentPage)))
-	} else {
-		b.WriteString(titleStyle.Render(fmt.Sprintf("lunchtui | %s | %s", currentPage, m.period)))
-	}
+	b.WriteString(m.renderTitle())
 
 	b.WriteString("\n\n")
 
@@ -418,6 +429,8 @@ func (m model) View() string {
 		b.WriteString(transactionsView(m))
 	case categorizeTransaction:
 		b.WriteString(categorizeTransactionView(m))
+	case recurringExpenses:
+		b.WriteString(m.recurringExpenses.View())
 	case loading:
 		b.WriteString(fmt.Sprintf("%s Loading data...", m.loadingSpinner.View()))
 		return docStyle.Render(b.String())
@@ -427,6 +440,32 @@ func (m model) View() string {
 	b.WriteString(m.help.View(m.keys))
 
 	return docStyle.Render(b.String())
+}
+
+func (m model) renderTitle() string {
+	var b strings.Builder
+
+	var currentPage string
+	switch m.sessionState {
+	case overviewState:
+		currentPage = "overview"
+	case transactions:
+		currentPage = "transactions"
+	case categorizeTransaction:
+		currentPage = "categorize transaction"
+	case recurringExpenses:
+		currentPage = "recurring expenses"
+	case loading:
+		currentPage = "loading"
+	}
+
+	if m.period == "" {
+		b.WriteString(titleStyle.Render(fmt.Sprintf("lunchtui | %s", currentPage)))
+	} else {
+		b.WriteString(titleStyle.Render(fmt.Sprintf("lunchtui | %s | %s", currentPage, m.period)))
+	}
+
+	return b.String()
 }
 
 func main() {
@@ -489,7 +528,7 @@ func main() {
 					spinner.WithSpinner(spinner.Dot),
 				),
 				overview:          overview.New(),
-				recurringExpenses: []*lm.RecurringExpense{},
+				recurringExpenses: recurring.New(),
 			}
 
 			delegate := m.newItemDelegate(newDeleteKeyMap())
