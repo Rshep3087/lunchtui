@@ -258,6 +258,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.sessionState = transactions
 			return m, nil
 		}
+
+		if k == "o" && m.sessionState != overviewState {
+			m.sessionState = overviewState
+			return m, nil
+		}
 	}
 
 	switch msg := msg.(type) {
@@ -363,13 +368,13 @@ func (m model) View() string {
 	var currentPage string
 	switch m.sessionState {
 	case overviewState:
-		currentPage = "Overview"
+		currentPage = "overview"
 	case transactions:
-		currentPage = "Transactions"
+		currentPage = "transactions"
 	case categorizeTransaction:
-		currentPage = "Categorize Transaction"
+		currentPage = "categorize transaction"
 	case loading:
-		currentPage = "Loading"
+		currentPage = "loading"
 	}
 
 	if m.period == "" {
@@ -467,7 +472,7 @@ func main() {
 			transactionList.StatusMessageLifetime = 3 * time.Second
 			transactionList.AdditionalFullHelpKeys = func() []key.Binding {
 				return []key.Binding{
-					tlKeyMap.overview,
+					tlKeyMap.categorizeTransaction,
 				}
 			}
 			m.transactions = transactionList

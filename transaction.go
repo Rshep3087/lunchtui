@@ -44,16 +44,11 @@ func (t transactionItem) FilterValue() string {
 }
 
 type transactionListKeyMap struct {
-	overview              key.Binding
 	categorizeTransaction key.Binding
 }
 
 func newTransactionListKeyMap() *transactionListKeyMap {
 	return &transactionListKeyMap{
-		overview: key.NewBinding(
-			key.WithKeys("o"),
-			key.WithHelp("o", "overview"),
-		),
 		categorizeTransaction: key.NewBinding(
 			key.WithKeys("c"),
 			key.WithHelp("c", "categorize transaction"),
@@ -88,11 +83,6 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 		// if the list is filtering, don't process key events
 		if m.transactions.FilterState() == list.Filtering {
 			break
-		}
-
-		if key.Matches(msg, m.transactionsListKeys.overview) {
-			m.sessionState = overviewState
-			return m, nil
 		}
 
 		if key.Matches(msg, m.transactionsListKeys.categorizeTransaction) {
