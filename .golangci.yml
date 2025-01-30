@@ -13,6 +13,14 @@ linters:
     - typecheck
     - unused
     - varcheck
+    - gocyclo
+    - gofmt
+    - goimports
+    - golint
+    - misspell
+    - unconvert
+    - goconst
+    - gocritic
 
 issues:
   exclude-rules:
