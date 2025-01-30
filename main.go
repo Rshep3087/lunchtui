@@ -246,8 +246,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// always check for quit key first
 	if msg, ok := msg.(tea.KeyMsg); ok {
 		k := msg.String()
-		if (k == "q" || k == "ctrl+c") && m.sessionState == overviewState {
+		if k == "q" || k == "ctrl+c" {
 			return m, tea.Quit
+		}
+
+		if m.sessionState == loading {
+			return m, nil
 		}
 
 		if k == "t" && m.sessionState != transactions {
