@@ -19,10 +19,8 @@ func (m model) newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 		Foreground(lipgloss.AdaptiveColor{Light: "#ffe644", Dark: "#ffb744"})
 
 	d.UpdateFunc = func(msg tea.Msg, listModel *list.Model) tea.Cmd {
-		switch msg := msg.(type) {
-		case tea.KeyMsg:
-			switch {
-			case key.Matches(msg, keys.review), key.Matches(msg, keys.unreview):
+		if msg, ok := msg.(tea.KeyMsg); ok {
+			if key.Matches(msg, keys.review) || key.Matches(msg, keys.unreview) {
 				action := "cleared"
 				if key.Matches(msg, keys.unreview) {
 					action = "uncleared"

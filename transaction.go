@@ -100,7 +100,7 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 					return nil
 				}
 
-				newT, err := m.lmc.GetTransaction(context.TODO(), int64(t.ID), &lm.TransactionFilters{
+				newT, err := m.lmc.GetTransaction(context.TODO(), t.ID, &lm.TransactionFilters{
 					DebitAsNegative: &m.debitsAsNegative,
 				})
 				if err != nil {
