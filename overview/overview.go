@@ -190,12 +190,15 @@ func New(opts ...Option) Model {
 
 	m.accountTree.Root(m.Styles.TreeRootStyle.Render("Accounts"))
 
+	tableStyle := table.DefaultStyles()
+	tableStyle.Selected = lipgloss.NewStyle()
 	m.spendingBreakdown = table.New(
 		table.WithColumns([]table.Column{
 			{Title: "Category", Width: 20},
 			{Title: "Total Spent", Width: 15},
 		}),
 		table.WithFocused(false),
+		table.WithStyles(tableStyle),
 	)
 
 	for _, opt := range opts {
@@ -223,7 +226,6 @@ func (m *Model) SetSize(width, height int) {
 func (m *Model) setSize(width, height int) {
 	m.Viewport.Width = width
 	m.Viewport.Height = height
-	m.spendingBreakdown.SetHeight(height - 1)
 }
 
 func (m *Model) UpdateViewport() {
