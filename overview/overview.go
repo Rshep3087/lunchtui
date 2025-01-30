@@ -167,6 +167,30 @@ func (m *Model) SetCategories(categories map[int]*lm.Category) {
 	m.UpdateViewport()
 }
 
+func (m *Model) SetRecurringExpenses(recurringExpenses []*lm.RecurringExpense) {
+	log.Println("Setting recurring expenses")
+	var rows []table.Row
+	for _, r := range recurringExpenses {
+		amount, err := r.ParsedAmount()
+		if err != nil {
+			log.Printf("error parsing amount: %v", err)
+			continue
+		}
+
+		rows = append(rows, table.Row{
+			r.Payee,
+			r.Description,
+			r.Cadence,
+			r.BillingDate,
+			amount.Display(),
+		})
+	}
+
+	m.recurringExpenses.SetRows(rows)
+	m.recurringExpenses.SetHeight(len(rows))
+	m.UpdateViewport()
+}
+
 func (m *Model) SetAccounts(assets map[int64]*lm.Asset, plaidAccounts map[int64]*lm.PlaidAccount) {
 	log.Println("Setting accounts")
 	m.assets = assets

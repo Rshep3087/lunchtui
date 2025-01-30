@@ -60,20 +60,6 @@ type keyMap struct {
 	transactions key.Binding
 	overview     key.Binding
 	quit         key.Binding
-func (m model) calculateRecurringExpensesRows() []table.Row {
-	var rows []table.Row
-
-	for _, re := range m.recurringExpenses {
-		rows = append(rows, table.Row{
-			re.Merchant,
-			re.Description,
-			re.Repeats,
-			fmt.Sprintf("%d", re.BillingDay),
-			re.Amount.Display(),
-		})
-	}
-
-	return rows
 }
 
 func (km keyMap) ShortHelp() []key.Binding {
@@ -148,13 +134,13 @@ type getRecurringExpensesMsg struct {
 func (m model) getRecurringExpenses() tea.Msg {
 	ctx := context.Background()
 
-	recurringExpenses, err := m.lmc.GetRecurringExpenses(ctx, &lm.RecurringExpenseFilters{
-		DebitAsNegative: m.debitsAsNegative,
-	})
+	recurringExpenses, err := m.lmc.GetRecurringExpenses(ctx, nil)
 	if err != nil {
-		log.Println(err)
+		log.Println(fmt.Errorf("error getting recurring expenses: %w", err))
 		return nil
 	}
+
+	log.Println("got recurring expenses")
 
 	return getRecurringExpensesMsg{recurringExpenses: recurringExpenses}
 }
@@ -336,7 +322,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.categoryForm = newCategorizeTransactionForm(msg.categories)
 		m.overview.SetCategories(m.categories)
 
-		m.overview.recurringExpenses.SetRows(m.calculateRecurringExpensesRows())
 		m.sessionState = m.checkIfLoading()
 
 		return m, tea.Batch(m.getTransactions, m.categoryForm.Init(), tea.WindowSize())
@@ -386,7 +371,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case getRecurringExpensesMsg:
 		m.recurringExpenses = msg.recurringExpenses
-		m.sessionState = m.checkIfLoading()
+		m.overview.SetRecurringExpenses(msg.recurringExpenses)
 		return m, nil
 	}
 
@@ -398,9 +383,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return updateCategorizeTransaction(msg, &m)
 	} else if m.sessionState == transactions {
 		return updateTransactions(msg, m)
-	} else {
-		return m, nil
 	}
+
+	return m, nil
 }
 
 func (m model) View() string {
