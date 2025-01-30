@@ -360,10 +360,22 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	var b strings.Builder
 
+	var currentPage string
+	switch m.sessionState {
+	case overviewState:
+		currentPage = "Overview"
+	case transactions:
+		currentPage = "Transactions"
+	case categorizeTransaction:
+		currentPage = "Categorize Transaction"
+	case loading:
+		currentPage = "Loading"
+	}
+
 	if m.period == "" {
-		b.WriteString(titleStyle.Render("lunchtui"))
+		b.WriteString(titleStyle.Render(fmt.Sprintf("lunchtui | %s", currentPage)))
 	} else {
-		b.WriteString(titleStyle.Render(fmt.Sprintf("lunchtui | %s", m.period)))
+		b.WriteString(titleStyle.Render(fmt.Sprintf("lunchtui | %s | %s", currentPage, m.period)))
 	}
 
 	b.WriteString("\n\n")
