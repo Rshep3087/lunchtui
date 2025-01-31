@@ -30,6 +30,7 @@ type Model struct {
 	plaidAccounts     map[int64]*lm.PlaidAccount
 	accountTree       *tree.Tree
 	spendingBreakdown table.Model
+	currency          string
 }
 
 type categoryTotal struct {
@@ -84,7 +85,7 @@ func (m *Model) calculateSpendingBreakdown() []table.Row {
 }
 
 func (m *Model) calculateNetWorth() *money.Money {
-	netWorth := money.New(0, "USD")
+	netWorth := money.New(0, m.currency)
 
 	for _, asset := range m.assets {
 		amount, err := asset.ParsedAmount()
@@ -169,18 +170,19 @@ func (m *Model) SetAccounts(assets map[int64]*lm.Asset, plaidAccounts map[int64]
 	m.UpdateViewport()
 }
 
-func New(opts ...Option) Model {
+func New(currency string, opts ...Option) Model {
 	m := Model{
 		Styles:   defaultStyles(),
 		Viewport: viewport.New(0, 20),
 		summary: Summary{
 			// setting them to 0 so that the currency is set,
 			// otherwise it's nil and blows up
-			totalIncomeEarned: *money.New(0, "USD"),
-			totalSpent:        *money.New(0, "USD"),
-			netIncome:         *money.New(0, "USD"),
+			totalIncomeEarned: *money.New(0, currency),
+			totalSpent:        *money.New(0, currency),
+			netIncome:         *money.New(0, currency),
 		},
 		accountTree: tree.New(),
+		currency:    currency,
 	}
 
 	m.accountTree.Root(m.Styles.TreeRootStyle.Render("Accounts"))
@@ -287,7 +289,7 @@ func (m *Model) updateSummary() {
 		return
 	}
 
-	var totalIncomeEarned, totalSpent = money.New(0, "USD"), money.New(0, "USD")
+	var totalIncomeEarned, totalSpent = money.New(0, m.currency), money.New(0, m.currency)
 
 	for _, t := range m.transactions {
 		category := m.categories[int(t.CategoryID)]

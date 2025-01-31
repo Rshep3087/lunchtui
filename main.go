@@ -525,7 +525,7 @@ func main() {
 				loadingSpinner: spinner.New(
 					spinner.WithSpinner(spinner.Dot),
 				),
-				overview:          overview.New(),
+				overview:          overview.New(lmc.User.PrimaryCurrency),
 				recurringExpenses: recurring.New(),
 			}
 
