@@ -18,6 +18,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/log"
 	lm "github.com/rshep3087/lunchmoney"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/sync/errgroup"
@@ -148,6 +149,7 @@ func (m model) getRecurringExpenses() tea.Msg {
 	if err != nil {
 		return nil
 	}
+	log.Debug("got recurring expenses")
 
 	return getRecurringExpensesMsg{recurringExpenses: recurringExpenses}
 }
@@ -270,6 +272,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// always check for quit key first
 	if msg, ok := msg.(tea.KeyMsg); ok {
 		k := msg.String()
+		log.Debug("key pressed", "key", k)
+
 		if k == "q" || k == "ctrl+c" {
 			return m, tea.Quit
 		}
@@ -476,8 +480,23 @@ func main() {
 				Name:  "debits-as-negative",
 				Usage: "Show debits as negative numbers",
 			},
+			&cli.BoolFlag{
+				Name:  "debug",
+				Usage: "Enable debug logging",
+				Value: false,
+			},
 		},
 		Action: func(c *cli.Context) error {
+			if c.Bool("debug") {
+				f, err := tea.LogToFileWith("lunchtui.log", "lunchtui", log.Default())
+				if err != nil {
+					return err
+				}
+				defer f.Close()
+
+				log.SetLevel(log.DebugLevel)
+			}
+
 			lmc, err := lm.NewClient(c.String("token"))
 			if err != nil {
 				return err

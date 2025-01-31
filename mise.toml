@@ -2,7 +2,7 @@
 '_'.file = '.env'
 
 [tasks.run_dev]
-run = ["go install", "lunchtui --debits-as-negative"]
+run = ["go install", "lunchtui --debug --debits-as-negative"]
 description = "Run the application with debits as negative"
 
 [tasks.run_debug]
