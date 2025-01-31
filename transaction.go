@@ -16,20 +16,7 @@ type transactionItem struct {
 	category     *lm.Category
 	plaidAccount *lm.PlaidAccount
 	asset        *lm.Asset
-	filterUncleared key.Binding
 }
-
-func newTransactionListKeyMap() *transactionListKeyMap {
-	return &transactionListKeyMap{
-		categorizeTransaction: key.NewBinding(
-			key.WithKeys("c"),
-			key.WithHelp("c", "categorize transaction"),
-		),
-		filterUncleared: key.NewBinding(
-			key.WithKeys("u"),
-			key.WithHelp("u", "filter uncleared transactions"),
-		),
-	}
 
 func (t transactionItem) Title() string {
 	return t.t.Payee
@@ -57,6 +44,7 @@ func (t transactionItem) FilterValue() string {
 
 type transactionListKeyMap struct {
 	categorizeTransaction key.Binding
+	filterUncleared       key.Binding
 }
 
 func newTransactionListKeyMap() *transactionListKeyMap {
@@ -64,6 +52,10 @@ func newTransactionListKeyMap() *transactionListKeyMap {
 		categorizeTransaction: key.NewBinding(
 			key.WithKeys("c"),
 			key.WithHelp("c", "categorize transaction"),
+		),
+		filterUncleared: key.NewBinding(
+			key.WithKeys("u"),
+			key.WithHelp("u", "filter uncleared transactions"),
 		),
 	}
 }
@@ -77,16 +69,6 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 		if !ok {
 			return m, nil
 		}
-
-		if key.Matches(msg, m.transactionsListKeys.filterUncleared) {
-			unclearedItems := make([]list.Item, 0)
-			for _, item := range m.transactions.Items() {
-				if t, ok := item.(transactionItem); ok && t.t.Status == "uncleared" {
-					unclearedItems = append(unclearedItems, item)
-				}
-			}
-			m.transactions.SetItems(unclearedItems)
-			return m, nil
 
 		t.t = msg.t
 		// must set the new category on the transaction item
@@ -105,6 +87,19 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 		// if the list is filtering, don't process key events
 		if m.transactions.FilterState() == list.Filtering {
 			break
+		}
+
+		if key.Matches(msg, m.transactionsListKeys.filterUncleared) {
+			unclearedItems := make([]list.Item, 0)
+			for _, item := range m.transactions.Items() {
+				if t, ok := item.(transactionItem); ok && t.t.Status == "uncleared" {
+					unclearedItems = append(unclearedItems, item)
+				}
+			}
+			m.transactions.SetItems(unclearedItems)
+
+			m.transactionsStats = newTransactionStats(m.transactions.Items())
+			return m, nil
 		}
 
 		if key.Matches(msg, m.transactionsListKeys.categorizeTransaction) {

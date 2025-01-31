@@ -71,12 +71,12 @@ func (d delegateKeyMap) FullHelp() [][]key.Binding {
 func newDeleteKeyMap() *delegateKeyMap {
 	return &delegateKeyMap{
 		review: key.NewBinding(
-			key.WithKeys("r"),
-			key.WithHelp("r", "review"),
+			key.WithKeys("R"),
+			key.WithHelp("<shift-r>", "review"),
 		),
 		unreview: key.NewBinding(
-			key.WithKeys("u"),
-			key.WithHelp("u", "unreview"),
+			key.WithKeys("U"),
+			key.WithHelp("<shift-u>", "unreview"),
 		),
 	}
 }
