@@ -46,12 +46,16 @@ var (
 			key.WithHelp("r", "recurring expenses"),
 		),
 		nextPeriod: key.NewBinding(
-			key.WithKeys("1"),
+			key.WithKeys("!"),
 			key.WithHelp("shift+1", "next month"),
 		),
 		previousPeriod: key.NewBinding(
-			key.WithKeys("2"),
+			key.WithKeys("@"),
 			key.WithHelp("shift+2", "previous month"),
+		),
+		fullHelp: key.NewBinding(
+			key.WithKeys("?"),
+			key.WithHelp("?", "help"),
 		),
 		quit: key.NewBinding(
 			key.WithKeys("q", "ctrl+c"),
@@ -76,6 +80,7 @@ type keyMap struct {
 	recurring      key.Binding
 	nextPeriod     key.Binding
 	previousPeriod key.Binding
+	fullHelp       key.Binding
 	quit           key.Binding
 }
 
@@ -84,9 +89,8 @@ func (km keyMap) ShortHelp() []key.Binding {
 		km.overview,
 		km.transactions,
 		km.recurring,
-		km.nextPeriod,
-		km.previousPeriod,
 		km.quit,
+		km.fullHelp,
 	}
 }
 
@@ -97,6 +101,10 @@ func (km keyMap) FullHelp() [][]key.Binding {
 			km.transactions,
 			km.recurring,
 			km.quit,
+			km.fullHelp,
+		}, {
+			km.nextPeriod,
+			km.previousPeriod,
 		},
 	}
 }
@@ -114,8 +122,8 @@ type model struct {
 	// sessionState is the current state of the session
 	sessionState sessionState
 	// transactions is a bubbletea list model of financial transactions
-	transactions list.Model
-	period       string
+	transactions  list.Model
+	period        string
 	currentPeriod time.Time
 
 	transactionsStats *transactionsStats
@@ -291,12 +299,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 
-		if k == "1" {
+		if k == "!" {
 			m.currentPeriod = m.currentPeriod.AddDate(0, 1, 0)
 			return m, m.getTransactions
 		}
 
-		if k == "2" {
+		if k == "@" {
 			m.currentPeriod = m.currentPeriod.AddDate(0, -1, 0)
 			return m, m.getTransactions
 		}
@@ -318,6 +326,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		if k == "o" && m.sessionState != overviewState {
 			m.sessionState = overviewState
+			return m, nil
+		}
+
+		if k == "?" {
+			m.help.ShowAll = !m.help.ShowAll
 			return m, nil
 		}
 	}
@@ -582,6 +595,10 @@ func main() {
 }
 
 func (m model) checkIfLoading() sessionState {
+	if m.sessionState != loading {
+		return m.sessionState
+	}
+
 	if m.user == nil || m.categories == nil || m.plaidAccounts == nil || m.assets == nil {
 		log.Debug("user, categories, plaid accounts, or assets are nil, loading")
 		return loading
