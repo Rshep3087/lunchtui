@@ -74,6 +74,8 @@ func (km keyMap) ShortHelp() []key.Binding {
 		km.overview,
 		km.transactions,
 		km.recurring,
+		km.nextPeriod,
+		km.previousPeriod,
 		km.quit,
 	}
 }
@@ -214,14 +216,14 @@ type transactionsResp struct {
 func (m model) getTransactions() tea.Msg {
 	ctx := context.Background()
 
-	now := time.Now()
-	nowFormatted := now.Format("2006-01-02")
-	firstOfTheMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location()).Format("2006-01-02")
+	lastDay := m.currentPeriod.AddDate(0, 1, 0).Add(-time.Second)
+	endDate := lastDay.Format("2006-01-02")
+	startDate := time.Date(m.currentPeriod.Year(), m.currentPeriod.Month(), 1, 0, 0, 0, 0, m.currentPeriod.Location()).Format("2006-01-02")
 
 	ts, err := m.lmc.GetTransactions(ctx, &lm.TransactionFilters{
 		DebitAsNegative: &m.debitsAsNegative,
-		StartDate:       &firstOfTheMonth,
-		EndDate:         &nowFormatted,
+		StartDate:       &startDate,
+		EndDate:         &endDate,
 	})
 	if err != nil {
 		return nil
@@ -230,7 +232,7 @@ func (m model) getTransactions() tea.Msg {
 	// reverse the slice so the most recent transactions are at the top
 	slices.Reverse(ts)
 
-	return transactionsResp{ts: ts, period: fmt.Sprintf("%s - %s", firstOfTheMonth, nowFormatted)}
+	return transactionsResp{ts: ts, period: fmt.Sprintf("%s - %s", startDate, endDate)}
 }
 
 type getUserMsg struct {
@@ -276,6 +278,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		if k == "q" || k == "ctrl+c" {
 			return m, tea.Quit
+		}
+
+		if k == "1" {
+			m.currentPeriod = m.currentPeriod.AddDate(0, 1, 0)
+			return m, m.getTransactions
+		}
+
+		if k == "2" {
+			m.currentPeriod = m.currentPeriod.AddDate(0, -1, 0)
+			return m, m.getTransactions
 		}
 
 		if m.sessionState == loading {
@@ -523,6 +535,7 @@ func main() {
 				lmc:                  lmc,
 				transactionsListKeys: tlKeyMap,
 				debitsAsNegative:     c.Bool("debits-as-negative"),
+				currentPeriod:        time.Now(),
 				loadingSpinner: spinner.New(
 					spinner.WithSpinner(spinner.Dot),
 				),
