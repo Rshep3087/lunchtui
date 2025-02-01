@@ -384,6 +384,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case getUserMsg:
 		m.user = msg.user
 		m.sessionState = m.checkIfLoading()
+		m.overview.SetCurrency(m.user.PrimaryCurrency)
 		return m, nil
 
 	case getRecurringExpensesMsg:
@@ -525,7 +526,7 @@ func main() {
 				loadingSpinner: spinner.New(
 					spinner.WithSpinner(spinner.Dot),
 				),
-				overview:          overview.New(lmc.User.PrimaryCurrency),
+				overview:          overview.New(),
 				recurringExpenses: recurring.New(),
 			}
 
@@ -558,12 +559,10 @@ func main() {
 
 func (m model) checkIfLoading() sessionState {
 	if m.user == nil || m.categories == nil || m.plaidAccounts == nil || m.assets == nil {
+		log.Debug("user, categories, plaid accounts, or assets are nil, loading")
 		return loading
 	}
 
-	if len(m.transactions.Items()) == 0 {
-		return loading
-	}
-
+	log.Debug("everything is loaded, showing overview")
 	return overviewState
 }

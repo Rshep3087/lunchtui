@@ -12,6 +12,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/tree"
+	"github.com/charmbracelet/log"
 	lm "github.com/rshep3087/lunchmoney"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -85,9 +86,17 @@ func (m *Model) calculateSpendingBreakdown() []table.Row {
 }
 
 func (m *Model) calculateNetWorth() *money.Money {
+	if m.currency == "" {
+		return money.New(0, "USD")
+	}
+
 	netWorth := money.New(0, m.currency)
 
 	for _, asset := range m.assets {
+		if asset.Currency != m.currency {
+			continue
+		}
+
 		amount, err := asset.ParsedAmount()
 		if err != nil {
 			continue
@@ -97,10 +106,19 @@ func (m *Model) calculateNetWorth() *money.Money {
 			amount = amount.Negative()
 		}
 
-		netWorth, _ = netWorth.Add(amount)
+		nwa, err := netWorth.Add(amount)
+		if err != nil {
+			continue
+		}
+
+		netWorth = nwa
 	}
 
 	for _, account := range m.plaidAccounts {
+		if account.Currency != m.currency {
+			continue
+		}
+
 		amount, err := account.ParsedAmount()
 		if err != nil {
 			continue
@@ -110,7 +128,12 @@ func (m *Model) calculateNetWorth() *money.Money {
 			amount = amount.Negative()
 		}
 
-		netWorth, _ = netWorth.Add(amount)
+		nwa, err := netWorth.Add(amount)
+		if err != nil {
+			continue
+		}
+
+		netWorth = nwa
 	}
 
 	return netWorth
@@ -145,12 +168,6 @@ func defaultStyles() Styles {
 
 type Option func(*Model)
 
-func WithSummary(s Summary) Option {
-	return func(m *Model) {
-		m.summary = s
-	}
-}
-
 func (m *Model) SetTransactions(transactions []*lm.Transaction) {
 	m.transactions = transactions
 	m.updateSummary()
@@ -170,19 +187,18 @@ func (m *Model) SetAccounts(assets map[int64]*lm.Asset, plaidAccounts map[int64]
 	m.UpdateViewport()
 }
 
-func New(currency string, opts ...Option) Model {
+func (m *Model) SetCurrency(currency string) {
+	m.currency = currency
+	m.updateAccountTree()
+	m.UpdateViewport()
+}
+
+func New(opts ...Option) Model {
 	m := Model{
-		Styles:   defaultStyles(),
-		Viewport: viewport.New(0, 20),
-		summary: Summary{
-			// setting them to 0 so that the currency is set,
-			// otherwise it's nil and blows up
-			totalIncomeEarned: *money.New(0, currency),
-			totalSpent:        *money.New(0, currency),
-			netIncome:         *money.New(0, currency),
-		},
+		Styles:      defaultStyles(),
+		Viewport:    viewport.New(0, 20),
+		summary:     Summary{},
 		accountTree: tree.New(),
-		currency:    currency,
 	}
 
 	m.accountTree.Root(m.Styles.TreeRootStyle.Render("Accounts"))
@@ -240,16 +256,22 @@ func (m *Model) UpdateViewport() {
 			),
 	)
 
+	var spendingBreakdownData string
 	rows := m.calculateSpendingBreakdown()
-	m.spendingBreakdown.SetRows(rows)
-	m.spendingBreakdown.SetHeight(len(rows))
+	if len(rows) == 0 {
+		spendingBreakdownData = "No data available"
+	} else {
+		m.spendingBreakdown.SetRows(rows)
+		m.spendingBreakdown.SetHeight(len(rows))
+		spendingBreakdownData = m.spendingBreakdown.View()
+	}
 
 	spendingBreakdown := lipgloss.JoinVertical(lipgloss.Top,
 		lipgloss.NewStyle().Bold(true).Render("Spending Breakdown"),
 		lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			Padding(0, 1).
-			Render(m.spendingBreakdown.View()),
+			Render(spendingBreakdownData),
 	)
 
 	mainContent := lipgloss.JoinHorizontal(lipgloss.Top,
@@ -264,6 +286,13 @@ func (m *Model) UpdateViewport() {
 }
 
 func (m Model) summaryView() string {
+	if m.summary.totalIncomeEarned.Currency() == nil || m.summary.totalSpent.Currency() == nil || m.summary.netIncome.Currency() == nil {
+		return lipgloss.JoinVertical(lipgloss.Top,
+			lipgloss.NewStyle().Bold(true).Render("Period Summary"),
+			m.Styles.SummaryStyle.Render("No data available"),
+		)
+	}
+
 	var b strings.Builder
 
 	b.WriteString(fmt.Sprintf("Income: %s\n", m.Styles.IncomeStyle.Render(m.summary.totalIncomeEarned.Display())))
@@ -299,13 +328,26 @@ func (m *Model) updateSummary() {
 
 		amount, err := t.ParsedAmount()
 		if err != nil {
+			log.Debug("parsing amount", "error", err)
 			continue
 		}
 
 		if m.categories[int(t.CategoryID)].IsIncome {
-			totalIncomeEarned, _ = totalIncomeEarned.Add(amount)
+			tie, err := totalIncomeEarned.Add(amount)
+			if err != nil {
+				log.Debug("adding amount to total income earned", "error", err)
+				continue
+			}
+
+			totalIncomeEarned = tie
 		} else {
-			totalSpent, _ = totalSpent.Add(amount)
+			tsa, err := totalSpent.Add(amount)
+			if err != nil {
+				log.Debug("adding amount to total spent", "error", err)
+				continue
+			}
+
+			totalSpent = tsa
 		}
 
 	}
