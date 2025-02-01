@@ -45,6 +45,14 @@ var (
 			key.WithKeys("r"),
 			key.WithHelp("r", "recurring expenses"),
 		),
+		nextPeriod: key.NewBinding(
+			key.WithKeys("1"),
+			key.WithHelp("shift+1", "next month"),
+		),
+		previousPeriod: key.NewBinding(
+			key.WithKeys("2"),
+			key.WithHelp("shift+2", "previous month"),
+		),
 		quit: key.NewBinding(
 			key.WithKeys("q", "ctrl+c"),
 			key.WithHelp("q", "quit"),
@@ -63,10 +71,12 @@ const (
 )
 
 type keyMap struct {
-	transactions key.Binding
-	overview     key.Binding
-	recurring    key.Binding
-	quit         key.Binding
+	transactions   key.Binding
+	overview       key.Binding
+	recurring      key.Binding
+	nextPeriod     key.Binding
+	previousPeriod key.Binding
+	quit           key.Binding
 }
 
 func (km keyMap) ShortHelp() []key.Binding {
@@ -106,6 +116,7 @@ type model struct {
 	// transactions is a bubbletea list model of financial transactions
 	transactions list.Model
 	period       string
+	currentPeriod time.Time
 
 	transactionsStats *transactionsStats
 	// debitsAsNegative is a flag to show debits as negative numbers
