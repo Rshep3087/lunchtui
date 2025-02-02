@@ -123,7 +123,7 @@ type model struct {
 	sessionState sessionState
 	// transactions is a bubbletea list model of financial transactions
 	transactions  list.Model
-	period        string
+	period        Period
 	currentPeriod time.Time
 
 	transactionsStats *transactionsStats
@@ -235,9 +235,8 @@ type getsTransactionsMsg struct {
 func (m model) getTransactions() tea.Msg {
 	ctx := context.Background()
 
-	lastDay := m.currentPeriod.AddDate(0, 1, 0).Add(-time.Second)
-	endDate := lastDay.Format("2006-01-02")
-	startDate := time.Date(m.currentPeriod.Year(), m.currentPeriod.Month(), 1, 0, 0, 0, 0, m.currentPeriod.Location()).Format("2006-01-02")
+	m.period.end = m.currentPeriod.AddDate(0, 1, 0).Add(-time.Second)
+	m.period.start = time.Date(m.currentPeriod.Year(), m.currentPeriod.Month(), 1, 0, 0, 0, 0, m.currentPeriod.Location())
 
 	ts, err := m.lmc.GetTransactions(ctx, &lm.TransactionFilters{
 		DebitAsNegative: &m.debitsAsNegative,
@@ -251,7 +250,7 @@ func (m model) getTransactions() tea.Msg {
 	// reverse the slice so the most recent transactions are at the top
 	slices.Reverse(ts)
 
-	return getsTransactionsMsg{ts: ts, period: fmt.Sprintf("%s - %s", startDate, endDate)}
+	return getsTransactionsMsg{ts: ts, period: m.period.String()}
 }
 
 type getUserMsg struct {
@@ -518,16 +517,23 @@ func (m model) renderTitle() string {
 		currentPage = "loading"
 	}
 
-	if m.period == "" {
+	if m.period.String() == "" {
 		b.WriteString(titleStyle.Render(fmt.Sprintf("lunchtui | %s", currentPage)))
 	} else {
-		b.WriteString(titleStyle.Render(fmt.Sprintf("lunchtui | %s | %s", currentPage, m.period)))
+		b.WriteString(titleStyle.Render(fmt.Sprintf("lunchtui | %s | %s", currentPage, m.period.String())))
 	}
 
 	return b.String()
 }
 
-func main() {
+type Period struct {
+	start time.Time
+	end   time.Time
+}
+
+func (p Period) String() string {
+	return fmt.Sprintf("%s - %s", p.start.Format("2006-01-02"), p.end.Format("2006-01-02"))
+}
 	app := &cli.App{
 		Name:  "lunchtui",
 		Usage: "A terminal UI for Lunch Money",
@@ -586,6 +592,7 @@ func main() {
 				transactionsListKeys: tlKeyMap,
 				debitsAsNegative:     c.Bool("debits-as-negative"),
 				currentPeriod:        time.Now(),
+				period:               Period{start: time.Date(time.Now().Year(), time.Now().Month(), 1, 0, 0, 0, 0, time.Now().Location()), end: time.Now()},
 				loadingSpinner: spinner.New(
 					spinner.WithSpinner(spinner.Dot),
 				),
