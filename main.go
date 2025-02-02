@@ -235,8 +235,7 @@ type getsTransactionsMsg struct {
 func (m model) getTransactions() tea.Msg {
 	ctx := context.Background()
 
-	m.period.end = time.Date(m.currentPeriod.Year(), m.currentPeriod.Month()+1, 1, 0, 0, 0, 0, m.currentPeriod.Location()).Add(-time.Second)
-	m.period.start = time.Date(m.currentPeriod.Year(), m.currentPeriod.Month(), 1, 0, 0, 0, 0, m.currentPeriod.Location())
+	m.period.setPeriod(m.currentPeriod, "month")
 
 	sd := m.period.startDate()
 	ed := m.period.endDate()
@@ -546,7 +545,16 @@ func (p Period) endDate() string {
 	return p.end.Format("2006-01-02")
 }
 
-func main() {
+func (p *Period) setPeriod(current time.Time, periodType string) {
+	switch periodType {
+	case "month":
+		p.start = time.Date(current.Year(), current.Month(), 1, 0, 0, 0, 0, current.Location())
+		p.end = time.Date(current.Year(), current.Month()+1, 1, 0, 0, 0, 0, current.Location()).Add(-time.Second)
+	case "year":
+		p.start = time.Date(current.Year(), 1, 1, 0, 0, 0, 0, current.Location())
+		p.end = time.Date(current.Year()+1, 1, 1, 0, 0, 0, 0, current.Location()).Add(-time.Second)
+	}
+}
 	app := &cli.App{
 		Name:  "lunchtui",
 		Usage: "A terminal UI for Lunch Money",
