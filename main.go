@@ -329,7 +329,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
-		if k == "?" {
+		if k == "?" && m.sessionState != transactions {
 			m.help.ShowAll = !m.help.ShowAll
 			return m, nil
 		}
