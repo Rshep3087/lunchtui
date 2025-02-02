@@ -53,7 +53,11 @@ var (
 			key.WithKeys("@"),
 			key.WithHelp("shift+2", "previous month"),
 		),
-		fullHelp: key.NewBinding(
+		switchRange: key.NewBinding(
+			key.WithKeys("s"),
+			key.WithHelp("s", "switch range"),
+		),
+		fullHelp:    key.NewBinding(
 			key.WithKeys("?"),
 			key.WithHelp("?", "help"),
 		),
@@ -89,6 +93,7 @@ func (km keyMap) ShortHelp() []key.Binding {
 		km.overview,
 		km.transactions,
 		km.recurring,
+		km.switchRange,
 		km.quit,
 		km.fullHelp,
 	}
@@ -105,7 +110,8 @@ func (km keyMap) FullHelp() [][]key.Binding {
 		}, {
 			km.nextPeriod,
 			km.previousPeriod,
-		},
+		}, {
+			km.switchRange,
 	}
 }
 
@@ -122,9 +128,10 @@ type model struct {
 	// sessionState is the current state of the session
 	sessionState sessionState
 	// transactions is a bubbletea list model of financial transactions
-	transactions  list.Model
-	period        Period
+	transactions list.Model
+	period       Period
 	currentPeriod time.Time
+	rangeType    string
 
 	transactionsStats *transactionsStats
 	// debitsAsNegative is a flag to show debits as negative numbers
@@ -235,7 +242,7 @@ type getsTransactionsMsg struct {
 func (m model) getTransactions() tea.Msg {
 	ctx := context.Background()
 
-	m.period.setPeriod(m.currentPeriod, "month")
+	m.period.setPeriod(m.currentPeriod, m.rangeType)
 
 	sd := m.period.startDate()
 	ed := m.period.endDate()
@@ -307,6 +314,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		if k == "@" {
 			m.currentPeriod = m.currentPeriod.AddDate(0, -1, 0)
+			return m, m.getTransactions
+		}
+
+		if k == "s" {
+			if m.rangeType == "month" {
+				m.rangeType = "year"
+			} else {
+				m.rangeType = "month"
+			}
 			return m, m.getTransactions
 		}
 
@@ -618,7 +634,8 @@ func main() {
 				transactionsListKeys: tlKeyMap,
 				debitsAsNegative:     c.Bool("debits-as-negative"),
 				currentPeriod:        time.Now(),
-				period:               Period{start: time.Date(time.Now().Year(), time.Now().Month(), 1, 0, 0, 0, 0, time.Now().Location()), end: time.Now()},
+				period:               Period{},
+				rangeType:            "month",
 				loadingSpinner: spinner.New(
 					spinner.WithSpinner(spinner.Dot),
 				),
