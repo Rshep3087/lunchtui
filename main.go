@@ -53,11 +53,11 @@ var (
 			key.WithKeys("@"),
 			key.WithHelp("shift+2", "previous month"),
 		),
-		switchRange: key.NewBinding(
+		switchPeriod: key.NewBinding(
 			key.WithKeys("s"),
 			key.WithHelp("s", "switch range"),
 		),
-		fullHelp:    key.NewBinding(
+		fullHelp: key.NewBinding(
 			key.WithKeys("?"),
 			key.WithHelp("?", "help"),
 		),
@@ -78,12 +78,18 @@ const (
 	recurringExpenses
 )
 
+const (
+	monthlyPeriodType = "month"
+	annualPeriodType  = "year"
+)
+
 type keyMap struct {
 	transactions   key.Binding
 	overview       key.Binding
 	recurring      key.Binding
 	nextPeriod     key.Binding
 	previousPeriod key.Binding
+	switchPeriod   key.Binding
 	fullHelp       key.Binding
 	quit           key.Binding
 }
@@ -93,7 +99,7 @@ func (km keyMap) ShortHelp() []key.Binding {
 		km.overview,
 		km.transactions,
 		km.recurring,
-		km.switchRange,
+		km.switchPeriod,
 		km.quit,
 		km.fullHelp,
 	}
@@ -107,11 +113,12 @@ func (km keyMap) FullHelp() [][]key.Binding {
 			km.recurring,
 			km.quit,
 			km.fullHelp,
-		}, {
+		},
+		{
 			km.nextPeriod,
 			km.previousPeriod,
-		}, {
-			km.switchRange,
+			km.switchPeriod,
+		},
 	}
 }
 
@@ -128,10 +135,12 @@ type model struct {
 	// sessionState is the current state of the session
 	sessionState sessionState
 	// transactions is a bubbletea list model of financial transactions
-	transactions list.Model
-	period       Period
+	transactions  list.Model
+	period        Period
 	currentPeriod time.Time
-	rangeType    string
+	// periodType is the type of range for the transactions
+	// ex. month, year
+	periodType string
 
 	transactionsStats *transactionsStats
 	// debitsAsNegative is a flag to show debits as negative numbers
@@ -242,7 +251,7 @@ type getsTransactionsMsg struct {
 func (m model) getTransactions() tea.Msg {
 	ctx := context.Background()
 
-	m.period.setPeriod(m.currentPeriod, m.rangeType)
+	m.period.setPeriod(m.currentPeriod, m.periodType)
 
 	sd := m.period.startDate()
 	ed := m.period.endDate()
@@ -318,10 +327,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		if k == "s" {
-			if m.rangeType == "month" {
-				m.rangeType = "year"
+			if m.periodType == monthlyPeriodType {
+				m.periodType = annualPeriodType
 			} else {
-				m.rangeType = "month"
+				m.periodType = monthlyPeriodType
 			}
 			return m, m.getTransactions
 		}
@@ -538,7 +547,7 @@ func (m model) renderTitle() string {
 	if m.period.String() == "" {
 		b.WriteString(titleStyle.Render(fmt.Sprintf("lunchtui | %s", currentPage)))
 	} else {
-		b.WriteString(titleStyle.Render(fmt.Sprintf("lunchtui | %s | %s", currentPage, m.period.String())))
+		b.WriteString(titleStyle.Render(fmt.Sprintf("lunchtui | %s | %s | %s", currentPage, m.period.String(), m.periodType)))
 	}
 
 	return b.String()
@@ -563,13 +572,14 @@ func (p Period) endDate() string {
 
 func (p *Period) setPeriod(current time.Time, periodType string) {
 	switch periodType {
-	case "month":
+	case monthlyPeriodType:
 		p.start = time.Date(current.Year(), current.Month(), 1, 0, 0, 0, 0, current.Location())
 		p.end = time.Date(current.Year(), current.Month()+1, 1, 0, 0, 0, 0, current.Location()).Add(-time.Second)
-	case "year":
+	case annualPeriodType:
 		p.start = time.Date(current.Year(), 1, 1, 0, 0, 0, 0, current.Location())
 		p.end = time.Date(current.Year()+1, 1, 1, 0, 0, 0, 0, current.Location()).Add(-time.Second)
 	default:
+		// default to month
 		p.start = time.Date(current.Year(), current.Month(), 1, 0, 0, 0, 0, current.Location())
 		p.end = time.Date(current.Year(), current.Month()+1, 1, 0, 0, 0, 0, current.Location()).Add(-time.Second)
 	}
@@ -635,7 +645,7 @@ func main() {
 				debitsAsNegative:     c.Bool("debits-as-negative"),
 				currentPeriod:        time.Now(),
 				period:               Period{},
-				rangeType:            "month",
+				periodType:           "month",
 				loadingSpinner: spinner.New(
 					spinner.WithSpinner(spinner.Dot),
 				),
