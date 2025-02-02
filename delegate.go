@@ -7,6 +7,8 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+const unclearedStatus = "uncleared"
+
 func (m model) newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 	d := list.NewDefaultDelegate()
 	d.Styles.SelectedTitle = lipgloss.NewStyle().
@@ -23,7 +25,7 @@ func (m model) newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 			if key.Matches(msg, keys.review) || key.Matches(msg, keys.unreview) {
 				action := "cleared"
 				if key.Matches(msg, keys.unreview) {
-					action = "uncleared"
+					action = unclearedStatus
 				}
 				if ti, ok := listModel.SelectedItem().(transactionItem); ok {
 					ti.t.Status = action

@@ -53,6 +53,10 @@ var (
 			key.WithKeys("@"),
 			key.WithHelp("shift+2", "previous month"),
 		),
+		switchPeriod: key.NewBinding(
+			key.WithKeys("s"),
+			key.WithHelp("s", "switch range"),
+		),
 		fullHelp: key.NewBinding(
 			key.WithKeys("?"),
 			key.WithHelp("?", "help"),
@@ -74,12 +78,18 @@ const (
 	recurringExpenses
 )
 
+const (
+	monthlyPeriodType = "month"
+	annualPeriodType  = "year"
+)
+
 type keyMap struct {
 	transactions   key.Binding
 	overview       key.Binding
 	recurring      key.Binding
 	nextPeriod     key.Binding
 	previousPeriod key.Binding
+	switchPeriod   key.Binding
 	fullHelp       key.Binding
 	quit           key.Binding
 }
@@ -89,6 +99,7 @@ func (km keyMap) ShortHelp() []key.Binding {
 		km.overview,
 		km.transactions,
 		km.recurring,
+		km.switchPeriod,
 		km.quit,
 		km.fullHelp,
 	}
@@ -102,9 +113,11 @@ func (km keyMap) FullHelp() [][]key.Binding {
 			km.recurring,
 			km.quit,
 			km.fullHelp,
-		}, {
+		},
+		{
 			km.nextPeriod,
 			km.previousPeriod,
+			km.switchPeriod,
 		},
 	}
 }
@@ -123,8 +136,11 @@ type model struct {
 	sessionState sessionState
 	// transactions is a bubbletea list model of financial transactions
 	transactions  list.Model
-	period        string
+	period        Period
 	currentPeriod time.Time
+	// periodType is the type of range for the transactions
+	// ex. month, year
+	periodType string
 
 	transactionsStats *transactionsStats
 	// debitsAsNegative is a flag to show debits as negative numbers
@@ -227,22 +243,23 @@ func (m model) getCategories() tea.Msg {
 	return getCategoriesMsg{categories: cs}
 }
 
-type transactionsResp struct {
+type getsTransactionsMsg struct {
 	ts     []*lm.Transaction
-	period string
+	period Period
 }
 
 func (m model) getTransactions() tea.Msg {
 	ctx := context.Background()
 
-	lastDay := m.currentPeriod.AddDate(0, 1, 0).Add(-time.Second)
-	endDate := lastDay.Format("2006-01-02")
-	startDate := time.Date(m.currentPeriod.Year(), m.currentPeriod.Month(), 1, 0, 0, 0, 0, m.currentPeriod.Location()).Format("2006-01-02")
+	m.period.setPeriod(m.currentPeriod, m.periodType)
+
+	sd := m.period.startDate()
+	ed := m.period.endDate()
 
 	ts, err := m.lmc.GetTransactions(ctx, &lm.TransactionFilters{
 		DebitAsNegative: &m.debitsAsNegative,
-		StartDate:       &startDate,
-		EndDate:         &endDate,
+		StartDate:       &sd,
+		EndDate:         &ed,
 	})
 	if err != nil {
 		return nil
@@ -251,7 +268,7 @@ func (m model) getTransactions() tea.Msg {
 	// reverse the slice so the most recent transactions are at the top
 	slices.Reverse(ts)
 
-	return transactionsResp{ts: ts, period: fmt.Sprintf("%s - %s", startDate, endDate)}
+	return getsTransactionsMsg{ts: ts, period: m.period}
 }
 
 type getUserMsg struct {
@@ -309,6 +326,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.getTransactions
 		}
 
+		if k == "s" {
+			if m.periodType == monthlyPeriodType {
+				m.periodType = annualPeriodType
+			} else {
+				m.periodType = monthlyPeriodType
+			}
+			return m, m.getTransactions
+		}
+
 		if m.sessionState == loading {
 			return m, nil
 		}
@@ -329,7 +355,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
-		if k == "?" {
+		if k == "?" && m.sessionState != transactions {
 			m.help.ShowAll = !m.help.ShowAll
 			return m, nil
 		}
@@ -337,91 +363,24 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		h, v := docStyle.GetFrameSize()
-
-		m.overview.SetSize(msg.Width-h, msg.Height-v-5)
-		m.overview.Viewport.Width = msg.Width
-		m.overview.Viewport.Height = msg.Height - 5
-
-		m.transactions.SetSize(msg.Width-h, msg.Height-v-5)
-		m.recurringExpenses.SetSize(msg.Width-h, msg.Height-v-3)
-
-		m.help.Width = msg.Width
-
-		if m.categoryForm != nil {
-			m.categoryForm = m.categoryForm.WithHeight(msg.Height - 5).WithWidth(msg.Width)
-		}
+		return m.handleWindowSize(msg)
 
 	case spinner.TickMsg:
-		if m.sessionState != loading {
-			return m, nil
-		}
-
-		var cmd tea.Cmd
-		m.loadingSpinner, cmd = m.loadingSpinner.Update(msg)
-		return m, cmd
+		return m.handleSpinnerTick(msg)
 
 	// set the categories on the model,
 	// send a cmd to get transactions
 	case getCategoriesMsg:
-		m.categories = make(map[int]*lm.Category, len(msg.categories)+1)
-		// set the uncategorized category which does not come from the API
-		m.categories[uncategorized.ID] = uncategorized
-
-		for _, c := range msg.categories {
-			m.categories[c.ID] = c
-		}
-
-		m.categoryForm = newCategorizeTransactionForm(msg.categories)
-		m.overview.SetCategories(m.categories)
-
-		m.sessionState = m.checkIfLoading()
-
-		return m, tea.Batch(m.getTransactions, m.categoryForm.Init(), tea.WindowSize())
+		return m.handleGetCategories(msg)
 
 	case getAccountsMsg:
-		m.plaidAccounts = make(map[int64]*lm.PlaidAccount, len(msg.plaidAccounts))
-		for _, pa := range msg.plaidAccounts {
-			m.plaidAccounts[pa.ID] = pa
-		}
+		return m.handleGetAccounts(msg)
 
-		m.assets = make(map[int64]*lm.Asset, len(msg.assets))
-		for _, a := range msg.assets {
-			m.assets[a.ID] = a
-		}
-
-		m.overview.SetAccounts(m.assets, m.plaidAccounts)
-
-		m.sessionState = m.checkIfLoading()
-
-		return m, nil
-
-	case transactionsResp:
-		var items = make([]list.Item, len(msg.ts))
-		for i, t := range msg.ts {
-			items[i] = transactionItem{
-				t:            t,
-				category:     m.categories[int(t.CategoryID)],
-				plaidAccount: m.plaidAccounts[t.PlaidAccountID],
-				asset:        m.assets[t.AssetID],
-			}
-		}
-
-		cmd := m.transactions.SetItems(items)
-
-		m.transactionsStats = newTransactionStats(items)
-		m.overview.SetTransactions(msg.ts)
-		m.period = msg.period
-
-		m.sessionState = m.checkIfLoading()
-
-		return m, cmd
+	case getsTransactionsMsg:
+		return m.handleGetTransactions(msg)
 
 	case getUserMsg:
-		m.user = msg.user
-		m.sessionState = m.checkIfLoading()
-		m.overview.SetCurrency(m.user.PrimaryCurrency)
-		return m, nil
+		return m.handleGetUser(msg)
 
 	case getRecurringExpensesMsg:
 		m.recurringExpenses.SetRecurringExpenses(msg.recurringExpenses)
@@ -446,6 +405,99 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	return m, nil
+}
+
+func (m model) handleWindowSize(msg tea.WindowSizeMsg) (tea.Model, tea.Cmd) {
+	h, v := docStyle.GetFrameSize()
+
+	m.overview.SetSize(msg.Width-h, msg.Height-v-5)
+	m.overview.Viewport.Width = msg.Width
+	m.overview.Viewport.Height = msg.Height - 5
+
+	m.transactions.SetSize(msg.Width-h, msg.Height-v-5)
+	m.recurringExpenses.SetSize(msg.Width-h, msg.Height-v-3)
+
+	m.help.Width = msg.Width
+
+	if m.categoryForm != nil {
+		m.categoryForm = m.categoryForm.WithHeight(msg.Height - 5).WithWidth(msg.Width)
+	}
+
+	return m, nil
+}
+
+func (m model) handleGetUser(msg getUserMsg) (tea.Model, tea.Cmd) {
+	m.user = msg.user
+	m.sessionState = m.checkIfLoading()
+	m.overview.SetCurrency(m.user.PrimaryCurrency)
+	return m, nil
+}
+
+func (m model) handleGetTransactions(msg getsTransactionsMsg) (tea.Model, tea.Cmd) {
+	var items = make([]list.Item, len(msg.ts))
+	for i, t := range msg.ts {
+		items[i] = transactionItem{
+			t:            t,
+			category:     m.categories[int(t.CategoryID)],
+			plaidAccount: m.plaidAccounts[t.PlaidAccountID],
+			asset:        m.assets[t.AssetID],
+		}
+	}
+
+	cmd := m.transactions.SetItems(items)
+
+	m.transactionsStats = newTransactionStats(items)
+	m.overview.SetTransactions(msg.ts)
+	m.period = msg.period
+
+	m.sessionState = m.checkIfLoading()
+
+	return m, cmd
+}
+
+func (m model) handleGetAccounts(msg getAccountsMsg) (tea.Model, tea.Cmd) {
+	m.plaidAccounts = make(map[int64]*lm.PlaidAccount, len(msg.plaidAccounts))
+	for _, pa := range msg.plaidAccounts {
+		m.plaidAccounts[pa.ID] = pa
+	}
+
+	m.assets = make(map[int64]*lm.Asset, len(msg.assets))
+	for _, a := range msg.assets {
+		m.assets[a.ID] = a
+	}
+
+	m.overview.SetAccounts(m.assets, m.plaidAccounts)
+
+	m.sessionState = m.checkIfLoading()
+
+	return m, nil
+}
+
+func (m model) handleGetCategories(msg getCategoriesMsg) (tea.Model, tea.Cmd) {
+	m.categories = make(map[int]*lm.Category, len(msg.categories)+1)
+	// set the uncategorized category which does not come from the API
+	m.categories[uncategorized.ID] = uncategorized
+
+	for _, c := range msg.categories {
+		m.categories[c.ID] = c
+	}
+
+	m.categoryForm = newCategorizeTransactionForm(msg.categories)
+	m.overview.SetCategories(m.categories)
+
+	m.sessionState = m.checkIfLoading()
+
+	return m, tea.Batch(m.getTransactions, m.categoryForm.Init(), tea.WindowSize())
+}
+
+func (m model) handleSpinnerTick(msg spinner.TickMsg) (tea.Model, tea.Cmd) {
+	if m.sessionState != loading {
+		return m, nil
+	}
+
+	var cmd tea.Cmd
+	m.loadingSpinner, cmd = m.loadingSpinner.Update(msg)
+	return m, cmd
 }
 
 func (m model) View() string {
@@ -492,13 +544,45 @@ func (m model) renderTitle() string {
 		currentPage = "loading"
 	}
 
-	if m.period == "" {
+	if m.period.String() == "" {
 		b.WriteString(titleStyle.Render(fmt.Sprintf("lunchtui | %s", currentPage)))
 	} else {
-		b.WriteString(titleStyle.Render(fmt.Sprintf("lunchtui | %s | %s", currentPage, m.period)))
+		b.WriteString(titleStyle.Render(fmt.Sprintf("lunchtui | %s | %s | %s", currentPage, m.period.String(), m.periodType)))
 	}
 
 	return b.String()
+}
+
+type Period struct {
+	start time.Time
+	end   time.Time
+}
+
+func (p Period) String() string {
+	return fmt.Sprintf("%s - %s", p.start.Format("2006-01-02"), p.end.Format("2006-01-02"))
+}
+
+func (p Period) startDate() string {
+	return p.start.Format("2006-01-02")
+}
+
+func (p Period) endDate() string {
+	return p.end.Format("2006-01-02")
+}
+
+func (p *Period) setPeriod(current time.Time, periodType string) {
+	switch periodType {
+	case monthlyPeriodType:
+		p.start = time.Date(current.Year(), current.Month(), 1, 0, 0, 0, 0, current.Location())
+		p.end = time.Date(current.Year(), current.Month()+1, 1, 0, 0, 0, 0, current.Location()).Add(-time.Second)
+	case annualPeriodType:
+		p.start = time.Date(current.Year(), 1, 1, 0, 0, 0, 0, current.Location())
+		p.end = time.Date(current.Year()+1, 1, 1, 0, 0, 0, 0, current.Location()).Add(-time.Second)
+	default:
+		// default to month
+		p.start = time.Date(current.Year(), current.Month(), 1, 0, 0, 0, 0, current.Location())
+		p.end = time.Date(current.Year(), current.Month()+1, 1, 0, 0, 0, 0, current.Location()).Add(-time.Second)
+	}
 }
 
 func main() {
@@ -560,6 +644,8 @@ func main() {
 				transactionsListKeys: tlKeyMap,
 				debitsAsNegative:     c.Bool("debits-as-negative"),
 				currentPeriod:        time.Now(),
+				period:               Period{},
+				periodType:           "month",
 				loadingSpinner: spinner.New(
 					spinner.WithSpinner(spinner.Dot),
 				),

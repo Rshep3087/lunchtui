@@ -81,6 +81,9 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 
 		m.transactionsStats = newTransactionStats(m.transactions.Items())
 
+		// move the cursor down to the next item automatically
+		m.transactions.CursorDown()
+
 		return m, tea.Batch(setItemCmd, statusCmd)
 
 	case tea.KeyMsg:
