@@ -553,8 +553,13 @@ func (p *Period) setPeriod(current time.Time, periodType string) {
 	case "year":
 		p.start = time.Date(current.Year(), 1, 1, 0, 0, 0, 0, current.Location())
 		p.end = time.Date(current.Year()+1, 1, 1, 0, 0, 0, 0, current.Location()).Add(-time.Second)
+	default:
+		p.start = time.Date(current.Year(), current.Month(), 1, 0, 0, 0, 0, current.Location())
+		p.end = time.Date(current.Year(), current.Month()+1, 1, 0, 0, 0, 0, current.Location()).Add(-time.Second)
 	}
 }
+
+func main() {
 	app := &cli.App{
 		Name:  "lunchtui",
 		Usage: "A terminal UI for Lunch Money",
