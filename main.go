@@ -235,7 +235,7 @@ type getsTransactionsMsg struct {
 func (m model) getTransactions() tea.Msg {
 	ctx := context.Background()
 
-	m.period.end = m.currentPeriod.AddDate(0, 1, 0).Add(-time.Second)
+	m.period.end = time.Date(m.currentPeriod.Year(), m.currentPeriod.Month()+1, 1, 0, 0, 0, 0, m.currentPeriod.Location()).Add(-time.Second)
 	m.period.start = time.Date(m.currentPeriod.Year(), m.currentPeriod.Month(), 1, 0, 0, 0, 0, m.currentPeriod.Location())
 
 	sd := m.period.startDate()
