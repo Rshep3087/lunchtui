@@ -229,7 +229,7 @@ func (m model) getCategories() tea.Msg {
 
 type getsTransactionsMsg struct {
 	ts     []*lm.Transaction
-	period string
+	period Period
 }
 
 func (m model) getTransactions() tea.Msg {
@@ -238,10 +238,13 @@ func (m model) getTransactions() tea.Msg {
 	m.period.end = m.currentPeriod.AddDate(0, 1, 0).Add(-time.Second)
 	m.period.start = time.Date(m.currentPeriod.Year(), m.currentPeriod.Month(), 1, 0, 0, 0, 0, m.currentPeriod.Location())
 
+	sd := m.period.startDate()
+	ed := m.period.endDate()
+
 	ts, err := m.lmc.GetTransactions(ctx, &lm.TransactionFilters{
 		DebitAsNegative: &m.debitsAsNegative,
-		StartDate:       &startDate,
-		EndDate:         &endDate,
+		StartDate:       &sd,
+		EndDate:         &ed,
 	})
 	if err != nil {
 		return nil
@@ -250,7 +253,7 @@ func (m model) getTransactions() tea.Msg {
 	// reverse the slice so the most recent transactions are at the top
 	slices.Reverse(ts)
 
-	return getsTransactionsMsg{ts: ts, period: m.period.String()}
+	return getsTransactionsMsg{ts: ts, period: m.period}
 }
 
 type getUserMsg struct {
@@ -534,6 +537,16 @@ type Period struct {
 func (p Period) String() string {
 	return fmt.Sprintf("%s - %s", p.start.Format("2006-01-02"), p.end.Format("2006-01-02"))
 }
+
+func (p Period) startDate() string {
+	return p.start.Format("2006-01-02")
+}
+
+func (p Period) endDate() string {
+	return p.end.Format("2006-01-02")
+}
+
+func main() {
 	app := &cli.App{
 		Name:  "lunchtui",
 		Usage: "A terminal UI for Lunch Money",
