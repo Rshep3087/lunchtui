@@ -93,15 +93,7 @@ func (m *Model) calculateNetWorth() *money.Money {
 	netWorth := money.New(0, m.currency)
 
 	for _, asset := range m.assets {
-		if asset.Currency != m.currency {
-			continue
-		}
-
-		amount, err := asset.ParsedAmount()
-		if err != nil {
-			continue
-		}
-
+		amount := money.NewFromFloat(asset.ToBase, m.currency)
 		if asset.TypeName == "credit" && asset.SubtypeName == "credit card" {
 			amount = amount.Negative()
 		}
@@ -115,14 +107,7 @@ func (m *Model) calculateNetWorth() *money.Money {
 	}
 
 	for _, account := range m.plaidAccounts {
-		if account.Currency != m.currency {
-			continue
-		}
-
-		amount, err := account.ParsedAmount()
-		if err != nil {
-			continue
-		}
+		amount := money.NewFromFloat(account.ToBase, m.currency)
 
 		if account.Type == "credit" && account.Subtype == "credit card" {
 			amount = amount.Negative()
@@ -368,11 +353,7 @@ func (m *Model) updateAccountTree() {
 	for typeName, assets := range assets {
 		assetTree := tree.New().Root(titleCaser.String(m.Styles.AssetTypeStyle.Render(typeName)))
 		for _, a := range assets {
-			pa, err := a.ParsedAmount()
-			if err != nil {
-				continue
-			}
-
+			pa := money.NewFromFloat(a.ToBase, m.currency)
 			text := fmt.Sprintf("%s (%s)", a.Name, pa.Display())
 			assetTree.Child(m.Styles.AccountStyle.Render(text))
 		}
@@ -389,11 +370,7 @@ func (m *Model) updateAccountTree() {
 	for typeName, accounts := range plaidAccounts {
 		accountTree := tree.New().Root(titleCaser.String(m.Styles.AssetTypeStyle.Render(typeName)))
 		for _, a := range accounts {
-			pa, err := a.ParsedAmount()
-			if err != nil {
-				continue
-			}
-
+			pa := money.NewFromFloat(a.ToBase, m.currency)
 			text := fmt.Sprintf("%s (%s)", a.Name, pa.Display())
 			accountTree.Child(m.Styles.AccountStyle.Render(text))
 		}
