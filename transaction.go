@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/log"
 	lm "github.com/icco/lunchmoney"
 )
 
@@ -73,6 +74,7 @@ func newTransactionListKeyMap() *transactionListKeyMap {
 func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case updateTransactionMsg:
+		log.Debug("updating transaction")
 		// create a copy of the transaction and update the status
 		// this keep the category, assets, plaidAccount, etc. intact
 		t, ok := m.transactions.SelectedItem().(transactionItem)
@@ -120,21 +122,24 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 			// updating the category for the transaction at the current index
 			t := m.transactions.Items()[m.transactions.Index()].(transactionItem).t
 			m.categoryForm.SubmitCmd = func() tea.Msg {
-				cid := m.categoryForm.GetInt("category")
+				ctx := context.Background()
+				cid := int(m.categoryForm.Get("category").(int64))
+				log.Debug("updating transaction", "transaction", t.ID, "category", cid)
 
-				resp, err := m.lmc.UpdateTransaction(context.TODO(), t.ID, &lm.UpdateTransaction{CategoryID: &cid})
+				resp, err := m.lmc.UpdateTransaction(ctx, t.ID, &lm.UpdateTransaction{CategoryID: &cid})
 				if err != nil {
+					log.Debug("updating transaction", "error", err)
 					return err
 				}
 
 				if !resp.Updated {
+					log.Debug("transaction not updated")
 					return nil
 				}
 
-				newT, err := m.lmc.GetTransaction(context.TODO(), t.ID, &lm.TransactionFilters{
-					DebitAsNegative: &m.debitsAsNegative,
-				})
+				newT, err := m.lmc.GetTransaction(ctx, t.ID, &lm.TransactionFilters{DebitAsNegative: &m.debitsAsNegative})
 				if err != nil {
+					log.Debug("getting transaction", "error", err)
 					return err
 				}
 
