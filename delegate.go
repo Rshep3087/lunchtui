@@ -8,6 +8,7 @@ import (
 )
 
 const unclearedStatus = "uncleared"
+const clearedStatus string = "cleared"
 
 func (m model) newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 	d := list.NewDefaultDelegate()
@@ -23,7 +24,7 @@ func (m model) newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 	d.UpdateFunc = func(msg tea.Msg, listModel *list.Model) tea.Cmd {
 		if msg, ok := msg.(tea.KeyMsg); ok {
 			if key.Matches(msg, keys.review) || key.Matches(msg, keys.unreview) {
-				action := "cleared"
+				action := clearedStatus
 				if key.Matches(msg, keys.unreview) {
 					action = unclearedStatus
 				}

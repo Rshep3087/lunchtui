@@ -126,7 +126,8 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 				cid := int(m.categoryForm.Get("category").(int64))
 				log.Debug("updating transaction", "transaction", t.ID, "category", cid)
 
-				resp, err := m.lmc.UpdateTransaction(ctx, t.ID, &lm.UpdateTransaction{CategoryID: &cid})
+				status := clearedStatus
+				resp, err := m.lmc.UpdateTransaction(ctx, t.ID, &lm.UpdateTransaction{CategoryID: &cid, Status: &status})
 				if err != nil {
 					log.Debug("updating transaction", "error", err)
 					return err
@@ -147,6 +148,7 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 				// respect the debitAsNegative setting, so we will use
 				// the original transaction to update the category
 				t.CategoryID = newT.CategoryID
+				t.Status = newT.Status
 				return updateTransactionMsg{t: t, fieldUpdated: "category"}
 			}
 
