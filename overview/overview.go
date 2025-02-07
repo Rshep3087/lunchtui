@@ -13,7 +13,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/tree"
 	"github.com/charmbracelet/log"
-	lm "github.com/rshep3087/lunchmoney"
+	lm "github.com/icco/lunchmoney"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -26,7 +26,7 @@ type Model struct {
 	Viewport          viewport.Model
 	summary           Summary
 	transactions      []*lm.Transaction
-	categories        map[int]*lm.Category
+	categories        map[int64]*lm.Category
 	assets            map[int64]*lm.Asset
 	plaidAccounts     map[int64]*lm.PlaidAccount
 	accountTree       *tree.Tree
@@ -45,7 +45,7 @@ func (m *Model) calculateSpendingBreakdown() []table.Row {
 	categoryTotals := make(map[string]*money.Money)
 
 	for _, t := range m.transactions {
-		category := m.categories[int(t.CategoryID)]
+		category := m.categories[t.CategoryID]
 		if category.ExcludeFromTotals || category.IsIncome {
 			continue
 		}
@@ -174,7 +174,7 @@ func (m *Model) SetTransactions(transactions []*lm.Transaction) {
 	m.UpdateViewport()
 }
 
-func (m *Model) SetCategories(categories map[int]*lm.Category) {
+func (m *Model) SetCategories(categories map[int64]*lm.Category) {
 	m.categories = categories
 	m.updateSummary()
 	m.UpdateViewport()
@@ -321,7 +321,7 @@ func (m *Model) updateSummary() {
 	var totalIncomeEarned, totalSpent = money.New(0, m.currency), money.New(0, m.currency)
 
 	for _, t := range m.transactions {
-		category := m.categories[int(t.CategoryID)]
+		category := m.categories[t.CategoryID]
 		if category.ExcludeFromTotals {
 			continue
 		}
@@ -332,7 +332,7 @@ func (m *Model) updateSummary() {
 			continue
 		}
 
-		if m.categories[int(t.CategoryID)].IsIncome {
+		if m.categories[t.CategoryID].IsIncome {
 			tie, err := totalIncomeEarned.Add(amount)
 			if err != nil {
 				log.Debug("adding amount to total income earned", "error", err)

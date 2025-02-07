@@ -19,7 +19,7 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/log"
-	lm "github.com/rshep3087/lunchmoney"
+	lm "github.com/icco/lunchmoney"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/sync/errgroup"
 )
@@ -148,7 +148,7 @@ type model struct {
 
 	categoryForm *huh.Form
 	// categories is a map of category ID to category
-	categories map[int]*lm.Category
+	categories map[int64]*lm.Category
 	// plaidAccounts are individual bank accounts that you have linked to Lunch Money via Plaid.
 	// You may link one bank but one bank might contain 4 accounts.
 	// Each of these accounts is a Plaid Account.
@@ -474,7 +474,7 @@ func (m model) handleGetTransactions(msg getsTransactionsMsg) (tea.Model, tea.Cm
 	for i, t := range msg.ts {
 		items[i] = transactionItem{
 			t:            t,
-			category:     m.categories[int(t.CategoryID)],
+			category:     m.categories[t.CategoryID],
 			plaidAccount: m.plaidAccounts[t.PlaidAccountID],
 			asset:        m.assets[t.AssetID],
 		}
@@ -512,7 +512,7 @@ func (m model) handleGetAccounts(msg getAccountsMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) handleGetCategories(msg getCategoriesMsg) (tea.Model, tea.Cmd) {
-	m.categories = make(map[int]*lm.Category, len(msg.categories)+1)
+	m.categories = make(map[int64]*lm.Category, len(msg.categories)+1)
 	// set the uncategorized category which does not come from the API
 	m.categories[uncategorized.ID] = uncategorized
 

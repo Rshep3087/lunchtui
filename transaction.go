@@ -8,7 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	lm "github.com/rshep3087/lunchmoney"
+	lm "github.com/icco/lunchmoney"
 )
 
 type transactionItem struct {
@@ -84,7 +84,7 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 		// must set the new category on the transaction item
 		// in case that is what changed
 		// in future, we could check the fieldUpdated to see what changed
-		t.category = m.categories[int(t.t.CategoryID)]
+		t.category = m.categories[t.t.CategoryID]
 
 		setItemCmd := m.transactions.SetItem(m.transactions.Index(), t)
 		statusCmd := m.transactions.NewStatusMessage(fmt.Sprintf("Updated %s for transaction: %s", msg.fieldUpdated, msg.t.Payee))

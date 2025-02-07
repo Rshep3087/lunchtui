@@ -7,7 +7,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
-	lm "github.com/rshep3087/lunchmoney"
+	lm "github.com/icco/lunchmoney"
 )
 
 func newCategorizeTransactionForm(categories []*lm.Category) *huh.Form { // Sort categories by Name
@@ -15,13 +15,13 @@ func newCategorizeTransactionForm(categories []*lm.Category) *huh.Form { // Sort
 		return categories[i].Name < categories[j].Name
 	})
 
-	opts := make([]huh.Option[int], len(categories))
+	opts := make([]huh.Option[int64], len(categories))
 	for i, c := range categories {
 		opts[i] = huh.NewOption(c.Name, c.ID)
 	}
 
 	return huh.NewForm(huh.NewGroup(
-		huh.NewSelect[int]().
+		huh.NewSelect[int64]().
 			Title("New category").
 			Description("Select a new category for the transaction").
 			Options(opts...).
