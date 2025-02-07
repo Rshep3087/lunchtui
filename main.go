@@ -158,10 +158,14 @@ type model struct {
 	// user is the current user determined by the API token
 	user *lm.User
 
+	tags map[int]*lm.Tag
+
 	// recurringExpenses is a model for the recurring expenses widget
 	recurringExpenses recurring.Model
 	// lmc is the Lunch Money client
 	lmc *lm.Client
+
+	loadingState loadingState
 }
 
 func (m model) Init() tea.Cmd {
@@ -172,6 +176,7 @@ func (m model) Init() tea.Cmd {
 		m.loadingSpinner.Tick,
 		m.getRecurringExpenses,
 		m.recurringExpenses.Init(),
+		m.getTags,
 	)
 }
 
@@ -284,6 +289,21 @@ func (m model) getUser() tea.Msg {
 	return getUserMsg{user: u}
 }
 
+type getTagsMsg struct {
+	tags []*lm.Tag
+}
+
+func (m model) getTags() tea.Msg {
+	ctx := context.Background()
+
+	tags, err := m.lmc.GetTags(ctx)
+	if err != nil {
+		return nil
+	}
+
+	return getTagsMsg{tags: tags}
+}
+
 type updateTransactionMsg struct {
 	t            *lm.Transaction
 	fieldUpdated string
@@ -385,6 +405,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case getRecurringExpensesMsg:
 		m.recurringExpenses.SetRecurringExpenses(msg.recurringExpenses)
 		return m, nil
+
+	case getTagsMsg:
+		return m.handleGetTags(msg)
+
 	}
 
 	var cmd tea.Cmd
@@ -404,6 +428,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 	}
 
+	return m, nil
+}
+
+func (m model) handleGetTags(msg getTagsMsg) (tea.Model, tea.Cmd) {
+	tags := make(map[int]*lm.Tag, len(msg.tags))
+	for _, t := range msg.tags {
+		tags[t.ID] = t
+	}
+	m.tags = tags
+	m.loadingState.set("tags")
+	m.sessionState = m.checkIfLoading()
 	return m, nil
 }
 
@@ -428,6 +463,7 @@ func (m model) handleWindowSize(msg tea.WindowSizeMsg) (tea.Model, tea.Cmd) {
 
 func (m model) handleGetUser(msg getUserMsg) (tea.Model, tea.Cmd) {
 	m.user = msg.user
+	m.loadingState.set("user")
 	m.sessionState = m.checkIfLoading()
 	m.overview.SetCurrency(m.user.PrimaryCurrency)
 	return m, nil
@@ -450,6 +486,7 @@ func (m model) handleGetTransactions(msg getsTransactionsMsg) (tea.Model, tea.Cm
 	m.overview.SetTransactions(msg.ts)
 	m.period = msg.period
 
+	m.loadingState.set("transactions")
 	m.sessionState = m.checkIfLoading()
 
 	return m, cmd
@@ -468,6 +505,7 @@ func (m model) handleGetAccounts(msg getAccountsMsg) (tea.Model, tea.Cmd) {
 
 	m.overview.SetAccounts(m.assets, m.plaidAccounts)
 
+	m.loadingState.set("accounts")
 	m.sessionState = m.checkIfLoading()
 
 	return m, nil
@@ -485,6 +523,7 @@ func (m model) handleGetCategories(msg getCategoriesMsg) (tea.Model, tea.Cmd) {
 	m.categoryForm = newCategorizeTransactionForm(msg.categories)
 	m.overview.SetCategories(m.categories)
 
+	m.loadingState.set("categories")
 	m.sessionState = m.checkIfLoading()
 
 	return m, tea.Batch(m.getTransactions, m.categoryForm.Init(), tea.WindowSize())
@@ -651,6 +690,13 @@ func main() {
 				),
 				overview:          overview.New(),
 				recurringExpenses: recurring.New(),
+				loadingState: newLoadingState(
+					"categories",
+					"transactions",
+					"user",
+					"accounts",
+					"tags",
+				),
 			}
 
 			delegate := m.newItemDelegate(newDeleteKeyMap())
@@ -685,8 +731,8 @@ func (m model) checkIfLoading() sessionState {
 		return m.sessionState
 	}
 
-	if m.user == nil || m.categories == nil || m.plaidAccounts == nil || m.assets == nil {
-		log.Debug("user, categories, plaid accounts, or assets are nil, loading")
+	if loaded, notLoaded := m.loadingState.allLoaded(); !loaded {
+		log.Debugf("not loaded: %s", notLoaded)
 		return loading
 	}
 

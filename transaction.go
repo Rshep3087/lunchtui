@@ -16,6 +16,7 @@ type transactionItem struct {
 	category     *lm.Category
 	plaidAccount *lm.PlaidAccount
 	asset        *lm.Asset
+	tags         []*lm.Tag
 }
 
 func (t transactionItem) Title() string {
@@ -35,7 +36,16 @@ func (t transactionItem) Description() string {
 		account = t.asset.Name
 	}
 
-	return fmt.Sprintf("%s | %s | %s | %s | %s", t.t.Date, t.category.Name, amount.Display(), account, t.t.Status)
+	tags := ""
+	for _, tag := range t.tags {
+		tags += tag.Name + ","
+	}
+
+	if tags == "" {
+		tags = "no tags"
+	}
+
+	return fmt.Sprintf("%s | %s | %s | %s | %s | %s", t.t.Date, t.category.Name, amount.Display(), account, tags, t.t.Status)
 }
 
 func (t transactionItem) FilterValue() string {
