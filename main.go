@@ -342,14 +342,28 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		if k == "!" {
-			m.currentPeriod = m.currentPeriod.AddDate(0, 1, 0)
+			if m.periodType == monthlyPeriodType {
+				m.currentPeriod = m.currentPeriod.AddDate(0, 1, 0)
+			}
+
+			if m.periodType == annualPeriodType {
+				m.currentPeriod = m.currentPeriod.AddDate(1, 0, 0)
+			}
+
 			m.loadingState.unset("transactions")
 			m.sessionState = loading
 			return m, m.getTransactions
 		}
 
 		if k == "@" {
-			m.currentPeriod = m.currentPeriod.AddDate(0, -1, 0)
+			if m.periodType == monthlyPeriodType {
+				m.currentPeriod = m.currentPeriod.AddDate(0, -1, 0)
+			}
+
+			if m.periodType == annualPeriodType {
+				m.currentPeriod = m.currentPeriod.AddDate(-1, 0, 0)
+			}
+
 			m.loadingState.unset("transactions")
 			m.sessionState = loading
 			return m, m.getTransactions
@@ -361,6 +375,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				m.periodType = monthlyPeriodType
 			}
+
 			m.loadingState.unset("transactions")
 			m.sessionState = loading
 			return m, m.getTransactions
