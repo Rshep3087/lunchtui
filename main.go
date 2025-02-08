@@ -78,6 +78,23 @@ const (
 	recurringExpenses
 )
 
+func (ss sessionState) String() string {
+	switch ss {
+	case overviewState:
+		return "overview"
+	case transactions:
+		return "transactions"
+	case categorizeTransaction:
+		return "categorize transaction"
+	case loading:
+		return "loading"
+	case recurringExpenses:
+		return "recurring expenses"
+	}
+
+	return "unknown"
+}
+
 const (
 	monthlyPeriodType = "month"
 	annualPeriodType  = "year"
@@ -134,6 +151,8 @@ type model struct {
 	transactionsListKeys *transactionListKeyMap
 	// sessionState is the current state of the session
 	sessionState sessionState
+	// previousSessionState is the state before the current session state
+	previousSessionState sessionState
 	// transactions is a bubbletea list model of financial transactions
 	transactions  list.Model
 	period        Period
@@ -337,6 +356,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		if k == "esc" {
+			m.previousSessionState = m.sessionState
 			m.sessionState = overviewState
 			return m, nil
 		}
@@ -350,6 +370,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.currentPeriod = m.currentPeriod.AddDate(1, 0, 0)
 			}
 
+			m.previousSessionState = m.sessionState
 			m.loadingState.unset("transactions")
 			m.sessionState = loading
 			return m, m.getTransactions
@@ -364,6 +385,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.currentPeriod = m.currentPeriod.AddDate(-1, 0, 0)
 			}
 
+			m.previousSessionState = m.sessionState
 			m.loadingState.unset("transactions")
 			m.sessionState = loading
 			return m, m.getTransactions
@@ -376,6 +398,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.periodType = monthlyPeriodType
 			}
 
+			m.previousSessionState = m.sessionState
 			m.loadingState.unset("transactions")
 			m.sessionState = loading
 			return m, m.getTransactions
@@ -386,17 +409,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		if k == "t" && m.sessionState != transactions {
+			m.previousSessionState = m.sessionState
 			m.sessionState = transactions
 			return m, nil
 		}
 
 		if k == "r" && m.sessionState != recurringExpenses {
+			m.previousSessionState = m.sessionState
 			m.recurringExpenses.SetFocus(true)
 			m.sessionState = recurringExpenses
 			return m, nil
 		}
 
 		if k == "o" && m.sessionState != overviewState {
+			m.previousSessionState = m.sessionState
 			m.sessionState = overviewState
 			return m, nil
 		}
@@ -704,6 +730,7 @@ func main() {
 				keys:                 keys,
 				help:                 helpModel,
 				sessionState:         loading,
+				previousSessionState: overviewState,
 				lmc:                  lmc,
 				transactionsListKeys: tlKeyMap,
 				debitsAsNegative:     c.Bool("debits-as-negative"),
@@ -761,6 +788,6 @@ func (m model) checkIfLoading() sessionState {
 		return loading
 	}
 
-	log.Debug("everything is loaded, showing overview")
-	return overviewState
+	log.Debugf("all loaded showing %s", m.previousSessionState)
+	return m.previousSessionState
 }
