@@ -24,16 +24,10 @@ func (m model) newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 	d.UpdateFunc = func(msg tea.Msg, listModel *list.Model) tea.Cmd {
 		if msg, ok := msg.(tea.KeyMsg); ok {
 			if key.Matches(msg, keys.review) || key.Matches(msg, keys.unreview) {
-				action := clearedStatus
-				if key.Matches(msg, keys.unreview) {
-					action = unclearedStatus
-				}
-				if ti, ok := listModel.SelectedItem().(transactionItem); ok {
-					ti.t.Status = action
-					return m.updateTransactionStatus(ti.t)
-				}
+				return updateTransactionStatus(msg, keys, listModel, m)
 			}
 		}
+
 		return nil
 	}
 
@@ -48,6 +42,21 @@ func (m model) newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 	}
 
 	return d
+}
+
+func updateTransactionStatus(msg tea.KeyMsg, keys *delegateKeyMap, listModel *list.Model, m model) tea.Cmd {
+	action := clearedStatus
+	if key.Matches(msg, keys.unreview) {
+		action = unclearedStatus
+	}
+
+	ti, isValidTransactionItem := listModel.SelectedItem().(transactionItem)
+	if !isValidTransactionItem {
+		return nil
+	}
+
+	ti.t.Status = action
+	return m.updateTransactionStatus(ti.t)
 }
 
 type delegateKeyMap struct {

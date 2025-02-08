@@ -18,9 +18,7 @@ import (
 	"golang.org/x/text/language"
 )
 
-var titleCaser = cases.Title(language.English)
-
-// Model deines the state for the overview widget for LunchTUI
+// Model deines the state for the overview widget for LunchTUI.
 type Model struct {
 	Styles            Styles
 	Viewport          viewport.Model
@@ -32,6 +30,7 @@ type Model struct {
 	accountTree       *tree.Tree
 	spendingBreakdown table.Model
 	currency          string
+	titleCaser        cases.Caser
 }
 
 type categoryTotal struct {
@@ -185,6 +184,7 @@ func New(opts ...Option) Model {
 		Viewport:    viewport.New(0, 20),
 		summary:     Summary{},
 		accountTree: tree.New(),
+		titleCaser:  cases.Title(language.English),
 	}
 
 	m.accountTree.Root(m.Styles.TreeRootStyle.Render("Accounts"))
@@ -237,7 +237,8 @@ func (m *Model) UpdateViewport() {
 			Render(
 				lipgloss.JoinVertical(lipgloss.Top,
 					lipgloss.NewStyle().MarginBottom(1).Render(m.accountTree.String()),
-					lipgloss.NewStyle().MarginTop(1).Render(fmt.Sprintf("Estimated Net Worth: %s", m.Styles.IncomeStyle.Render(netWorth.Display()))),
+					lipgloss.NewStyle().
+						MarginTop(1).Render(fmt.Sprintf("Estimated Net Worth: %s", m.Styles.IncomeStyle.Render(netWorth.Display()))),
 				),
 			),
 	)
@@ -271,8 +272,10 @@ func (m *Model) UpdateViewport() {
 	m.Viewport.SetContent(mainContent)
 }
 
-func (m Model) summaryView() string {
-	if m.summary.totalIncomeEarned.Currency() == nil || m.summary.totalSpent.Currency() == nil || m.summary.netIncome.Currency() == nil {
+func (m *Model) summaryView() string {
+	if m.summary.totalIncomeEarned.Currency() == nil ||
+		m.summary.totalSpent.Currency() == nil ||
+		m.summary.netIncome.Currency() == nil {
 		return lipgloss.JoinVertical(lipgloss.Top,
 			lipgloss.NewStyle().Bold(true).Render("Period Summary"),
 			m.Styles.SummaryStyle.Render("No data available"),
@@ -319,23 +322,22 @@ func (m *Model) updateSummary() {
 		}
 
 		if m.categories[t.CategoryID].IsIncome {
-			tie, err := totalIncomeEarned.Add(amount)
-			if err != nil {
-				log.Debug("adding amount to total income earned", "error", err)
+			tie, additionError := totalIncomeEarned.Add(amount)
+			if additionError != nil {
+				log.Debug("adding amount to total income earned", "error", additionError)
 				continue
 			}
 
 			totalIncomeEarned = tie
 		} else {
-			tsa, err := totalSpent.Add(amount)
-			if err != nil {
-				log.Debug("adding amount to total spent", "error", err)
+			tsa, additionError := totalSpent.Add(amount)
+			if additionError != nil {
+				log.Debug("adding amount to total spent", "error", additionError)
 				continue
 			}
 
 			totalSpent = tsa
 		}
-
 	}
 
 	netIncome, _ := totalIncomeEarned.Add(totalSpent)
@@ -352,7 +354,7 @@ func (m *Model) updateAccountTree() {
 
 	// add a child for each asset
 	for typeName, assets := range assets {
-		assetTree := tree.New().Root(titleCaser.String(m.Styles.AssetTypeStyle.Render(typeName)))
+		assetTree := tree.New().Root(m.titleCaser.String(m.Styles.AssetTypeStyle.Render(typeName)))
 		for _, a := range assets {
 			pa := money.NewFromFloat(a.ToBase, m.currency)
 			text := fmt.Sprintf("%s (%s)", a.Name, pa.Display())
@@ -369,7 +371,7 @@ func (m *Model) updateAccountTree() {
 	}
 
 	for typeName, accounts := range plaidAccounts {
-		accountTree := tree.New().Root(titleCaser.String(m.Styles.AssetTypeStyle.Render(typeName)))
+		accountTree := tree.New().Root(m.titleCaser.String(m.Styles.AssetTypeStyle.Render(typeName)))
 		for _, a := range accounts {
 			pa := money.NewFromFloat(a.ToBase, m.currency)
 			text := fmt.Sprintf("%s (%s)", a.Name, pa.Display())

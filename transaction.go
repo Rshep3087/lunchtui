@@ -46,7 +46,14 @@ func (t transactionItem) Description() string {
 		tags = "no tags"
 	}
 
-	return fmt.Sprintf("%s | %s | %s | %s | %s | %s", t.t.Date, t.category.Name, amount.Display(), account, tags, t.t.Status)
+	return fmt.Sprintf("%s | %s | %s | %s | %s | %s",
+		t.t.Date,
+		t.category.Name,
+		amount.Display(),
+		account,
+		tags,
+		t.t.Status,
+	)
 }
 
 func (t transactionItem) FilterValue() string {
@@ -89,7 +96,9 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 		t.category = m.categories[t.t.CategoryID]
 
 		setItemCmd := m.transactions.SetItem(m.transactions.Index(), t)
-		statusCmd := m.transactions.NewStatusMessage(fmt.Sprintf("Updated %s for transaction: %s", msg.fieldUpdated, msg.t.Payee))
+		statusCmd := m.transactions.NewStatusMessage(
+			fmt.Sprintf("Updated %s for transaction: %s", msg.fieldUpdated, msg.t.Payee),
+		)
 
 		m.transactionsStats = newTransactionStats(m.transactions.Items())
 
@@ -99,61 +108,16 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(setItemCmd, statusCmd)
 
 	case tea.KeyMsg:
-		// if the list is filtering, don't process key events
 		if m.transactions.FilterState() == list.Filtering {
 			break
 		}
 
 		if key.Matches(msg, m.transactionsListKeys.filterUncleared) {
-			unclearedItems := make([]list.Item, 0)
-			for _, item := range m.transactions.Items() {
-				if t, ok := item.(transactionItem); ok && t.t.Status == "uncleared" {
-					unclearedItems = append(unclearedItems, item)
-				}
-			}
-			m.transactions.SetItems(unclearedItems)
-
-			m.transactionsStats = newTransactionStats(m.transactions.Items())
-			return m, nil
+			return filterUnclearedTransactions(m)
 		}
 
 		if key.Matches(msg, m.transactionsListKeys.categorizeTransaction) {
-			// we know which transaction we're categorizing because we're
-			// updating the category for the transaction at the current index
-			t := m.transactions.Items()[m.transactions.Index()].(transactionItem).t
-			m.categoryForm.SubmitCmd = func() tea.Msg {
-				ctx := context.Background()
-				cid := int(m.categoryForm.Get("category").(int64))
-				log.Debug("updating transaction", "transaction", t.ID, "category", cid)
-
-				status := clearedStatus
-				resp, err := m.lmc.UpdateTransaction(ctx, t.ID, &lm.UpdateTransaction{CategoryID: &cid, Status: &status})
-				if err != nil {
-					log.Debug("updating transaction", "error", err)
-					return err
-				}
-
-				if !resp.Updated {
-					log.Debug("transaction not updated")
-					return nil
-				}
-
-				newT, err := m.lmc.GetTransaction(ctx, t.ID, &lm.TransactionFilters{DebitAsNegative: &m.debitsAsNegative})
-				if err != nil {
-					log.Debug("getting transaction", "error", err)
-					return err
-				}
-
-				// the transaction we get back from the API does not
-				// respect the debitAsNegative setting, so we will use
-				// the original transaction to update the category
-				t.CategoryID = newT.CategoryID
-				t.Status = newT.Status
-				return updateTransactionMsg{t: t, fieldUpdated: "category"}
-			}
-
-			m.sessionState = categorizeTransaction
-			return m, tea.WindowSize()
+			return categorizeTrans(m)
 		}
 	}
 
@@ -161,6 +125,74 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 	m.transactions, cmd = m.transactions.Update(msg)
 
 	return m, cmd
+}
+
+func categorizeTrans(m model) (tea.Model, tea.Cmd) {
+	// we know which transaction we're categorizing because we're
+	// updating the category for the transaction at the current index
+	t, ok := m.transactions.Items()[m.transactions.Index()].(transactionItem)
+	if !ok {
+		return m, nil
+	}
+
+	m.categoryForm.SubmitCmd = func() tea.Msg {
+		return submitCategoryForm(m, t)
+	}
+
+	m.sessionState = categorizeTransaction
+	return m, tea.WindowSize()
+}
+
+func submitCategoryForm(m model, t transactionItem) tea.Msg {
+	ctx := context.Background()
+	categoryValue := m.categoryForm.Get("category")
+	cid64, isCategoryValueValid := categoryValue.(int64)
+	if !isCategoryValueValid {
+		log.Debug("invalid category value", "value", categoryValue)
+		return nil
+	}
+
+	cid := int(cid64)
+
+	log.Debug("updating transaction", "transaction", t.t.ID, "category", cid)
+
+	status := clearedStatus
+	resp, err := m.lmc.UpdateTransaction(ctx, t.t.ID, &lm.UpdateTransaction{CategoryID: &cid, Status: &status})
+	if err != nil {
+		log.Debug("updating transaction", "error", err)
+		return err
+	}
+
+	if !resp.Updated {
+		log.Debug("transaction not updated")
+		return nil
+	}
+
+	newT, err := m.lmc.GetTransaction(ctx, t.t.ID, &lm.TransactionFilters{DebitAsNegative: &m.debitsAsNegative})
+	if err != nil {
+		log.Debug("getting transaction", "error", err)
+		return err
+	}
+
+	// the transaction we get back from the API does not
+	// respect the debitAsNegative setting, so we will use
+	// the original transaction to update the category
+	t.t.CategoryID = newT.CategoryID
+	t.t.Status = newT.Status
+	return updateTransactionMsg{t: t.t, fieldUpdated: "category"}
+}
+
+func filterUnclearedTransactions(m model) (tea.Model, tea.Cmd) {
+	unclearedItems := make([]list.Item, 0)
+	for _, item := range m.transactions.Items() {
+		if t, ok := item.(transactionItem); ok && t.t.Status == "uncleared" {
+			unclearedItems = append(unclearedItems, item)
+		}
+	}
+	m.transactions.SetItems(unclearedItems)
+
+	m.transactionsStats = newTransactionStats(m.transactions.Items())
+	return m, nil
 }
 
 func transactionsView(m model) string {
@@ -202,11 +234,22 @@ type transactionsStats struct {
 	cleared   int
 }
 
-// View renders the transactions stats in a single line
+// View renders the transactions stats in a single line.
 func (t transactionsStats) View() string {
-	pending := lipgloss.NewStyle().Foreground(lipgloss.Color("#7f7d78")).MarginRight(2).Render(fmt.Sprintf("%d pending", t.pending))
-	uncleared := lipgloss.NewStyle().Foreground(lipgloss.Color("#e05951")).MarginRight(2).Render(fmt.Sprintf("%d uncleared", t.uncleared))
-	cleared := lipgloss.NewStyle().Foreground(lipgloss.Color("#22ba46")).MarginRight(2).Render(fmt.Sprintf("%d cleared", t.cleared))
+	pending := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#7f7d78")).
+		MarginRight(2).
+		Render(fmt.Sprintf("%d pending", t.pending))
+
+	uncleared := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#e05951")).
+		MarginRight(2).
+		Render(fmt.Sprintf("%d uncleared", t.uncleared))
+
+	cleared := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#22ba46")).
+		MarginRight(2).
+		Render(fmt.Sprintf("%d cleared", t.cleared))
 
 	transactionStatus := lipgloss.JoinHorizontal(lipgloss.Left, pending, uncleared, cleared)
 	return lipgloss.NewStyle().

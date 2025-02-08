@@ -24,49 +24,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-var (
-	// styles
-	// docStyle is the style for the document
-	docStyle = lipgloss.NewStyle().Margin(1, 2)
-	// titleStyle is the style for the main title
-	titleStyle = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#000000", Dark: "#ffd644"}).Bold(true)
-
-	uncategorized *lm.Category = &lm.Category{ID: 0, Name: "Uncategorized", Description: "Transactions without a category"}
-	keys                       = keyMap{
-		transactions: key.NewBinding(
-			key.WithKeys("t"),
-			key.WithHelp("t", "transactions"),
-		),
-		overview: key.NewBinding(
-			key.WithKeys("o"),
-			key.WithHelp("o", "overview"),
-		),
-		recurring: key.NewBinding(
-			key.WithKeys("r"),
-			key.WithHelp("r", "recurring expenses"),
-		),
-		nextPeriod: key.NewBinding(
-			key.WithKeys("!"),
-			key.WithHelp("shift+1", "next month"),
-		),
-		previousPeriod: key.NewBinding(
-			key.WithKeys("@"),
-			key.WithHelp("shift+2", "previous month"),
-		),
-		switchPeriod: key.NewBinding(
-			key.WithKeys("s"),
-			key.WithHelp("s", "switch range"),
-		),
-		fullHelp: key.NewBinding(
-			key.WithKeys("?"),
-			key.WithHelp("?", "help"),
-		),
-		quit: key.NewBinding(
-			key.WithKeys("q", "ctrl+c"),
-			key.WithHelp("q", "quit"),
-		),
-	}
-)
+var ()
 
 type sessionState int
 
@@ -185,6 +143,12 @@ type model struct {
 	lmc *lm.Client
 
 	loadingState loadingState
+	styles       styles
+}
+
+type styles struct {
+	docStyle   lipgloss.Style
+	titleStyle lipgloss.Style
 }
 
 func (m model) Init() tea.Cmd {
@@ -348,88 +312,9 @@ func (m model) updateTransactionStatus(t *lm.Transaction) tea.Cmd {
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// always check for quit key first
 	if msg, ok := msg.(tea.KeyMsg); ok {
-		k := msg.String()
-		log.Debug("key pressed", "key", k)
-
-		if k == "q" || k == "ctrl+c" {
-			return m, tea.Quit
-		}
-
-		if k == "esc" {
-			m.previousSessionState = m.sessionState
-			m.sessionState = overviewState
-			return m, nil
-		}
-
-		if k == "!" {
-			if m.periodType == monthlyPeriodType {
-				m.currentPeriod = m.currentPeriod.AddDate(0, 1, 0)
-			}
-
-			if m.periodType == annualPeriodType {
-				m.currentPeriod = m.currentPeriod.AddDate(1, 0, 0)
-			}
-
-			m.previousSessionState = m.sessionState
-			m.loadingState.unset("transactions")
-			m.sessionState = loading
-			return m, m.getTransactions
-		}
-
-		if k == "@" {
-			if m.periodType == monthlyPeriodType {
-				m.currentPeriod = m.currentPeriod.AddDate(0, -1, 0)
-			}
-
-			if m.periodType == annualPeriodType {
-				m.currentPeriod = m.currentPeriod.AddDate(-1, 0, 0)
-			}
-
-			m.previousSessionState = m.sessionState
-			m.loadingState.unset("transactions")
-			m.sessionState = loading
-			return m, m.getTransactions
-		}
-
-		if k == "s" {
-			if m.periodType == monthlyPeriodType {
-				m.periodType = annualPeriodType
-			} else {
-				m.periodType = monthlyPeriodType
-			}
-
-			m.previousSessionState = m.sessionState
-			m.loadingState.unset("transactions")
-			m.sessionState = loading
-			return m, m.getTransactions
-		}
-
-		if m.sessionState == loading {
-			return m, nil
-		}
-
-		if k == "t" && m.sessionState != transactions {
-			m.previousSessionState = m.sessionState
-			m.sessionState = transactions
-			return m, nil
-		}
-
-		if k == "r" && m.sessionState != recurringExpenses {
-			m.previousSessionState = m.sessionState
-			m.recurringExpenses.SetFocus(true)
-			m.sessionState = recurringExpenses
-			return m, nil
-		}
-
-		if k == "o" && m.sessionState != overviewState {
-			m.previousSessionState = m.sessionState
-			m.sessionState = overviewState
-			return m, nil
-		}
-
-		if k == "?" && m.sessionState != transactions {
-			m.help.ShowAll = !m.help.ShowAll
-			return m, nil
+		if model, cmd := handleKeyPress(msg, &m); cmd != nil {
+			log.Debug("key press handled, cmd returned")
+			return model, cmd
 		}
 	}
 
@@ -460,7 +345,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case getTagsMsg:
 		return m.handleGetTags(msg)
-
 	}
 
 	var cmd tea.Cmd
@@ -478,9 +362,120 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case recurringExpenses:
 		m.recurringExpenses, cmd = m.recurringExpenses.Update(msg)
 		return m, cmd
+	case loading:
+		m.loadingSpinner, cmd = m.loadingSpinner.Update(msg)
+		return m, cmd
 	}
 
 	return m, nil
+}
+
+func handleKeyPress(msg tea.KeyMsg, m *model) (tea.Model, tea.Cmd) {
+	k := msg.String()
+	log.Debug("key pressed", "key", k)
+
+	if k == "q" || k == "ctrl+c" {
+		return m, tea.Quit
+	}
+
+	if k == "esc" {
+		return resetToOverviewState(m)
+	}
+
+	if k == "!" {
+		return advancePeriod(m)
+	}
+
+	if k == "@" {
+		return retrievePreviousPeriod(m)
+	}
+
+	if k == "s" {
+		return switchPeriodType(m)
+	}
+
+	// should this be deleted?
+	if m.sessionState == loading {
+		return m, nil
+	}
+
+	if k == "t" && m.sessionState != transactions {
+		m.previousSessionState = m.sessionState
+		m.sessionState = transactions
+		return m, nil
+	}
+
+	if k == "r" && m.sessionState != recurringExpenses {
+		m.previousSessionState = m.sessionState
+		m.recurringExpenses.SetFocus(true)
+		m.sessionState = recurringExpenses
+		return m, nil
+	}
+
+	if k == "o" && m.sessionState != overviewState {
+		m.previousSessionState = m.sessionState
+		m.sessionState = overviewState
+		return m, nil
+	}
+
+	if k == "?" && m.sessionState != transactions {
+		m.help.ShowAll = !m.help.ShowAll
+		return m, nil
+	}
+
+	return m, nil
+}
+
+// resetToOverviewState resets the session state to the overview state.
+func resetToOverviewState(m *model) (tea.Model, tea.Cmd) {
+	m.previousSessionState = m.sessionState
+	m.sessionState = overviewState
+	return m, nil
+}
+
+// advancePeriod advances the current period by one month or year depending on the period type.
+func advancePeriod(m *model) (tea.Model, tea.Cmd) {
+	if m.periodType == monthlyPeriodType {
+		m.currentPeriod = m.currentPeriod.AddDate(0, 1, 0)
+	}
+
+	if m.periodType == annualPeriodType {
+		m.currentPeriod = m.currentPeriod.AddDate(1, 0, 0)
+	}
+
+	m.previousSessionState = m.sessionState
+	m.loadingState.unset("transactions")
+	m.sessionState = loading
+	return m, m.getTransactions
+}
+
+// retrievePreviousPeriod retrieves the previous period by one month or year depending on the period type.
+func retrievePreviousPeriod(m *model) (tea.Model, tea.Cmd) {
+	if m.periodType == monthlyPeriodType {
+		m.currentPeriod = m.currentPeriod.AddDate(0, -1, 0)
+	}
+
+	if m.periodType == annualPeriodType {
+		m.currentPeriod = m.currentPeriod.AddDate(-1, 0, 0)
+	}
+
+	m.previousSessionState = m.sessionState
+	m.loadingState.unset("transactions")
+	m.sessionState = loading
+	return m, m.getTransactions
+}
+
+func switchPeriodType(m *model) (tea.Model, tea.Cmd) {
+	if m.periodType == monthlyPeriodType {
+		m.periodType = annualPeriodType
+	} else {
+		m.periodType = monthlyPeriodType
+	}
+
+	m.previousSessionState = m.sessionState
+	m.loadingState.unset("transactions")
+	m.sessionState = loading
+	return m, m.getTransactions
 }
 
 func (m model) handleGetTags(msg getTagsMsg) (tea.Model, tea.Cmd) {
@@ -495,13 +490,14 @@ func (m model) handleGetTags(msg getTagsMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) handleWindowSize(msg tea.WindowSizeMsg) (tea.Model, tea.Cmd) {
-	h, v := docStyle.GetFrameSize()
+	h, v := m.styles.docStyle.GetFrameSize()
 
-	m.overview.SetSize(msg.Width-h, msg.Height-v-5)
+	var takenHeight = 5
+	m.overview.SetSize(msg.Width-h, msg.Height-v-takenHeight)
 	m.overview.Viewport.Width = msg.Width
-	m.overview.Viewport.Height = msg.Height - 5
+	m.overview.Viewport.Height = msg.Height - takenHeight
 
-	m.transactions.SetSize(msg.Width-h, msg.Height-v-5)
+	m.transactions.SetSize(msg.Width-h, msg.Height-v-takenHeight)
 	m.recurringExpenses.SetSize(msg.Width-h, msg.Height-v-3)
 
 	m.help.Width = msg.Width
@@ -566,7 +562,11 @@ func (m model) handleGetAccounts(msg getAccountsMsg) (tea.Model, tea.Cmd) {
 func (m model) handleGetCategories(msg getCategoriesMsg) (tea.Model, tea.Cmd) {
 	m.categories = make(map[int64]*lm.Category, len(msg.categories)+1)
 	// set the uncategorized category which does not come from the API
-	m.categories[uncategorized.ID] = uncategorized
+	m.categories[0] = &lm.Category{
+		ID:          0,
+		Name:        "Uncategorized",
+		Description: "Transactions without a category",
+	}
 
 	for _, c := range msg.categories {
 		m.categories[c.ID] = c
@@ -614,7 +614,7 @@ func (m model) View() string {
 	b.WriteString("\n\n")
 	b.WriteString(m.help.View(m.keys))
 
-	return docStyle.Render(b.String())
+	return m.styles.docStyle.Render(b.String())
 }
 
 func (m model) renderTitle() string {
@@ -635,10 +635,17 @@ func (m model) renderTitle() string {
 	}
 
 	if m.period.String() == "" {
-		b.WriteString(titleStyle.Render(fmt.Sprintf("lunchtui | %s", currentPage)))
-	} else {
-		b.WriteString(titleStyle.Render(fmt.Sprintf("lunchtui | %s | %s | %s", currentPage, m.period.String(), m.periodType)))
+		b.WriteString(m.styles.titleStyle.Render(fmt.Sprintf("lunchtui | %s", currentPage)))
+		return b.String()
 	}
+
+	b.WriteString(m.styles.titleStyle.Render(
+		fmt.Sprintf("lunchtui | %s | %s | %s",
+			currentPage,
+			m.period.String(),
+			m.periodType,
+		),
+	))
 
 	return b.String()
 }
@@ -648,15 +655,15 @@ type Period struct {
 	end   time.Time
 }
 
-func (p Period) String() string {
+func (p *Period) String() string {
 	return fmt.Sprintf("%s - %s", p.start.Format("2006-01-02"), p.end.Format("2006-01-02"))
 }
 
-func (p Period) startDate() string {
+func (p *Period) startDate() string {
 	return p.start.Format("2006-01-02")
 }
 
-func (p Period) endDate() string {
+func (p *Period) endDate() string {
 	return p.end.Format("2006-01-02")
 }
 
@@ -713,22 +720,11 @@ func main() {
 				return err
 			}
 
-			helpModel := help.New()
-			helpModel.ShortSeparator = " + "
-			helpModel.Styles = help.Styles{
-				Ellipsis:       lipgloss.NewStyle().Foreground(lipgloss.Color("#888888")),
-				ShortKey:       lipgloss.NewStyle().Foreground(lipgloss.Color("#ffd644")).Bold(true),
-				ShortDesc:      lipgloss.NewStyle().Foreground(lipgloss.Color("#ffffff")),
-				ShortSeparator: lipgloss.NewStyle().Foreground(lipgloss.Color("#888888")),
-				FullKey:        lipgloss.NewStyle().Foreground(lipgloss.Color("#ffd644")).Bold(true),
-				FullDesc:       lipgloss.NewStyle().Foreground(lipgloss.Color("#ffffff")),
-				FullSeparator:  lipgloss.NewStyle().Foreground(lipgloss.Color("#888888")),
-			}
-
 			tlKeyMap := newTransactionListKeyMap()
 			m := model{
-				keys:                 keys,
-				help:                 helpModel,
+				keys:                 initializeKeyMap(),
+				styles:               createStyles(),
+				help:                 createHelpModel(),
 				sessionState:         loading,
 				previousSessionState: overviewState,
 				lmc:                  lmc,
@@ -752,19 +748,10 @@ func main() {
 			}
 
 			delegate := m.newItemDelegate(newDeleteKeyMap())
-
-			transactionList := list.New([]list.Item{}, delegate, 0, 0)
-			transactionList.SetShowTitle(false)
-			transactionList.StatusMessageLifetime = 3 * time.Second
-			transactionList.AdditionalFullHelpKeys = func() []key.Binding {
-				return []key.Binding{
-					tlKeyMap.categorizeTransaction,
-				}
-			}
-			m.transactions = transactionList
+			m.transactions = createTransactionList(delegate, tlKeyMap)
 
 			p := tea.NewProgram(m, tea.WithAltScreen())
-			if _, err := p.Run(); err != nil {
+			if _, err = p.Run(); err != nil {
 				return err
 			}
 
@@ -773,9 +760,82 @@ func main() {
 	}
 
 	if err := app.Run(os.Args); err != nil {
-		fmt.Printf("lunchtui ran into an error: %v", err)
+		log.Error("lunchtui ran into an error", "error", err)
 		os.Exit(1)
 	}
+}
+
+func createTransactionList(delegate list.DefaultDelegate, tlKeyMap *transactionListKeyMap) list.Model {
+	transactionList := list.New([]list.Item{}, delegate, 0, 0)
+	transactionList.SetShowTitle(false)
+	transactionList.StatusMessageLifetime = 3 * time.Second
+	transactionList.AdditionalFullHelpKeys = func() []key.Binding {
+		return []key.Binding{
+			tlKeyMap.categorizeTransaction,
+		}
+	}
+	return transactionList
+}
+
+func createHelpModel() help.Model {
+	helpModel := help.New()
+	helpModel.ShortSeparator = " + "
+	helpModel.Styles = help.Styles{
+		Ellipsis:       lipgloss.NewStyle().Foreground(lipgloss.Color("#888888")),
+		ShortKey:       lipgloss.NewStyle().Foreground(lipgloss.Color("#ffd644")).Bold(true),
+		ShortDesc:      lipgloss.NewStyle().Foreground(lipgloss.Color("#ffffff")),
+		ShortSeparator: lipgloss.NewStyle().Foreground(lipgloss.Color("#888888")),
+		FullKey:        lipgloss.NewStyle().Foreground(lipgloss.Color("#ffd644")).Bold(true),
+		FullDesc:       lipgloss.NewStyle().Foreground(lipgloss.Color("#ffffff")),
+		FullSeparator:  lipgloss.NewStyle().Foreground(lipgloss.Color("#888888")),
+	}
+	return helpModel
+}
+
+func initializeKeyMap() keyMap {
+	keys := keyMap{
+		transactions: key.NewBinding(
+			key.WithKeys("t"),
+			key.WithHelp("t", "transactions"),
+		),
+		overview: key.NewBinding(
+			key.WithKeys("o"),
+			key.WithHelp("o", "overview"),
+		),
+		recurring: key.NewBinding(
+			key.WithKeys("r"),
+			key.WithHelp("r", "recurring expenses"),
+		),
+		nextPeriod: key.NewBinding(
+			key.WithKeys("!"),
+			key.WithHelp("shift+1", "next month"),
+		),
+		previousPeriod: key.NewBinding(
+			key.WithKeys("@"),
+			key.WithHelp("shift+2", "previous month"),
+		),
+		switchPeriod: key.NewBinding(
+			key.WithKeys("s"),
+			key.WithHelp("s", "switch range"),
+		),
+		fullHelp: key.NewBinding(
+			key.WithKeys("?"),
+			key.WithHelp("?", "help"),
+		),
+		quit: key.NewBinding(
+			key.WithKeys("q", "ctrl+c"),
+			key.WithHelp("q", "quit"),
+		),
+	}
+	return keys
+}
+
+func createStyles() styles {
+	modelStyles := styles{
+		docStyle:   lipgloss.NewStyle().Margin(1, 2),
+		titleStyle: lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#000000", Dark: "#ffd644"}).Bold(true),
+	}
+	return modelStyles
 }
 
 func (m model) checkIfLoading() sessionState {
