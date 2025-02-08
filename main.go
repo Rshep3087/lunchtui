@@ -343,11 +343,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		if k == "!" {
 			m.currentPeriod = m.currentPeriod.AddDate(0, 1, 0)
+			m.loadingState.unset("transactions")
+			m.sessionState = loading
 			return m, m.getTransactions
 		}
 
 		if k == "@" {
 			m.currentPeriod = m.currentPeriod.AddDate(0, -1, 0)
+			m.loadingState.unset("transactions")
+			m.sessionState = loading
 			return m, m.getTransactions
 		}
 
@@ -357,6 +361,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				m.periodType = monthlyPeriodType
 			}
+			m.loadingState.unset("transactions")
+			m.sessionState = loading
 			return m, m.getTransactions
 		}
 
@@ -562,7 +568,6 @@ func (m model) View() string {
 		b.WriteString(m.recurringExpenses.View())
 	case loading:
 		b.WriteString(fmt.Sprintf("%s Loading data...", m.loadingSpinner.View()))
-		return docStyle.Render(b.String())
 	}
 
 	b.WriteString("\n\n")

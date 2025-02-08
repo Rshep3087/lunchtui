@@ -17,6 +17,11 @@ func (l loadingState) set(key string) {
 	l[key] = true
 }
 
+// unset unsets the key in the loading state
+func (l loadingState) unset(key string) {
+	l[key] = false
+}
+
 // allLoaded returns true if all keys are loaded
 func (l loadingState) allLoaded() (bool, string) {
 	for k, v := range l {
