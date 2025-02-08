@@ -355,6 +355,7 @@ func (m *Model) updateSummary() {
 }
 
 func (m *Model) updateAccountTree() {
+	log.Debug("updating account tree")
 	m.accountTree = tree.New()
 	m.accountTree.Root(m.Styles.TreeRootStyle.Render("Accounts"))
 
