@@ -95,7 +95,7 @@ func (m *Model) calculateNetWorth() *money.Money {
 	for _, asset := range m.assets {
 		amount := money.NewFromFloat(asset.ToBase, m.currency)
 		if asset.TypeName == "credit" && asset.SubtypeName == "credit card" {
-			amount = amount.Negative()
+			amount = amount.Absolute()
 		}
 
 		nwa, err := netWorth.Add(amount)
@@ -110,7 +110,8 @@ func (m *Model) calculateNetWorth() *money.Money {
 		amount := money.NewFromFloat(account.ToBase, m.currency)
 
 		if account.Type == "credit" && account.Subtype == "credit card" {
-			amount = amount.Negative()
+			// if the account is a credit card, we want to show the amount as a positive number
+			amount = amount.Absolute()
 		}
 
 		nwa, err := netWorth.Add(amount)
