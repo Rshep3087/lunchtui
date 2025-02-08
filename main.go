@@ -336,6 +336,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 
+		if k == "esc" {
+			m.sessionState = overviewState
+			return m, nil
+		}
+
 		if k == "!" {
 			m.currentPeriod = m.currentPeriod.AddDate(0, 1, 0)
 			return m, m.getTransactions
