@@ -90,38 +90,47 @@ func (m *Model) calculateNetWorth() *money.Money {
 	}
 
 	netWorth := money.New(0, m.currency)
-
-	for _, asset := range m.assets {
-		amount := money.NewFromFloat(asset.ToBase, m.currency)
-		if asset.TypeName == "credit" && asset.SubtypeName == "credit card" {
-			amount = amount.Absolute()
-		}
-
-		nwa, err := netWorth.Add(amount)
-		if err != nil {
-			continue
-		}
-
-		netWorth = nwa
-	}
-
-	for _, account := range m.plaidAccounts {
-		amount := money.NewFromFloat(account.ToBase, m.currency)
-
-		if account.Type == "credit" && account.Subtype == "credit card" {
-			// if the account is a credit card, we want to show the amount as a positive number
-			amount = amount.Absolute()
-		}
-
-		nwa, err := netWorth.Add(amount)
-		if err != nil {
-			continue
-		}
-
-		netWorth = nwa
-	}
+	netWorth = m.calculateAssetsNetWorth(netWorth, m.assets)
+	netWorth = m.calculateAccountsNetWorth(netWorth, m.plaidAccounts)
 
 	return netWorth
+}
+
+// calculateAssetsNetWorth calculates the net worth for assets.
+func (m *Model) calculateAssetsNetWorth(netWorth *money.Money, assets map[int64]*lm.Asset) *money.Money {
+	for _, asset := range assets {
+		amount := money.NewFromFloat(asset.ToBase, m.currency)
+		netWorth = m.updateNetWorth(netWorth, amount, asset.TypeName, asset.SubtypeName)
+	}
+	return netWorth
+}
+
+// calculateAccountsNetWorth calculates the net worth for plaid accounts.
+func (m *Model) calculateAccountsNetWorth(netWorth *money.Money, accounts map[int64]*lm.PlaidAccount) *money.Money {
+	for _, account := range accounts {
+		amount := money.NewFromFloat(account.ToBase, m.currency)
+		netWorth = m.updateNetWorth(netWorth, amount, account.Type, account.Subtype)
+	}
+	return netWorth
+}
+
+// updateNetWorth updates net worth based on the type and subtype of the asset or account.
+func (m *Model) updateNetWorth(netWorth, amount *money.Money, assetType, subtype string) *money.Money {
+	var nwa *money.Money
+	var err error
+
+	if assetType == "credit" && subtype == "credit card" {
+		nwa, err = netWorth.Subtract(amount)
+	} else {
+		nwa, err = netWorth.Add(amount)
+	}
+
+	if err != nil {
+		log.Debug("updating net worth", "error", err)
+		return netWorth
+	}
+
+	return nwa
 }
 
 type Summary struct {
