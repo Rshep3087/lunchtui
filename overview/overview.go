@@ -355,6 +355,9 @@ func (m *Model) updateSummary() {
 }
 
 func (m *Model) updateAccountTree() {
+	m.accountTree = tree.New()
+	m.accountTree.Root(m.Styles.TreeRootStyle.Render("Accounts"))
+
 	// organize the assets by the type into a map
 	assets := make(map[string][]lm.Asset)
 	for _, a := range m.assets {
