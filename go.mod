@@ -4,6 +4,7 @@ go 1.23.4
 
 require (
 	github.com/Rhymond/go-money v1.0.14
+	github.com/carlmjohnson/be v0.24.1
 	github.com/charmbracelet/bubbles v0.20.0
 	github.com/charmbracelet/bubbletea v1.3.0
 	github.com/charmbracelet/huh v0.6.0
