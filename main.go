@@ -124,8 +124,10 @@ type model struct {
 	debitsAsNegative bool
 
 	categoryForm *huh.Form
-	// categories is a map of category ID to category
-	categories map[int64]*lm.Category
+	// idToCategory is a map of category ID to category
+	idToCategory map[int64]*lm.Category
+	// categories is a list of categories
+	categories []*lm.Category
 	// plaidAccounts are individual bank accounts that you have linked to Lunch Money via Plaid.
 	// You may link one bank but one bank might contain 4 accounts.
 	// Each of these accounts is a Plaid Account.
@@ -379,17 +381,21 @@ func handleKeyPress(msg tea.KeyMsg, m *model) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	}
 
+	if k == "esc" {
+		return handleEscape(m)
+	}
+
 	// check if any of the models that support filtering.
 	if m.transactions.FilterState() == list.Filtering {
 		return m, nil
 	}
 
-	if k == "q" {
-		return m, tea.Quit
+	if m.categoryForm != nil && m.categoryForm.State == huh.StateNormal {
+		return m, nil
 	}
 
-	if k == "esc" {
-		return resetToOverviewState(m)
+	if k == "q" {
+		return m, tea.Quit
 	}
 
 	if k == "!" {
@@ -436,8 +442,15 @@ func handleKeyPress(msg tea.KeyMsg, m *model) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// resetToOverviewState resets the session state to the overview state.
-func resetToOverviewState(m *model) (tea.Model, tea.Cmd) {
+// handleEscape resets the session state to the overview state.
+func handleEscape(m *model) (tea.Model, tea.Cmd) {
+	if m.sessionState == categorizeTransaction {
+		m.previousSessionState = overviewState
+		m.sessionState = transactions
+		m.categoryForm.State = huh.StateAborted
+		return m, m.getTransactions
+	}
+
 	m.previousSessionState = m.sessionState
 	m.sessionState = overviewState
 	return m, nil
@@ -532,7 +545,7 @@ func (m model) handleGetTransactions(msg getsTransactionsMsg) (tea.Model, tea.Cm
 	for i, t := range msg.ts {
 		items[i] = transactionItem{
 			t:            t,
-			category:     m.categories[t.CategoryID],
+			category:     m.idToCategory[t.CategoryID],
 			plaidAccount: m.plaidAccounts[t.PlaidAccountID],
 			asset:        m.assets[t.AssetID],
 		}
@@ -570,25 +583,24 @@ func (m model) handleGetAccounts(msg getAccountsMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) handleGetCategories(msg getCategoriesMsg) (tea.Model, tea.Cmd) {
-	m.categories = make(map[int64]*lm.Category, len(msg.categories)+1)
+	m.idToCategory = make(map[int64]*lm.Category, len(msg.categories)+1)
 	// set the uncategorized category which does not come from the API
-	m.categories[0] = &lm.Category{
+	m.idToCategory[0] = &lm.Category{
 		ID:          0,
 		Name:        "Uncategorized",
 		Description: "Transactions without a category",
 	}
 
 	for _, c := range msg.categories {
-		m.categories[c.ID] = c
+		m.idToCategory[c.ID] = c
 	}
 
-	m.categoryForm = newCategorizeTransactionForm(msg.categories)
-	m.overview.SetCategories(m.categories)
-
+	m.categories = msg.categories
+	m.overview.SetCategories(m.idToCategory)
 	m.loadingState.set("categories")
 	m.sessionState = m.checkIfLoading()
 
-	return m, tea.Batch(m.getTransactions, m.categoryForm.Init(), tea.WindowSize())
+	return m, tea.Batch(m.getTransactions, tea.WindowSize())
 }
 
 func (m model) handleSpinnerTick(msg spinner.TickMsg) (tea.Model, tea.Cmd) {

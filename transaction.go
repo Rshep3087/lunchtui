@@ -93,7 +93,7 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 		// must set the new category on the transaction item
 		// in case that is what changed
 		// in future, we could check the fieldUpdated to see what changed
-		t.category = m.categories[t.t.CategoryID]
+		t.category = m.idToCategory[t.t.CategoryID]
 
 		setItemCmd := m.transactions.SetItem(m.transactions.Index(), t)
 		statusCmd := m.transactions.NewStatusMessage(
@@ -117,7 +117,7 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 		}
 
 		if key.Matches(msg, m.transactionsListKeys.categorizeTransaction) {
-			return categorizeTrans(m)
+			return categorizeTrans(&m)
 		}
 	}
 
@@ -127,7 +127,7 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func categorizeTrans(m model) (tea.Model, tea.Cmd) {
+func categorizeTrans(m *model) (tea.Model, tea.Cmd) {
 	// we know which transaction we're categorizing because we're
 	// updating the category for the transaction at the current index
 	t, ok := m.transactions.Items()[m.transactions.Index()].(transactionItem)
@@ -135,12 +135,13 @@ func categorizeTrans(m model) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
+	m.categoryForm = newCategorizeTransactionForm(m.categories)
 	m.categoryForm.SubmitCmd = func() tea.Msg {
-		return submitCategoryForm(m, t)
+		return submitCategoryForm(*m, t)
 	}
 
 	m.sessionState = categorizeTransaction
-	return m, tea.WindowSize()
+	return m, tea.Batch(m.categoryForm.Init(), tea.WindowSize())
 }
 
 func submitCategoryForm(m model, t transactionItem) tea.Msg {

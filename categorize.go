@@ -1,8 +1,6 @@
 package main
 
 import (
-	"maps"
-	"slices"
 	"sort"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -10,7 +8,7 @@ import (
 	lm "github.com/icco/lunchmoney"
 )
 
-func newCategorizeTransactionForm(categories []*lm.Category) *huh.Form { // Sort categories by Name
+func newCategorizeTransactionForm(categories []*lm.Category) *huh.Form {
 	sort.Slice(categories, func(i, j int) bool {
 		return categories[i].Name < categories[j].Name
 	})
@@ -30,21 +28,16 @@ func newCategorizeTransactionForm(categories []*lm.Category) *huh.Form { // Sort
 }
 
 func updateCategorizeTransaction(msg tea.Msg, m *model) (tea.Model, tea.Cmd) {
-	var cmds []tea.Cmd
 	form, cmd := m.categoryForm.Update(msg)
 	if f, ok := form.(*huh.Form); ok {
 		m.categoryForm = f
 	}
 
-	cmds = append(cmds, cmd)
-
 	if m.categoryForm.State == huh.StateCompleted {
 		m.sessionState = transactions
-		m.categoryForm = newCategorizeTransactionForm(slices.Collect(maps.Values(m.categories)))
-		cmds = append(cmds, m.categoryForm.Init(), tea.WindowSize())
 	}
 
-	return m, tea.Batch(cmds...)
+	return m, cmd
 }
 func categorizeTransactionView(m model) string {
 	return m.categoryForm.View()
