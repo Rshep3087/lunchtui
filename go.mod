@@ -20,7 +20,7 @@ require (
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/catppuccin/go v0.3.0 // indirect
 	github.com/charmbracelet/x/ansi v0.8.0 // indirect
-	github.com/charmbracelet/x/exp/strings v0.0.0-20250206210616-ac5dd4e7ff44 // indirect
+	github.com/charmbracelet/x/exp/strings v0.0.0-20250207233001-40534c389c2d // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.6 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect

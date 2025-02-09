@@ -374,7 +374,17 @@ func handleKeyPress(msg tea.KeyMsg, m *model) (tea.Model, tea.Cmd) {
 	k := msg.String()
 	log.Debug("key pressed", "key", k)
 
-	if k == "q" || k == "ctrl+c" {
+	// always quit on ctrl+c
+	if k == "ctrl+c" {
+		return m, tea.Quit
+	}
+
+	// check if any of the models that support filtering.
+	if m.transactions.FilterState() == list.Filtering {
+		return m, nil
+	}
+
+	if k == "q" {
 		return m, tea.Quit
 	}
 
