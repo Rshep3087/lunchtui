@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"time"
 
@@ -15,7 +16,7 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/log"
 	lm "github.com/icco/lunchmoney"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 )
 
 type model struct {
@@ -148,14 +149,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func main() {
-	app := &cli.App{
-		Name:  "lunchtui",
-		Usage: "A terminal UI for Lunch Money",
+	app := &cli.Command{
+		Name:                  "lunchtui",
+		Usage:                 "A terminal UI for Lunch Money",
+		EnableShellCompletion: true,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "token",
 				Usage:    "The API token for Lunch Money",
-				EnvVars:  []string{"LUNCHMONEY_API_TOKEN"},
+				Sources:  cli.EnvVars("LUNCHMONEY_API_TOKEN"),
 				Required: true,
 			},
 			// debits-as-negative flag
@@ -169,7 +171,7 @@ func main() {
 				Value: false,
 			},
 		},
-		Action: func(c *cli.Context) error {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			if c.Bool("debug") {
 				f, err := tea.LogToFileWith("lunchtui.log", "lunchtui", log.Default())
 				if err != nil {
@@ -224,7 +226,7 @@ func main() {
 		},
 	}
 
-	if err := app.Run(os.Args); err != nil {
+	if err := app.Run(context.TODO(), os.Args); err != nil {
 		log.Error("lunchtui ran into an error", "error", err)
 		os.Exit(1)
 	}
