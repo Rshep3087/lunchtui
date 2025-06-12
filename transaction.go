@@ -326,17 +326,7 @@ func (t transactionsStats) View() string {
 }
 
 func updateDetailedTransaction(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
-	// Handle key messages for detailed transaction view
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "esc":
-			m.currentTransaction = nil
-			m.sessionState = transactions
-			return m, nil
-		}
-	}
-
+	// No specific key handling needed - escape is handled globally
 	return m, nil
 }
 
