@@ -320,3 +320,53 @@ func TestHandleGetTransactions(t *testing.T) {
 		})
 	}
 }
+
+func TestFilterUncategorizedTransactions(t *testing.T) {
+	// Create test transactions with different CategoryIDs
+	transactions := []list.Item{
+		transactionItem{
+			t:        &lm.Transaction{ID: 1, CategoryID: 0, Payee: "Uncategorized 1"},
+			category: &lm.Category{ID: 0, Name: "Uncategorized"},
+		},
+		transactionItem{
+			t:        &lm.Transaction{ID: 2, CategoryID: 1, Payee: "Categorized 1"},
+			category: &lm.Category{ID: 1, Name: "Food"},
+		},
+		transactionItem{
+			t:        &lm.Transaction{ID: 3, CategoryID: 0, Payee: "Uncategorized 2"},
+			category: &lm.Category{ID: 0, Name: "Uncategorized"},
+		},
+		transactionItem{
+			t:        &lm.Transaction{ID: 4, CategoryID: 2, Payee: "Categorized 2"},
+			category: &lm.Category{ID: 2, Name: "Transport"},
+		},
+	}
+
+	// Create a model with transactions
+	m := model{}
+	m.transactions = list.New(transactions, list.NewDefaultDelegate(), 80, 20)
+	m.transactions.SetItems(transactions)
+
+	// Apply the uncategorized filter
+	result, _ := filterUncategorizedTransactions(m)
+
+	// Check that only uncategorized transactions remain
+	resultModel := result.(model)
+	filteredItems := resultModel.transactions.Items()
+	expectedCount := 2
+
+	if len(filteredItems) != expectedCount {
+		t.Errorf("Expected %d uncategorized transactions, got %d", expectedCount, len(filteredItems))
+	}
+
+	// Verify that all remaining transactions have CategoryID of 0
+	for i, item := range filteredItems {
+		if trans, ok := item.(transactionItem); ok {
+			if trans.t.CategoryID != 0 {
+				t.Errorf("Transaction %d should have CategoryID 0, got %d", i, trans.t.CategoryID)
+			}
+		} else {
+			t.Errorf("Item %d is not a transactionItem", i)
+		}
+	}
+}

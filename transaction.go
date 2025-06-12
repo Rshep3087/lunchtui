@@ -63,6 +63,7 @@ func (t transactionItem) FilterValue() string {
 type transactionListKeyMap struct {
 	categorizeTransaction key.Binding
 	filterUncleared       key.Binding
+	filterUncategorized   key.Binding
 	refreshTransactions   key.Binding
 }
 
@@ -75,6 +76,10 @@ func newTransactionListKeyMap() *transactionListKeyMap {
 		filterUncleared: key.NewBinding(
 			key.WithKeys("u"),
 			key.WithHelp("u", "filter uncleared transactions"),
+		),
+		filterUncategorized: key.NewBinding(
+			key.WithKeys("n"),
+			key.WithHelp("n", "filter uncategorized transactions"),
 		),
 		refreshTransactions: key.NewBinding(
 			key.WithKeys("f5"),
@@ -119,6 +124,10 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 
 		if key.Matches(msg, m.transactionsListKeys.filterUncleared) {
 			return filterUnclearedTransactions(m)
+		}
+
+		if key.Matches(msg, m.transactionsListKeys.filterUncategorized) {
+			return filterUncategorizedTransactions(m)
 		}
 
 		if key.Matches(msg, m.transactionsListKeys.categorizeTransaction) {
@@ -200,6 +209,19 @@ func filterUnclearedTransactions(m model) (tea.Model, tea.Cmd) {
 		}
 	}
 	m.transactions.SetItems(unclearedItems)
+
+	m.transactionsStats = newTransactionStats(m.transactions.Items())
+	return m, nil
+}
+
+func filterUncategorizedTransactions(m model) (tea.Model, tea.Cmd) {
+	uncategorizedItems := make([]list.Item, 0)
+	for _, item := range m.transactions.Items() {
+		if t, ok := item.(transactionItem); ok && t.t.CategoryID == 0 {
+			uncategorizedItems = append(uncategorizedItems, item)
+		}
+	}
+	m.transactions.SetItems(uncategorizedItems)
 
 	m.transactionsStats = newTransactionStats(m.transactions.Items())
 	return m, nil
