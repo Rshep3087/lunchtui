@@ -28,8 +28,8 @@ func TestBudgetsNavigation(t *testing.T) {
 		t.Errorf("Expected session state to be loading, got %v", result.sessionState)
 	}
 
-	if result.previousSessionState != overviewState {
-		t.Errorf("Expected previous session state to be overviewState, got %v", result.previousSessionState)
+	if result.previousSessionState != budgets {
+		t.Errorf("Expected previous session state to be budgets, got %v", result.previousSessionState)
 	}
 
 	if cmd == nil {

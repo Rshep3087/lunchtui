@@ -155,7 +155,7 @@ func handleKeyPress(msg tea.KeyMsg, m *model) (tea.Model, tea.Cmd) {
 	}
 
 	if k == "b" && m.sessionState != budgets {
-		m.previousSessionState = m.sessionState
+		m.previousSessionState = budgets
 		m.loadingState.unset("budgets")
 		m.sessionState = loading
 		return m, m.getBudgets
