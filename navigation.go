@@ -15,9 +15,17 @@ func advancePeriod(m *model) (tea.Model, tea.Cmd) {
 	}
 
 	m.previousSessionState = m.sessionState
-	m.loadingState.unset("transactions")
 	m.sessionState = loading
-	return m, m.getTransactions
+
+	// Reload data based on current session state
+	switch m.previousSessionState {
+	case budgets:
+		m.loadingState.unset("budgets")
+		return m, m.getBudgets
+	default:
+		m.loadingState.unset("transactions")
+		return m, m.getTransactions
+	}
 }
 
 // retrievePreviousPeriod retrieves the previous period by one month or year depending on the period type.
@@ -31,9 +39,17 @@ func retrievePreviousPeriod(m *model) (tea.Model, tea.Cmd) {
 	}
 
 	m.previousSessionState = m.sessionState
-	m.loadingState.unset("transactions")
 	m.sessionState = loading
-	return m, m.getTransactions
+
+	// Reload data based on current session state
+	switch m.previousSessionState {
+	case budgets:
+		m.loadingState.unset("budgets")
+		return m, m.getBudgets
+	default:
+		m.loadingState.unset("transactions")
+		return m, m.getTransactions
+	}
 }
 
 func switchPeriodType(m *model) (tea.Model, tea.Cmd) {
@@ -44,7 +60,15 @@ func switchPeriodType(m *model) (tea.Model, tea.Cmd) {
 	}
 
 	m.previousSessionState = m.sessionState
-	m.loadingState.unset("transactions")
 	m.sessionState = loading
-	return m, m.getTransactions
+
+	// Reload data based on current session state
+	switch m.previousSessionState {
+	case budgets:
+		m.loadingState.unset("budgets")
+		return m, m.getBudgets
+	default:
+		m.loadingState.unset("transactions")
+		return m, m.getTransactions
+	}
 }
