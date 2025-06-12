@@ -144,6 +144,7 @@ func (m model) handleGetUser(msg getUserMsg) (tea.Model, tea.Cmd) {
 	m.loadingState.set("user")
 	m.sessionState = m.checkIfLoading()
 	m.overview.SetCurrency(m.user.PrimaryCurrency)
+	m.overview.SetUser(m.user)
 	return m, nil
 }
 

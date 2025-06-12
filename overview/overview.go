@@ -31,6 +31,7 @@ type Model struct {
 	spendingBreakdown table.Model
 	currency          string
 	titleCaser        cases.Caser
+	user              *lm.User
 }
 
 type categoryTotal struct {
@@ -188,6 +189,11 @@ func (m *Model) SetCurrency(currency string) {
 	m.UpdateViewport()
 }
 
+func (m *Model) SetUser(user *lm.User) {
+	m.user = user
+	m.UpdateViewport()
+}
+
 func New(opts ...Option) Model {
 	m := Model{
 		Styles:      defaultStyles(),
@@ -274,12 +280,42 @@ func (m *Model) UpdateViewport() {
 	mainContent := lipgloss.JoinHorizontal(lipgloss.Top,
 		accountTreeContent,
 		lipgloss.JoinVertical(lipgloss.Top,
+			m.userInfoView(),
 			m.summaryView(),
 			spendingBreakdown,
 		),
 	)
 
 	m.Viewport.SetContent(mainContent)
+}
+
+func (m *Model) userInfoView() string {
+	if m.user == nil {
+		return lipgloss.JoinVertical(lipgloss.Top,
+			lipgloss.NewStyle().Bold(true).Render("User Info"),
+			m.Styles.SummaryStyle.Render("Loading user information..."),
+		)
+	}
+
+	var b strings.Builder
+
+	if m.user.BudgetName != "" {
+		b.WriteString(fmt.Sprintf("Budget: %s\n", m.user.BudgetName))
+	}
+	if m.user.UserName != "" {
+		b.WriteString(fmt.Sprintf("User: %s\n", m.user.UserName))
+	}
+	if m.user.PrimaryCurrency != "" {
+		b.WriteString(fmt.Sprintf("Currency: %s\n", m.user.PrimaryCurrency))
+	}
+	if m.user.APIKeyLabel != "" {
+		b.WriteString(fmt.Sprintf("API Key: %s", m.user.APIKeyLabel))
+	}
+
+	return lipgloss.JoinVertical(lipgloss.Top,
+		lipgloss.NewStyle().Bold(true).Render("User Info"),
+		m.Styles.SummaryStyle.Render(b.String()),
+	)
 }
 
 func (m *Model) summaryView() string {

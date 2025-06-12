@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -250,6 +251,35 @@ func TestHandleGetUser(t *testing.T) {
 	be.True(t, ok)
 	be.Equal(t, lm.User{PrimaryCurrency: "USD"}, *gotModel.user)
 	be.Zero(t, cmd)
+}
+
+func TestOverviewUserDisplay(t *testing.T) {
+	// Create an overview model
+	overview := overview.New()
+
+	// Create mock user data
+	mockUser := &lm.User{
+		UserName:        "John Doe",
+		UserEmail:       "john@example.com",
+		UserID:          123,
+		AccountID:       456,
+		BudgetName:      "My Budget",
+		PrimaryCurrency: "USD",
+		APIKeyLabel:     "Personal API Key",
+	}
+
+	// Set the user
+	overview.SetUser(mockUser)
+
+	// Get the view content
+	view := overview.View()
+
+	// Check that user information is displayed
+	be.True(t, strings.Contains(view, "User Info"))
+	be.True(t, strings.Contains(view, "Budget: My Budget"))
+	be.True(t, strings.Contains(view, "User: John Doe"))
+	be.True(t, strings.Contains(view, "Currency: USD"))
+	be.True(t, strings.Contains(view, "API Key: Personal API Key"))
 }
 
 func TestHandleGetTransactions(t *testing.T) {
