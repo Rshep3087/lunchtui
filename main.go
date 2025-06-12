@@ -65,6 +65,8 @@ type model struct {
 
 	// recurringExpenses is a model for the recurring expenses widget
 	recurringExpenses recurring.Model
+	// budgets is a bubbletea list model of budgets
+	budgets list.Model
 	// lmc is the Lunch Money client
 	lmc *lm.Client
 
@@ -120,6 +122,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case getTagsMsg:
 		return m.handleGetTags(msg)
+
+	case getBudgetsMsg:
+		return m.handleGetBudgets(msg)
 	}
 
 	var cmd tea.Cmd
@@ -140,6 +145,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case recurringExpenses:
 		m.recurringExpenses, cmd = m.recurringExpenses.Update(msg)
 		return m, cmd
+	case budgets:
+		return updateBudgets(msg, m)
 	case loading:
 		m.loadingSpinner, cmd = m.loadingSpinner.Update(msg)
 		return m, cmd
@@ -211,11 +218,13 @@ func main() {
 					"user",
 					"accounts",
 					"tags",
+					"budgets",
 				),
 			}
 
 			delegate := m.newItemDelegate(newDeleteKeyMap())
 			m.transactions = createTransactionList(delegate, tlKeyMap)
+			m.budgets = createBudgetList(delegate)
 
 			p := tea.NewProgram(m, tea.WithAltScreen())
 			if _, err = p.Run(); err != nil {

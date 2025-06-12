@@ -7,10 +7,35 @@ import (
 
 	"github.com/carlmjohnson/be"
 	"github.com/charmbracelet/bubbles/list"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	lm "github.com/icco/lunchmoney"
 	"github.com/rshep3087/lunchtui/overview"
 )
+
+func TestBudgetsNavigation(t *testing.T) {
+	m := model{
+		sessionState:         overviewState,
+		previousSessionState: overviewState,
+		loadingState:         newLoadingState("budgets"),
+	}
+
+	// Test navigating to budgets
+	resultModel, cmd := handleKeyPress(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'b'}}, &m)
+	result := resultModel.(*model)
+
+	if result.sessionState != loading {
+		t.Errorf("Expected session state to be loading, got %v", result.sessionState)
+	}
+
+	if result.previousSessionState != overviewState {
+		t.Errorf("Expected previous session state to be overviewState, got %v", result.previousSessionState)
+	}
+
+	if cmd == nil {
+		t.Error("Expected command to fetch budgets, got nil")
+	}
+}
 
 func TestHandleEscape(t *testing.T) {
 	tests := []struct {
@@ -46,6 +71,12 @@ func TestHandleEscape(t *testing.T) {
 			initialState:  recurringExpenses,
 			expectedState: overviewState,
 			previousState: recurringExpenses,
+		},
+		{
+			name:          "from budgets state",
+			initialState:  budgets,
+			expectedState: overviewState,
+			previousState: budgets,
 		},
 	}
 

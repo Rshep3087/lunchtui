@@ -16,6 +16,7 @@ const (
 	categorizeTransaction
 	loading
 	recurringExpenses
+	budgets
 )
 
 func (ss sessionState) String() string {
@@ -32,6 +33,8 @@ func (ss sessionState) String() string {
 		return "loading"
 	case recurringExpenses:
 		return "recurring expenses"
+	case budgets:
+		return "budgets"
 	}
 
 	return "unknown"

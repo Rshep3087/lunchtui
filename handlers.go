@@ -43,6 +43,11 @@ type (
 		t            *lm.Transaction
 		fieldUpdated string
 	}
+
+	getBudgetsMsg struct {
+		budgets []*lm.Budget
+		period  Period
+	}
 )
 
 // Message handlers
@@ -55,6 +60,7 @@ func (m model) handleWindowSize(msg tea.WindowSizeMsg) (tea.Model, tea.Cmd) {
 	m.overview.Viewport.Height = msg.Height - takenHeight
 
 	m.transactions.SetSize(msg.Width-h, msg.Height-v-takenHeight)
+	m.budgets.SetSize(msg.Width-h, msg.Height-v-takenHeight)
 	m.recurringExpenses.SetSize(msg.Width-h, msg.Height-v-3)
 
 	m.help.Width = msg.Width
@@ -159,6 +165,24 @@ func (m model) handleGetTags(msg getTagsMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+func (m model) handleGetBudgets(msg getBudgetsMsg) (tea.Model, tea.Cmd) {
+	items := make([]list.Item, len(msg.budgets))
+	for i, b := range msg.budgets {
+		items[i] = budgetItem{
+			b:        b,
+			category: m.idToCategory[int64(b.CategoryID)],
+		}
+	}
+
+	cmd := m.budgets.SetItems(items)
+	m.period = msg.period
+
+	m.loadingState.set("budgets")
+	m.sessionState = m.checkIfLoading()
+
+	return m, cmd
+}
+
 // API call functions
 func (m model) getRecurringExpenses() tea.Msg {
 	ctx := context.Background()
@@ -258,6 +282,25 @@ func (m model) getTags() tea.Msg {
 	}
 
 	return getTagsMsg{tags: tags}
+}
+
+func (m model) getBudgets() tea.Msg {
+	ctx := context.Background()
+
+	m.period.setPeriod(m.currentPeriod, m.periodType)
+
+	sd := m.period.startDate()
+	ed := m.period.endDate()
+
+	budgets, err := m.lmc.GetBudgets(ctx, &lm.BudgetFilters{
+		StartDate: sd,
+		EndDate:   ed,
+	})
+	if err != nil {
+		return nil
+	}
+
+	return getBudgetsMsg{budgets: budgets, period: m.period}
 }
 
 func (m model) updateTransactionStatus(t *lm.Transaction) tea.Cmd {

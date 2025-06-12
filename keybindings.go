@@ -12,6 +12,7 @@ type keyMap struct {
 	transactions   key.Binding
 	overview       key.Binding
 	recurring      key.Binding
+	budgets        key.Binding
 	nextPeriod     key.Binding
 	previousPeriod key.Binding
 	switchPeriod   key.Binding
@@ -23,6 +24,7 @@ func (km keyMap) ShortHelp() []key.Binding {
 	return []key.Binding{
 		km.overview,
 		km.transactions,
+		km.budgets,
 		km.recurring,
 		km.switchPeriod,
 		km.quit,
@@ -35,6 +37,7 @@ func (km keyMap) FullHelp() [][]key.Binding {
 		{
 			km.overview,
 			km.transactions,
+			km.budgets,
 			km.recurring,
 			km.quit,
 			km.fullHelp,
@@ -60,6 +63,10 @@ func initializeKeyMap() keyMap {
 		recurring: key.NewBinding(
 			key.WithKeys("r"),
 			key.WithHelp("r", "recurring expenses"),
+		),
+		budgets: key.NewBinding(
+			key.WithKeys("b"),
+			key.WithHelp("b", "budgets"),
 		),
 		nextPeriod: key.NewBinding(
 			key.WithKeys("!"),
@@ -145,6 +152,13 @@ func handleKeyPress(msg tea.KeyMsg, m *model) (tea.Model, tea.Cmd) {
 		m.previousSessionState = m.sessionState
 		m.sessionState = overviewState
 		return m, nil
+	}
+
+	if k == "b" && m.sessionState != budgets {
+		m.previousSessionState = m.sessionState
+		m.loadingState.unset("budgets")
+		m.sessionState = loading
+		return m, m.getBudgets
 	}
 
 	if k == "?" && m.sessionState != transactions {

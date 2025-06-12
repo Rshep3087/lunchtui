@@ -22,6 +22,8 @@ func (m model) View() string {
 		b.WriteString(categorizeTransactionView(m))
 	case recurringExpenses:
 		b.WriteString(m.recurringExpenses.View())
+	case budgets:
+		b.WriteString(budgetsView(m))
 	case loading:
 		b.WriteString(fmt.Sprintf("%s Loading data...", m.loadingSpinner.View()))
 	}
@@ -47,6 +49,8 @@ func (m model) renderTitle() string {
 		currentPage = "categorize transaction"
 	case recurringExpenses:
 		currentPage = "recurring expenses"
+	case budgets:
+		currentPage = "budgets"
 	case loading:
 		currentPage = "loading"
 	}
