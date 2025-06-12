@@ -34,6 +34,7 @@
 - 💰 **Account Balances** - View all your account balances at a glance
 - 🔄 **Recurring Expenses** - Monitor your subscription and recurring payments
 - 📊 **Transaction Management** - Browse and search through your transactions
+- 📈 **Budget Tracking** - Monitor your spending against budgets with real-time progress
 - 🏷️ **Smart Categorization** - Easily categorize transactions with intuitive interface
 - ✅ **Transaction Status** - Mark transactions as cleared or uncleared
 - 🎨 **Beautiful UI** - Enjoy a clean, modern terminal interface built with Bubble Tea
@@ -71,6 +72,21 @@ export LUNCHMONEY_API_TOKEN="your-api-token-here"
 lunchtui
 ```
 
+### Navigation
+
+Once lunchtui is running, use these keyboard shortcuts to navigate:
+
+| Key | View | Description |
+|-----|------|-------------|
+| `o` | Overview | Account balances and financial summary |
+| `t` | Transactions | Browse and manage your transactions |
+| `b` | Budgets | View budget progress and spending by category |
+| `r` | Recurring | Monitor recurring expenses and subscriptions |
+| `[` / `]` | - | Navigate between previous/next time periods |
+| `s` | - | Switch between time period types (month/year) |
+| `?` | - | Toggle help menu |
+| `q` | - | Quit the application |
+
 ### Command Line Options
 
 | Flag | Description | Default |
@@ -107,6 +123,22 @@ export LUNCHMONEY_API_TOKEN="your-api-token-here"
 ```
 
 ## 📸 Screenshots
+
+### 📈 Budget Tracking
+*Monitor your spending against budgets with detailed progress tracking*
+
+**Key Features:**
+- **Real-time Progress** - See how much you've spent vs. your budget for each category
+- **Multi-currency Support** - View budgets in their original currency
+- **Transaction Count** - Track the number of transactions per budget category
+- **Period Navigation** - Switch between different time periods to view historical budget data
+- **Category Integration** - Budgets are automatically linked to your transaction categories
+
+**Budget View Information:**
+- Budget amount and currency
+- Amount spent to date
+- Number of transactions in the category
+- Easy navigation between time periods
 
 ### 🔄 Recurring Expenses View
 <img width="1312" alt="Recurring expenses management" src="https://github.com/user-attachments/assets/81cba900-d185-41be-88d0-148a05a0f4f0" />
