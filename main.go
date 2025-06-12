@@ -83,6 +83,7 @@ func (m model) Init() tea.Cmd {
 		m.getRecurringExpenses,
 		m.recurringExpenses.Init(),
 		m.getTags,
+		m.getBudgets,
 	)
 }
 
