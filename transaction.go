@@ -63,6 +63,7 @@ func (t transactionItem) FilterValue() string {
 type transactionListKeyMap struct {
 	categorizeTransaction key.Binding
 	filterUncleared       key.Binding
+	refreshTransactions   key.Binding
 }
 
 func newTransactionListKeyMap() *transactionListKeyMap {
@@ -74,6 +75,10 @@ func newTransactionListKeyMap() *transactionListKeyMap {
 		filterUncleared: key.NewBinding(
 			key.WithKeys("u"),
 			key.WithHelp("u", "filter uncleared transactions"),
+		),
+		refreshTransactions: key.NewBinding(
+			key.WithKeys("f5"),
+			key.WithHelp("f5", "refresh transactions"),
 		),
 	}
 }
@@ -118,6 +123,10 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 
 		if key.Matches(msg, m.transactionsListKeys.categorizeTransaction) {
 			return categorizeTrans(&m)
+		}
+
+		if key.Matches(msg, m.transactionsListKeys.refreshTransactions) {
+			return refreshTransactions(m)
 		}
 	}
 
@@ -194,6 +203,19 @@ func filterUnclearedTransactions(m model) (tea.Model, tea.Cmd) {
 
 	m.transactionsStats = newTransactionStats(m.transactions.Items())
 	return m, nil
+}
+
+func refreshTransactions(m model) (tea.Model, tea.Cmd) {
+	log.Debug("refreshing transactions")
+	// Set loading state and switch to loading view
+	m.loadingState.unset("transactions")
+	m.previousSessionState = m.sessionState
+	m.sessionState = loading
+
+	// Show a status message to indicate refresh is starting
+	statusCmd := m.transactions.NewStatusMessage("Refreshing transactions...")
+
+	return m, tea.Batch(statusCmd, m.getTransactions)
 }
 
 func transactionsView(m model) string {

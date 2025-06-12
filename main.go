@@ -794,6 +794,8 @@ func createTransactionList(delegate list.DefaultDelegate, tlKeyMap *transactionL
 	transactionList.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{
 			tlKeyMap.categorizeTransaction,
+			tlKeyMap.filterUncleared,
+			tlKeyMap.refreshTransactions,
 		}
 	}
 	return transactionList
