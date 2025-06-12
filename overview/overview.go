@@ -137,6 +137,7 @@ type Summary struct {
 	totalIncomeEarned money.Money
 	totalSpent        money.Money
 	netIncome         money.Money
+	savingsRate       float64
 }
 
 type Styles struct {
@@ -296,9 +297,16 @@ func (m *Model) summaryView() string {
 	b.WriteString(fmt.Sprintf("Income: %s\n", m.Styles.IncomeStyle.Render(m.summary.totalIncomeEarned.Display())))
 	b.WriteString(fmt.Sprintf("Spent: %s\n", m.Styles.SpentStyle.Render(m.summary.totalSpent.Display())))
 	if m.summary.netIncome.IsNegative() {
-		b.WriteString(fmt.Sprintf("Net Income: %s", m.Styles.SpentStyle.Render(m.summary.netIncome.Display())))
+		b.WriteString(fmt.Sprintf("Net Income: %s\n", m.Styles.SpentStyle.Render(m.summary.netIncome.Display())))
 	} else {
-		b.WriteString(fmt.Sprintf("Net Income: %s", m.Styles.IncomeStyle.Render(m.summary.netIncome.Display())))
+		b.WriteString(fmt.Sprintf("Net Income: %s\n", m.Styles.IncomeStyle.Render(m.summary.netIncome.Display())))
+	}
+
+	// Display savings rate
+	if m.summary.savingsRate >= 0 {
+		b.WriteString(fmt.Sprintf("Savings Rate: %s", m.Styles.IncomeStyle.Render(fmt.Sprintf("%.1f%%", m.summary.savingsRate))))
+	} else {
+		b.WriteString(fmt.Sprintf("Savings Rate: %s", m.Styles.SpentStyle.Render(fmt.Sprintf("%.1f%%", m.summary.savingsRate))))
 	}
 
 	return lipgloss.JoinVertical(lipgloss.Top,
@@ -351,7 +359,18 @@ func (m *Model) updateSummary() {
 
 	netIncome, _ := totalIncomeEarned.Add(totalSpent)
 
-	m.summary = Summary{totalIncomeEarned: *totalIncomeEarned, totalSpent: *totalSpent, netIncome: *netIncome}
+	// Calculate savings rate as (net income / total income) * 100
+	var savingsRate float64
+	if totalIncomeEarned.Amount() > 0 {
+		savingsRate = (float64(netIncome.Amount()) / float64(totalIncomeEarned.Amount())) * 100
+	}
+
+	m.summary = Summary{
+		totalIncomeEarned: *totalIncomeEarned,
+		totalSpent:        *totalSpent,
+		netIncome:         *netIncome,
+		savingsRate:       savingsRate,
+	}
 }
 
 func (m *Model) updateAccountTree() {
