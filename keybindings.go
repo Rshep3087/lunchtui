@@ -69,12 +69,12 @@ func initializeKeyMap() keyMap {
 			key.WithHelp("b", "budgets"),
 		),
 		nextPeriod: key.NewBinding(
-			key.WithKeys("!"),
-			key.WithHelp("shift+1", "next month"),
+			key.WithKeys("]"),
+			key.WithHelp("]", "next month"),
 		),
 		previousPeriod: key.NewBinding(
-			key.WithKeys("@"),
-			key.WithHelp("shift+2", "previous month"),
+			key.WithKeys("["),
+			key.WithHelp("[", "previous month"),
 		),
 		switchPeriod: key.NewBinding(
 			key.WithKeys("s"),
@@ -118,11 +118,11 @@ func handleKeyPress(msg tea.KeyMsg, m *model) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	}
 
-	if k == "!" {
+	if k == "]" {
 		return advancePeriod(m)
 	}
 
-	if k == "@" {
+	if k == "[" {
 		return retrievePreviousPeriod(m)
 	}
 
