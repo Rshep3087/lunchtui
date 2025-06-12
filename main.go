@@ -462,7 +462,7 @@ func handleEscape(m *model) (tea.Model, tea.Cmd) {
 	if m.sessionState == detailedTransaction {
 		m.currentTransaction = nil
 		m.sessionState = transactions
-		return m, nil
+		return m, m.getTransactions
 	}
 
 	m.previousSessionState = m.sessionState
