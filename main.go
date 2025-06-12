@@ -31,6 +31,7 @@ type sessionState int
 const (
 	overviewState sessionState = iota
 	transactions
+	detailedTransaction
 	categorizeTransaction
 	loading
 	recurringExpenses
@@ -42,6 +43,8 @@ func (ss sessionState) String() string {
 		return "overview"
 	case transactions:
 		return "transactions"
+	case detailedTransaction:
+		return "transaction details"
 	case categorizeTransaction:
 		return "categorize transaction"
 	case loading:
@@ -122,6 +125,8 @@ type model struct {
 	transactionsStats *transactionsStats
 	// debitsAsNegative is a flag to show debits as negative numbers
 	debitsAsNegative bool
+	// currentTransaction holds the currently selected transaction for detailed view
+	currentTransaction *transactionItem
 
 	categoryForm *huh.Form
 	// idToCategory is a map of category ID to category
@@ -358,6 +363,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case categorizeTransaction:
 		return updateCategorizeTransaction(msg, &m)
 
+	case detailedTransaction:
+		return updateDetailedTransaction(msg, m)
+
 	case transactions:
 		return updateTransactions(msg, m)
 
@@ -449,6 +457,12 @@ func handleEscape(m *model) (tea.Model, tea.Cmd) {
 		m.sessionState = transactions
 		m.categoryForm.State = huh.StateAborted
 		return m, m.getTransactions
+	}
+
+	if m.sessionState == detailedTransaction {
+		m.currentTransaction = nil
+		m.sessionState = transactions
+		return m, nil
 	}
 
 	m.previousSessionState = m.sessionState
@@ -625,6 +639,8 @@ func (m model) View() string {
 		b.WriteString(m.overview.View())
 	case transactions:
 		b.WriteString(transactionsView(m))
+	case detailedTransaction:
+		b.WriteString(detailedTransactionView(m))
 	case categorizeTransaction:
 		b.WriteString(categorizeTransactionView(m))
 	case recurringExpenses:
@@ -648,6 +664,8 @@ func (m model) renderTitle() string {
 		currentPage = "overview"
 	case transactions:
 		currentPage = "transactions"
+	case detailedTransaction:
+		currentPage = "transaction details"
 	case categorizeTransaction:
 		currentPage = "categorize transaction"
 	case recurringExpenses:
