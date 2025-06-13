@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -430,4 +431,88 @@ func TestFilterUncategorizedTransactions(t *testing.T) {
 			t.Errorf("Item %d is not a transactionItem", i)
 		}
 	}
+}
+
+func TestHandleEscapeFromInsertTransaction(t *testing.T) {
+	// Test escape from insert transaction state
+	m := &model{
+		sessionState:          insertTransaction,
+		previousSessionState:  transactions,
+		insertTransactionForm: &huh.Form{State: huh.StateNormal},
+	}
+
+	resultModel, _ := handleEscape(m)
+	result := resultModel.(*model)
+
+	be.Equal(t, transactions, result.sessionState)
+	be.Equal(t, huh.StateAborted, result.insertTransactionForm.State)
+}
+
+func TestInsertTransactionFormCreation(t *testing.T) {
+	// Create mock data
+	categories := []*lm.Category{
+		{ID: 1, Name: "Food"},
+		{ID: 2, Name: "Transport"},
+	}
+	plaidAccounts := map[int64]*lm.PlaidAccount{
+		100: {ID: 100, Name: "Chase Checking"},
+	}
+	assets := map[int64]*lm.Asset{
+		200: {ID: 200, Name: "Cash"},
+	}
+	tags := map[int]*lm.Tag{
+		1: {ID: 1, Name: "Personal"},
+		2: {ID: 2, Name: "Work"},
+	}
+
+	// Create the form
+	form := newInsertTransactionForm(categories, plaidAccounts, assets, tags)
+
+	// Verify form was created
+	be.Nonzero(t, form)
+	be.Equal(t, huh.StateNormal, form.State)
+}
+
+func TestInsertTransactionKeyHandling(t *testing.T) {
+	// Set up test model
+	m := &model{
+		sessionState:         transactions,
+		transactions:         list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0),
+		transactionsListKeys: newTransactionListKeyMap(),
+		categories: []*lm.Category{
+			{ID: 1, Name: "Food"},
+		},
+		plaidAccounts: map[int64]*lm.PlaidAccount{},
+		assets:        map[int64]*lm.Asset{},
+		tags:          map[int]*lm.Tag{},
+	}
+
+	// Test pressing 'i' key to trigger insert transaction
+	resultModel, cmd := updateTransactions(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'i'}}, *m)
+	result := resultModel.(*model)
+
+	// Verify state changed to insertTransaction
+	be.Equal(t, insertTransaction, result.sessionState)
+	be.Nonzero(t, result.insertTransactionForm)
+	be.Nonzero(t, cmd)
+}
+
+func TestInsertTransactionMessageHandling(t *testing.T) {
+	// Test success message handling
+	m := model{
+		transactions: list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0),
+	}
+
+	successMsg := insertTransactionSuccessMsg{transactionID: 12345}
+	_, cmd := m.handleInsertTransactionSuccess(successMsg)
+
+	// Should return a status command
+	be.Nonzero(t, cmd)
+
+	// Test error message handling
+	errorMsg := insertTransactionErrorMsg{error: fmt.Errorf("test error")}
+	_, cmd = m.handleInsertTransactionError(errorMsg)
+
+	// Should return a status command
+	be.Nonzero(t, cmd)
 }

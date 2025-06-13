@@ -67,6 +67,7 @@ type transactionListKeyMap struct {
 	filterUncategorized   key.Binding
 	refreshTransactions   key.Binding
 	showDetailed          key.Binding
+	insertTransaction     key.Binding
 }
 
 func newTransactionListKeyMap() *transactionListKeyMap {
@@ -90,6 +91,10 @@ func newTransactionListKeyMap() *transactionListKeyMap {
 		showDetailed: key.NewBinding(
 			key.WithKeys("enter"),
 			key.WithHelp("enter", "show transaction details"),
+		),
+		insertTransaction: key.NewBinding(
+			key.WithKeys("i"),
+			key.WithHelp("i", "insert new transaction"),
 		),
 	}
 }
@@ -146,6 +151,10 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 
 		if key.Matches(msg, m.transactionsListKeys.showDetailed) {
 			return showDetailedTransaction(m)
+		}
+
+		if key.Matches(msg, m.transactionsListKeys.insertTransaction) {
+			return insertNewTransaction(&m)
 		}
 	}
 

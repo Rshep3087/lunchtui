@@ -47,7 +47,8 @@ type model struct {
 	// currentTransaction holds the currently selected transaction for detailed view
 	currentTransaction *transactionItem
 
-	categoryForm *huh.Form
+	categoryForm          *huh.Form
+	insertTransactionForm *huh.Form
 	// idToCategory is a map of category ID to category
 	idToCategory map[int64]*lm.Category
 	// categories is a list of categories
@@ -126,6 +127,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case getBudgetsMsg:
 		return m.handleGetBudgets(msg)
+
+	case insertTransactionSuccessMsg:
+		return m.handleInsertTransactionSuccess(msg)
+
+	case insertTransactionErrorMsg:
+		return m.handleInsertTransactionError(msg)
 	}
 
 	var cmd tea.Cmd
@@ -136,6 +143,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case categorizeTransaction:
 		return updateCategorizeTransaction(msg, &m)
+
+	case insertTransaction:
+		return updateInsertTransaction(msg, &m)
 
 	case detailedTransaction:
 		return updateDetailedTransaction(msg, m)
@@ -251,6 +261,7 @@ func createTransactionList(delegate list.DefaultDelegate, tlKeyMap *transactionL
 			tlKeyMap.categorizeTransaction,
 			tlKeyMap.filterUncleared,
 			tlKeyMap.refreshTransactions,
+			tlKeyMap.insertTransaction,
 		}
 	}
 	return transactionList

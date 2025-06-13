@@ -114,6 +114,10 @@ func handleKeyPress(msg tea.KeyMsg, m *model) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
+	if m.insertTransactionForm != nil && m.insertTransactionForm.State == huh.StateNormal {
+		return m, nil
+	}
+
 	if k == "q" {
 		return m, tea.Quit
 	}
@@ -176,6 +180,13 @@ func handleEscape(m *model) (tea.Model, tea.Cmd) {
 		m.sessionState = transactions
 		m.categoryForm.State = huh.StateAborted
 		return m, m.getTransactions
+	}
+
+	if m.sessionState == insertTransaction {
+		m.previousSessionState = overviewState
+		m.sessionState = transactions
+		m.insertTransactionForm.State = huh.StateAborted
+		return m, nil // Don't refresh transactions on cancel
 	}
 
 	if m.sessionState == detailedTransaction {
