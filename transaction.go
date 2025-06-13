@@ -479,10 +479,10 @@ func detailedTransactionView(m model) string {
 		))
 	}
 
-	if t.t.ExternalID != 0 {
+	if t.t.ExternalID != "" {
 		details = append(details, lipgloss.JoinHorizontal(lipgloss.Left,
 			labelStyle.Render("External ID:"),
-			valueStyle.Render(fmt.Sprintf("%d", t.t.ExternalID)),
+			valueStyle.Render(t.t.ExternalID),
 		))
 	}
 
