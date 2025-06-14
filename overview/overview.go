@@ -20,18 +20,19 @@ import (
 
 // Model deines the state for the overview widget for LunchTUI.
 type Model struct {
-	Styles            Styles
-	Viewport          viewport.Model
-	summary           Summary
-	transactions      []*lm.Transaction
-	categories        map[int64]*lm.Category
-	assets            map[int64]*lm.Asset
-	plaidAccounts     map[int64]*lm.PlaidAccount
-	accountTree       *tree.Tree
-	spendingBreakdown table.Model
-	currency          string
-	titleCaser        cases.Caser
-	user              *lm.User
+	Styles             Styles
+	Viewport           viewport.Model
+	summary            Summary
+	transactionMetrics TransactionMetrics
+	transactions       []*lm.Transaction
+	categories         map[int64]*lm.Category
+	assets             map[int64]*lm.Asset
+	plaidAccounts      map[int64]*lm.PlaidAccount
+	accountTree        *tree.Tree
+	spendingBreakdown  table.Model
+	currency           string
+	titleCaser         cases.Caser
+	user               *lm.User
 }
 
 type categoryTotal struct {
@@ -141,6 +142,12 @@ type Summary struct {
 	savingsRate       float64
 }
 
+type TransactionMetrics struct {
+	total      int
+	pending    int
+	unreviewed int
+}
+
 type Styles struct {
 	IncomeStyle    lipgloss.Style
 	SpentStyle     lipgloss.Style
@@ -167,6 +174,7 @@ type Option func(*Model)
 func (m *Model) SetTransactions(transactions []*lm.Transaction) {
 	m.transactions = transactions
 	m.updateSummary()
+	m.updateTransactionMetrics()
 	m.UpdateViewport()
 }
 
@@ -281,6 +289,7 @@ func (m *Model) UpdateViewport() {
 		accountTreeContent,
 		lipgloss.JoinVertical(lipgloss.Top,
 			m.userInfoView(),
+			m.transactionMetricsView(),
 			m.summaryView(),
 			spendingBreakdown,
 		),
@@ -318,6 +327,19 @@ func (m *Model) userInfoView() string {
 	)
 }
 
+func (m *Model) transactionMetricsView() string {
+	var b strings.Builder
+
+	b.WriteString(fmt.Sprintf("Total: %d\n", m.transactionMetrics.total))
+	b.WriteString(fmt.Sprintf("Pending: %s\n", m.Styles.SpentStyle.Render(fmt.Sprintf("%d", m.transactionMetrics.pending))))
+	b.WriteString(fmt.Sprintf("Unreviewed: %s", m.Styles.SpentStyle.Render(fmt.Sprintf("%d", m.transactionMetrics.unreviewed))))
+
+	return lipgloss.JoinVertical(lipgloss.Top,
+		lipgloss.NewStyle().Bold(true).Render("Transaction Metrics"),
+		m.Styles.SummaryStyle.Render(b.String()),
+	)
+}
+
 func (m *Model) summaryView() string {
 	if m.summary.totalIncomeEarned.Currency() == nil ||
 		m.summary.totalSpent.Currency() == nil ||
@@ -349,6 +371,22 @@ func (m *Model) summaryView() string {
 		lipgloss.NewStyle().Bold(true).Render("Period Summary"),
 		m.Styles.SummaryStyle.Render(b.String()),
 	)
+}
+
+func (m *Model) updateTransactionMetrics() {
+	var metrics TransactionMetrics
+	metrics.total = len(m.transactions)
+
+	for _, t := range m.transactions {
+		switch t.Status {
+		case "pending":
+			metrics.pending++
+		case "uncleared":
+			metrics.unreviewed++
+		}
+	}
+
+	m.transactionMetrics = metrics
 }
 
 func (m *Model) updateSummary() {
