@@ -21,7 +21,9 @@ func (m model) View() string {
 	case categorizeTransaction:
 		b.WriteString(categorizeTransactionView(m))
 	case insertTransaction:
-		b.WriteString(insertTransactionView(m))
+		// Insert transaction functionality is disabled
+		b.WriteString("Insert transaction functionality is currently disabled. Press 'esc' to return.")
+		// b.WriteString(insertTransactionView(m))
 	case recurringExpenses:
 		b.WriteString(m.recurringExpenses.View())
 	case budgets:

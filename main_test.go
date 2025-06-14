@@ -487,13 +487,13 @@ func TestInsertTransactionKeyHandling(t *testing.T) {
 		tags:          map[int]*lm.Tag{},
 	}
 
-	// Test pressing 'i' key to trigger insert transaction
+	// Test pressing 'i' key - should show disabled message instead of triggering insert transaction
 	resultModel, cmd := updateTransactions(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'i'}}, *m)
-	result := resultModel.(*model)
+	result := resultModel.(model)
 
-	// Verify state changed to insertTransaction
-	be.Equal(t, insertTransaction, result.sessionState)
-	be.Nonzero(t, result.insertTransactionForm)
+	// Verify state remains transactions (insert transaction is disabled)
+	be.Equal(t, transactions, result.sessionState)
+	// Verify a status command was returned (disabled message)
 	be.Nonzero(t, cmd)
 }
 

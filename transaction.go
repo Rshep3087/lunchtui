@@ -92,10 +92,10 @@ func newTransactionListKeyMap() *transactionListKeyMap {
 			key.WithKeys("enter"),
 			key.WithHelp("enter", "show transaction details"),
 		),
-		insertTransaction: key.NewBinding(
-			key.WithKeys("i"),
-			key.WithHelp("i", "insert new transaction"),
-		),
+		// insertTransaction: key.NewBinding(
+		// 	key.WithKeys("i"),
+		// 	key.WithHelp("i", "insert new transaction"),
+		// ),
 	}
 }
 
@@ -153,9 +153,15 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 			return showDetailedTransaction(m)
 		}
 
-		if key.Matches(msg, m.transactionsListKeys.insertTransaction) {
-			return insertNewTransaction(&m)
+		// Insert transaction functionality is disabled
+		if msg.String() == "i" {
+			statusCmd := m.transactions.NewStatusMessage("Insert transaction functionality is currently disabled")
+			return m, statusCmd
 		}
+
+		// if key.Matches(msg, m.transactionsListKeys.insertTransaction) {
+		// 	return insertNewTransaction(&m)
+		// }
 	}
 
 	var cmd tea.Cmd
