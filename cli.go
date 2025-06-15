@@ -17,15 +17,15 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-// contextKey is used as a key for storing values in context
+// contextKey is used as a key for storing values in context.
 type contextKey string
 
 const (
-	// clientContextKey is the key for storing the Lunch Money client in context
+	// clientContextKey is the key for storing the Lunch Money client in context.
 	clientContextKey contextKey = "lunchMoneyClient"
 )
 
-// getClientFromContext retrieves the Lunch Money client from context
+// getClientFromContext retrieves the Lunch Money client from context.
 func getClientFromContext(ctx context.Context) (*lm.Client, error) {
 	client, ok := ctx.Value(clientContextKey).(*lm.Client)
 	if !ok {
@@ -300,7 +300,6 @@ func createCategoriesListCommand() *cli.Command {
 
 // categoriesListAction handles the categories list CLI command.
 func categoriesListAction(ctx context.Context, c *cli.Command) error {
-	// Get Lunch Money client from context
 	lmc, err := getClientFromContext(ctx)
 	if err != nil {
 		return err
