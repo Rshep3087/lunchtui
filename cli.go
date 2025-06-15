@@ -257,17 +257,6 @@ func createCategoriesListCommand() *cli.Command {
 		},
 		Action: categoriesListAction,
 	}
-} // CategoryOutput represents a category for JSON output.
-type CategoryOutput struct {
-	ID          int64  `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-}
-
-// CategoriesListOutput represents the complete output for categories list.
-type CategoriesListOutput struct {
-	Categories []CategoryOutput `json:"categories"`
-	Total      int              `json:"total"`
 }
 
 // categoriesListAction handles the categories list CLI command.
@@ -300,56 +289,37 @@ func categoriesListAction(ctx context.Context, c *cli.Command) error {
 		return categories[i].Name < categories[j].Name
 	})
 
-	// Prepare output data
-	categoryOutputs := make([]CategoryOutput, 0, len(categories)+1)
-	for _, category := range categories {
-		description := category.Description
-		if description == "" {
-			description = ""
-		}
-		categoryOutputs = append(categoryOutputs, CategoryOutput{
-			ID:          category.ID,
-			Name:        category.Name,
-			Description: description,
-		})
-	}
-
 	// Add the special "Uncategorized" category
-	categoryOutputs = append(categoryOutputs, CategoryOutput{
+	categories = append(categories, &lm.Category{
 		ID:          0,
-		Name:        "Uncategorized",
+		Name:        "uncategorized",
 		Description: "Transactions without a category",
 	})
 
 	// Output based on format
 	switch outputFormat {
 	case "json":
-		return outputCategoriesJSON(categoryOutputs)
+		return outputJSON(categories)
 	case "table":
-		return outputCategoriesTable(categoryOutputs)
+		return outputCategoriesTable(categories)
 	default:
 		return fmt.Errorf("unsupported output format: %s", outputFormat)
 	}
 }
 
 // outputCategoriesJSON outputs categories in JSON format.
-func outputCategoriesJSON(categories []CategoryOutput) error {
-	output := CategoriesListOutput{
-		Categories: categories,
-		Total:      len(categories),
-	}
-
-	data, err := json.MarshalIndent(output, "", "  ")
+func outputJSON(data any) error {
+	jsonData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
 	}
 
-	fmt.Println(string(data))
+	fmt.Println(string(jsonData))
 	return nil
 }
 
 // outputCategoriesTable outputs categories in table format.
-func outputCategoriesTable(categories []CategoryOutput) error {
+func outputCategoriesTable(categories []*lm.Category) error {
 	// Define table styles
 	var (
 		purple    = lipgloss.Color("99")
@@ -376,7 +346,7 @@ func outputCategoriesTable(categories []CategoryOutput) error {
 				return oddRowStyle
 			}
 		}).
-		Headers("ID", "NAME", "DESCRIPTION")
+		Headers("ID", "NAME", "DESCRIPTION", "IS INCOME", "EXCLUDE FROM BUDGET", "EXCLUDE FROM TOTALS", "IS GROUP")
 
 	// Add categories to table
 	for _, category := range categories {
@@ -384,13 +354,19 @@ func outputCategoriesTable(categories []CategoryOutput) error {
 		if description == "" {
 			description = "-"
 		}
-		t.Row(fmt.Sprintf("%d", category.ID), category.Name, description)
+		t.Row(
+			fmt.Sprintf("%d", category.ID),
+			category.Name,
+			description,
+			strconv.FormatBool(category.IsIncome),
+			strconv.FormatBool(category.ExcludeFromBudget),
+			strconv.FormatBool(category.ExcludeFromTotals),
+			strconv.FormatBool(category.IsGroup),
+		)
 	}
 
 	// Print the table
-	fmt.Printf("Categories:\n\n")
 	fmt.Println(t)
-	fmt.Printf("\nTotal categories: %d\n", len(categories))
 
 	return nil
 }
