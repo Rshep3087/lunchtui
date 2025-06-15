@@ -166,85 +166,64 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func main() {
-	app := &cli.Command{
-		Name:                  "lunchtui",
-		Usage:                 "A terminal UI for Lunch Money",
-		EnableShellCompletion: true,
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:     "token",
-				Usage:    "The API token for Lunch Money",
-				Sources:  cli.EnvVars("LUNCHMONEY_API_TOKEN"),
-				Required: true,
-			},
-			// debits-as-negative flag
-			&cli.BoolFlag{
-				Name:  "debits-as-negative",
-				Usage: "Show debits as negative numbers",
-			},
-			&cli.BoolFlag{
-				Name:  "debug",
-				Usage: "Enable debug logging",
-				Value: false,
-			},
-		},
-		Action: func(ctx context.Context, c *cli.Command) error {
-			if c.Bool("debug") {
-				f, err := tea.LogToFileWith("lunchtui.log", "lunchtui", log.Default())
-				if err != nil {
-					return err
-				}
-				defer f.Close()
+func rootAction(ctx context.Context, c *cli.Command) error {
+	if c.Bool("debug") {
+		f, err := tea.LogToFileWith("lunchtui.log", "lunchtui", log.Default())
+		if err != nil {
+			return err
+		}
+		defer f.Close()
 
-				log.SetLevel(log.DebugLevel)
-			}
-
-			lmc, err := lm.NewClient(c.String("token"))
-			if err != nil {
-				return err
-			}
-
-			tlKeyMap := newTransactionListKeyMap()
-			m := model{
-				keys:                 initializeKeyMap(),
-				styles:               createStyles(),
-				help:                 createHelpModel(),
-				sessionState:         loading,
-				previousSessionState: overviewState,
-				lmc:                  lmc,
-				transactionsListKeys: tlKeyMap,
-				debitsAsNegative:     c.Bool("debits-as-negative"),
-				currentPeriod:        time.Now(),
-				period:               Period{},
-				periodType:           "month",
-				loadingSpinner: spinner.New(
-					spinner.WithSpinner(spinner.Dot),
-				),
-				overview:          overview.New(),
-				recurringExpenses: recurring.New(),
-				loadingState: newLoadingState(
-					"categories",
-					"transactions",
-					"user",
-					"accounts",
-					"tags",
-					"budgets",
-				),
-			}
-
-			delegate := m.newItemDelegate(newDeleteKeyMap())
-			m.transactions = createTransactionList(delegate, tlKeyMap)
-			m.budgets = createBudgetList(delegate)
-
-			p := tea.NewProgram(m, tea.WithAltScreen())
-			if _, err = p.Run(); err != nil {
-				return err
-			}
-
-			return nil
-		},
+		log.SetLevel(log.DebugLevel)
 	}
+
+	lmc, err := lm.NewClient(c.String("token"))
+	if err != nil {
+		return err
+	}
+
+	tlKeyMap := newTransactionListKeyMap()
+	m := model{
+		keys:                 initializeKeyMap(),
+		styles:               createStyles(),
+		help:                 createHelpModel(),
+		sessionState:         loading,
+		previousSessionState: overviewState,
+		lmc:                  lmc,
+		transactionsListKeys: tlKeyMap,
+		debitsAsNegative:     c.Bool("debits-as-negative"),
+		currentPeriod:        time.Now(),
+		period:               Period{},
+		periodType:           "month",
+		loadingSpinner: spinner.New(
+			spinner.WithSpinner(spinner.Dot),
+		),
+		overview:          overview.New(),
+		recurringExpenses: recurring.New(),
+		loadingState: newLoadingState(
+			"categories",
+			"transactions",
+			"user",
+			"accounts",
+			"tags",
+			"budgets",
+		),
+	}
+
+	delegate := m.newItemDelegate(newDeleteKeyMap())
+	m.transactions = createTransactionList(delegate, tlKeyMap)
+	m.budgets = createBudgetList(delegate)
+
+	p := tea.NewProgram(m, tea.WithAltScreen())
+	if _, err = p.Run(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func main() {
+	app := createRootCommand()
 
 	if err := app.Run(context.TODO(), os.Args); err != nil {
 		log.Error("lunchtui ran into an error", "error", err)
