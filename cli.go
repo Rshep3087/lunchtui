@@ -476,13 +476,11 @@ func createAccountsListCommand() *cli.Command {
 
 // accountsListAction handles the accounts list CLI command.
 func accountsListAction(ctx context.Context, c *cli.Command) error {
-	// Create Lunch Money client
-	lmc, err := lm.NewClient(c.String("token"))
+	lmc, err := getClientFromContext(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to create Lunch Money client: %w", err)
+		return fmt.Errorf("getting Lunch Money client from context: %w", err)
 	}
 
-	// Fetch assets and plaid accounts concurrently
 	assetsChan := make(chan []*lm.Asset, 1)
 	plaidAccountsChan := make(chan []*lm.PlaidAccount, 1)
 	errorChan := make(chan error, 2)
