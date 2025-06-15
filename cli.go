@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss/table"
 	"github.com/charmbracelet/log"
 	lm "github.com/icco/lunchmoney"
 	"github.com/urfave/cli/v3"
@@ -272,23 +274,50 @@ func categoriesListAction(ctx context.Context, c *cli.Command) error {
 		return categories[i].Name < categories[j].Name
 	})
 
-	// Display categories
-	fmt.Printf("Categories:\n\n")
+	// Define table styles
+	var (
+		purple    = lipgloss.Color("99")
+		gray      = lipgloss.Color("245")
+		lightGray = lipgloss.Color("241")
+
+		headerStyle  = lipgloss.NewStyle().Foreground(purple).Bold(true).Align(lipgloss.Center)
+		cellStyle    = lipgloss.NewStyle().Padding(0, 1)
+		oddRowStyle  = cellStyle.Foreground(gray)
+		evenRowStyle = cellStyle.Foreground(lightGray)
+	)
+
+	// Create table
+	t := table.New().
+		Border(lipgloss.NormalBorder()).
+		BorderStyle(lipgloss.NewStyle().Foreground(purple)).
+		StyleFunc(func(row, col int) lipgloss.Style {
+			switch {
+			case row == table.HeaderRow:
+				return headerStyle
+			case row%2 == 0:
+				return evenRowStyle
+			default:
+				return oddRowStyle
+			}
+		}).
+		Headers("ID", "NAME", "DESCRIPTION")
+
+	// Add categories to table
 	for _, category := range categories {
-		fmt.Printf("ID: %d\n", category.ID)
-		fmt.Printf("Name: %s\n", category.Name)
-		if category.Description != "" {
-			fmt.Printf("Description: %s\n", category.Description)
+		description := category.Description
+		if description == "" {
+			description = "-"
 		}
-		fmt.Printf("\n")
+		t.Row(fmt.Sprintf("%d", category.ID), category.Name, description)
 	}
 
-	// Also display the special "Uncategorized" category
-	fmt.Printf("ID: 0\n")
-	fmt.Printf("Name: Uncategorized\n")
-	fmt.Printf("Description: Transactions without a category\n")
-	fmt.Printf("\n")
+	// Add the special "Uncategorized" category
+	t.Row("0", "Uncategorized", "Transactions without a category")
 
-	fmt.Printf("Total categories: %d\n", len(categories)+1)
+	// Print the table
+	fmt.Printf("Categories:\n\n")
+	fmt.Println(t)
+	fmt.Printf("\nTotal categories: %d\n", len(categories)+1)
+
 	return nil
 }
