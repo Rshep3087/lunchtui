@@ -23,6 +23,7 @@
 - [✨ Features](#-features)
 - [🚀 Installation](#-installation)
 - [📖 Usage](#-usage)
+- [🔧 CLI Commands](#-cli-commands)
 - [🔧 Configuration](#-configuration)
 - [📸 Screenshots](#-screenshots)
 - [🤝 Contributing](#-contributing)
@@ -107,6 +108,81 @@ lunchtui --debits-as-negative
 # Combine options
 lunchtui --token="your-token" --debits-as-negative
 ```
+
+## 🔧 CLI Commands
+
+In addition to the interactive TUI interface, lunchtui provides powerful CLI commands for automation and scripting.
+
+### Available Commands
+
+#### Transaction Management
+
+##### `lunchtui transaction insert`
+Insert a new transaction directly from the command line.
+
+**Usage:**
+```bash
+lunchtui transaction insert --payee "Coffee Shop" --amount "4.50" [options]
+
+# Basic transaction
+lunchtui transaction insert --payee "Grocery Store" --amount "45.67"
+
+# Transaction with category and notes
+lunchtui transaction insert --payee "Gas Station" --amount "35.00" --category 123 --notes "Weekly fill-up"
+
+# Income transaction (negative amount)
+lunchtui transaction insert --payee "Freelance Work" --amount "-500.00" --status cleared
+
+# Transaction with tags
+lunchtui transaction insert --payee "Restaurant" --amount "25.50" --tags 1 --tags 2
+```
+
+#### Categories Management
+
+##### `lunchtui categories list`
+List all categories with their IDs and details.
+
+**Usage:**
+```bash
+# List categories in table format
+lunchtui categories list
+
+# List categories in JSON format
+lunchtui categories list --output json
+```
+
+#### Accounts Management
+
+##### `lunchtui accounts list`
+List all accounts (both assets and Plaid accounts) with their IDs and details.
+
+**Usage:**
+```bash
+lunchtui accounts list [options]
+```
+
+### Global Flags
+
+All commands support these global flags:
+
+- `--token` - Lunch Money API token (can use `LUNCHMONEY_API_TOKEN` env var)
+- `--debits-as-negative` - Show debits as negative numbers
+- `--debug` - Enable debug logging
+
+### Getting Help
+
+Use the `--help` flag with any command to see detailed usage information:
+
+```bash
+# General help
+lunchtui --help
+
+# Command-specific help
+lunchtui transaction --help
+lunchtui categories list --help
+```
+
+🚧 **More CLI commands are coming soon!**
 
 ## 🔧 Configuration
 
