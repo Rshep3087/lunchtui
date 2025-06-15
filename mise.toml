@@ -15,4 +15,8 @@ description = "Run the dlv with debits as negative"
 
 [tasks.new_release]
 run = "goreleaser release --clean"
+depends = "version"
 description = "Create a new release"
+
+[tasks.version]
+run = "git tag $(svu n)"
