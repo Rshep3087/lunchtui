@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
@@ -244,10 +245,29 @@ func createCategoriesCommand() *cli.Command {
 // createCategoriesListCommand creates the categories list subcommand.
 func createCategoriesListCommand() *cli.Command {
 	return &cli.Command{
-		Name:   "list",
-		Usage:  "List all categories with their IDs and details",
+		Name:  "list",
+		Usage: "List all categories with their IDs and details",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:    "output",
+				Aliases: []string{"o"},
+				Usage:   "Output format: table or json",
+				Value:   "table",
+			},
+		},
 		Action: categoriesListAction,
 	}
+} // CategoryOutput represents a category for JSON output.
+type CategoryOutput struct {
+	ID          int64  `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+// CategoriesListOutput represents the complete output for categories list.
+type CategoriesListOutput struct {
+	Categories []CategoryOutput `json:"categories"`
+	Total      int              `json:"total"`
 }
 
 // categoriesListAction handles the categories list CLI command.
@@ -255,6 +275,12 @@ func categoriesListAction(ctx context.Context, c *cli.Command) error {
 	// Setup logging if debug is enabled
 	if c.Bool("debug") {
 		log.SetLevel(log.DebugLevel)
+	}
+
+	// Validate output format
+	outputFormat := c.String("output")
+	if outputFormat != "table" && outputFormat != "json" {
+		return fmt.Errorf("invalid output format: %s (must be 'table' or 'json')", outputFormat)
 	}
 
 	// Create Lunch Money client
@@ -274,6 +300,56 @@ func categoriesListAction(ctx context.Context, c *cli.Command) error {
 		return categories[i].Name < categories[j].Name
 	})
 
+	// Prepare output data
+	categoryOutputs := make([]CategoryOutput, 0, len(categories)+1)
+	for _, category := range categories {
+		description := category.Description
+		if description == "" {
+			description = ""
+		}
+		categoryOutputs = append(categoryOutputs, CategoryOutput{
+			ID:          category.ID,
+			Name:        category.Name,
+			Description: description,
+		})
+	}
+
+	// Add the special "Uncategorized" category
+	categoryOutputs = append(categoryOutputs, CategoryOutput{
+		ID:          0,
+		Name:        "Uncategorized",
+		Description: "Transactions without a category",
+	})
+
+	// Output based on format
+	switch outputFormat {
+	case "json":
+		return outputCategoriesJSON(categoryOutputs)
+	case "table":
+		return outputCategoriesTable(categoryOutputs)
+	default:
+		return fmt.Errorf("unsupported output format: %s", outputFormat)
+	}
+}
+
+// outputCategoriesJSON outputs categories in JSON format.
+func outputCategoriesJSON(categories []CategoryOutput) error {
+	output := CategoriesListOutput{
+		Categories: categories,
+		Total:      len(categories),
+	}
+
+	data, err := json.MarshalIndent(output, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal JSON: %w", err)
+	}
+
+	fmt.Println(string(data))
+	return nil
+}
+
+// outputCategoriesTable outputs categories in table format.
+func outputCategoriesTable(categories []CategoryOutput) error {
 	// Define table styles
 	var (
 		purple    = lipgloss.Color("99")
@@ -311,13 +387,10 @@ func categoriesListAction(ctx context.Context, c *cli.Command) error {
 		t.Row(fmt.Sprintf("%d", category.ID), category.Name, description)
 	}
 
-	// Add the special "Uncategorized" category
-	t.Row("0", "Uncategorized", "Transactions without a category")
-
 	// Print the table
 	fmt.Printf("Categories:\n\n")
 	fmt.Println(t)
-	fmt.Printf("\nTotal categories: %d\n", len(categories)+1)
+	fmt.Printf("\nTotal categories: %d\n", len(categories))
 
 	return nil
 }
