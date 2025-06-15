@@ -432,3 +432,76 @@ func TestFilterUncategorizedTransactions(t *testing.T) {
 		}
 	}
 }
+
+func TestConvertAssetToAccount(t *testing.T) {
+	asset := &lm.Asset{
+		ID:              123,
+		Name:            "Test Asset",
+		TypeName:        "checking",
+		SubtypeName:     "savings",
+		Balance:         "1000.00",
+		Currency:        "USD",
+		InstitutionName: "Test Bank",
+		Status:          "active",
+	}
+
+	account := convertAssetToAccount(asset)
+
+	be.Equal(t, int64(123), account.ID)
+	be.Equal(t, "Test Asset", account.Name)
+	be.Equal(t, "checking", account.Type)
+	be.Equal(t, "savings", account.Subtype)
+	be.Equal(t, "1000.00", account.Balance)
+	be.Equal(t, "USD", account.Currency)
+	be.Equal(t, "Test Bank", account.InstitutionName)
+	be.Equal(t, "active", account.Status)
+	be.Equal(t, "asset", account.AccountType)
+}
+
+func TestConvertPlaidAccountToAccount(t *testing.T) {
+	plaidAccount := &lm.PlaidAccount{
+		ID:              456,
+		Name:            "Test Plaid Account",
+		Type:            "depository",
+		Subtype:         "checking",
+		Balance:         "2500.50",
+		Currency:        "USD",
+		InstitutionName: "Plaid Bank",
+		Status:          "active",
+	}
+
+	account := convertPlaidAccountToAccount(plaidAccount)
+
+	be.Equal(t, int64(456), account.ID)
+	be.Equal(t, "Test Plaid Account", account.Name)
+	be.Equal(t, "depository", account.Type)
+	be.Equal(t, "checking", account.Subtype)
+	be.Equal(t, "2500.50", account.Balance)
+	be.Equal(t, "USD", account.Currency)
+	be.Equal(t, "Plaid Bank", account.InstitutionName)
+	be.Equal(t, "active", account.Status)
+	be.Equal(t, "plaid", account.AccountType)
+}
+
+func TestCreateOutputFormatFlag(t *testing.T) {
+	flag := createOutputFormatFlag()
+
+	be.Equal(t, "output", flag.Name)
+	be.Equal(t, "o", flag.Aliases[0])
+	be.Equal(t, 1, len(flag.Aliases))
+	be.Equal(t, "Output format: table or json", flag.Usage)
+	be.Equal(t, "table", flag.Value)
+	be.Nonzero(t, flag.Validator)
+
+	// Test validator with valid formats
+	err := flag.Validator("table")
+	be.NilErr(t, err)
+
+	err = flag.Validator("json")
+	be.NilErr(t, err)
+
+	// Test validator with invalid format
+	err = flag.Validator("invalid")
+	be.Nonzero(t, err)
+	be.True(t, strings.Contains(err.Error(), "invalid output format"))
+}
