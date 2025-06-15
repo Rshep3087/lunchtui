@@ -301,9 +301,9 @@ func newTransactionStats(ts []list.Item) *transactionsStats {
 		switch ti.t.Status {
 		case "pending":
 			stats.pending++
-		case "uncleared":
+		case unclearedStatus:
 			stats.uncleared++
-		case "cleared":
+		case clearedStatus:
 			stats.cleared++
 		}
 	}
@@ -341,7 +341,7 @@ func (t transactionsStats) View() string {
 		Render(transactionStatus)
 }
 
-func updateDetailedTransaction(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
+func updateDetailedTransaction(_ tea.Msg, m model) (tea.Model, tea.Cmd) {
 	// No specific key handling needed - escape is handled globally
 	return m, nil
 }
@@ -351,188 +351,191 @@ func detailedTransactionView(m model) string {
 		return "No transaction selected"
 	}
 
-	t := m.currentTransaction
+	styles := createDetailedTransactionStyles()
+	data := extractTransactionData(m.currentTransaction)
 
-	// Define styles for the detailed view
-	headerStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#FAFAFA")).
-		Background(lipgloss.Color("#7D56F4")).
-		Padding(0, 1).
-		MarginBottom(1).
-		Bold(true)
+	header := styles.headerStyle.Render("Transaction Details")
+	details := buildTransactionDetails(data, styles)
+	content := lipgloss.JoinVertical(lipgloss.Left, details...)
+	instructions := createInstructions(styles)
 
-	labelStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#7D56F4")).
-		Bold(true).
-		Width(20).
-		Align(lipgloss.Right)
+	return lipgloss.JoinVertical(lipgloss.Left,
+		header,
+		styles.containerStyle.Render(content),
+		instructions,
+	)
+}
 
-	valueStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#FAFAFA")).
-		MarginLeft(2)
+type detailedTransactionStyles struct {
+	headerStyle      lipgloss.Style
+	labelStyle       lipgloss.Style
+	valueStyle       lipgloss.Style
+	containerStyle   lipgloss.Style
+	statusStyle      lipgloss.Style
+	instructionStyle lipgloss.Style
+}
 
-	containerStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#7D56F4")).
-		Padding(1, 2).
-		Margin(1)
+type transactionDisplayData struct {
+	transaction *transactionItem
+	amountStr   string
+	accountName string
+	tagsStr     string
+	notesStr    string
+	currencyStr string
+	statusStyle lipgloss.Style
+}
 
-	statusStyle := lipgloss.NewStyle().
-		Padding(0, 1).
-		Bold(true)
-
-	// Status-specific styling
-	switch t.t.Status {
-	case "cleared":
-		statusStyle = statusStyle.Foreground(lipgloss.Color("#FAFAFA")).Background(lipgloss.Color("#22ba46"))
-	case "uncleared":
-		statusStyle = statusStyle.Foreground(lipgloss.Color("#FAFAFA")).Background(lipgloss.Color("#e05951"))
-	case "pending":
-		statusStyle = statusStyle.Foreground(lipgloss.Color("#000000")).Background(lipgloss.Color("#7f7d78"))
-	default:
-		statusStyle = statusStyle.Foreground(lipgloss.Color("#FAFAFA")).Background(lipgloss.Color("#666666"))
+func createDetailedTransactionStyles() detailedTransactionStyles {
+	return detailedTransactionStyles{
+		headerStyle: lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#FAFAFA")).
+			Background(lipgloss.Color("#7D56F4")).
+			Padding(0, 1).
+			MarginBottom(1).
+			Bold(true),
+		labelStyle: lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#7D56F4")).
+			Bold(true).
+			Width(20).
+			Align(lipgloss.Right),
+		valueStyle: lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#FAFAFA")).
+			MarginLeft(2),
+		containerStyle: lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("#7D56F4")).
+			Padding(1, 2).
+			Margin(1),
+		statusStyle: lipgloss.NewStyle().
+			Padding(0, 1).
+			Bold(true),
+		instructionStyle: lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#666666")).
+			Italic(true).
+			MarginTop(2),
 	}
+}
+
+func extractTransactionData(t *transactionItem) transactionDisplayData {
+	data := transactionDisplayData{transaction: t}
 
 	// Parse amount
 	amount, err := t.t.ParsedAmount()
-	amountStr := "Error parsing amount"
+	data.amountStr = "Error parsing amount"
 	if err == nil {
-		amountStr = amount.Display()
+		data.amountStr = amount.Display()
 	}
 
 	// Get account name
-	accountName := "Unknown"
+	data.accountName = "Unknown"
 	if t.plaidAccount != nil {
-		accountName = t.plaidAccount.Name
+		data.accountName = t.plaidAccount.Name
 	} else if t.asset != nil {
-		accountName = t.asset.Name
+		data.accountName = t.asset.Name
 	}
 
 	// Format tags
-	tagsStr := "None"
-	if len(t.tags) > 0 {
-		tagNames := make([]string, len(t.tags))
-		for i, tag := range t.tags {
-			tagNames[i] = tag.Name
-		}
-		tagsStr = strings.Join(tagNames, ", ")
-	}
+	data.tagsStr = formatTags(t.tags)
 
 	// Format notes
-	notesStr := t.t.Notes
-	if notesStr == "" {
-		notesStr = "None"
+	data.notesStr = t.t.Notes
+	if data.notesStr == "" {
+		data.notesStr = "None"
 	}
 
 	// Format currency
-	currencyStr := t.t.Currency
-	if currencyStr == "" {
-		currencyStr = "USD" // Default currency
+	data.currencyStr = t.t.Currency
+	if data.currencyStr == "" {
+		data.currencyStr = "USD"
 	}
 
-	// Create header
-	header := headerStyle.Render("Transaction Details")
+	// Create status-specific styling
+	data.statusStyle = createStatusStyle(t.t.Status)
 
-	// Create detail rows
+	return data
+}
+
+func formatTags(tags []*lm.Tag) string {
+	if len(tags) == 0 {
+		return "None"
+	}
+
+	tagNames := make([]string, len(tags))
+	for i, tag := range tags {
+		tagNames[i] = tag.Name
+	}
+	return strings.Join(tagNames, ", ")
+}
+
+func createStatusStyle(status string) lipgloss.Style {
+	baseStyle := lipgloss.NewStyle().Padding(0, 1).Bold(true)
+
+	switch status {
+	case "cleared":
+		return baseStyle.Foreground(lipgloss.Color("#FAFAFA")).Background(lipgloss.Color("#22ba46"))
+	case unclearedStatus:
+		return baseStyle.Foreground(lipgloss.Color("#FAFAFA")).Background(lipgloss.Color("#e05951"))
+	case "pending":
+		return baseStyle.Foreground(lipgloss.Color("#000000")).Background(lipgloss.Color("#7f7d78"))
+	default:
+		return baseStyle.Foreground(lipgloss.Color("#FAFAFA")).Background(lipgloss.Color("#666666"))
+	}
+}
+
+func buildTransactionDetails(data transactionDisplayData, styles detailedTransactionStyles) []string {
+	t := data.transaction
+
 	details := []string{
+		createDetailRow("ID:", strconv.FormatInt(t.t.ID, 10), styles),
+		createDetailRow("Payee:", t.t.Payee, styles),
+		createDetailRow("Amount:", data.amountStr, styles),
+		createDetailRow("Currency:", data.currencyStr, styles),
+		createDetailRow("Date:", t.t.Date, styles),
 		lipgloss.JoinHorizontal(lipgloss.Left,
-			labelStyle.Render("ID:"),
-			valueStyle.Render(strconv.FormatInt(t.t.ID, 10)),
+			styles.labelStyle.Render("Status:"),
+			data.statusStyle.Render(strings.ToUpper(t.t.Status)),
 		),
-		lipgloss.JoinHorizontal(lipgloss.Left,
-			labelStyle.Render("Payee:"),
-			valueStyle.Render(t.t.Payee),
-		),
-		lipgloss.JoinHorizontal(lipgloss.Left,
-			labelStyle.Render("Amount:"),
-			valueStyle.Render(amountStr),
-		),
-		lipgloss.JoinHorizontal(lipgloss.Left,
-			labelStyle.Render("Currency:"),
-			valueStyle.Render(currencyStr),
-		),
-		lipgloss.JoinHorizontal(lipgloss.Left,
-			labelStyle.Render("Date:"),
-			valueStyle.Render(t.t.Date),
-		),
-		lipgloss.JoinHorizontal(lipgloss.Left,
-			labelStyle.Render("Status:"),
-			statusStyle.Render(strings.ToUpper(t.t.Status)),
-		),
-		lipgloss.JoinHorizontal(lipgloss.Left,
-			labelStyle.Render("Category:"),
-			valueStyle.Render(t.category.Name),
-		),
-		lipgloss.JoinHorizontal(lipgloss.Left,
-			labelStyle.Render("Account:"),
-			valueStyle.Render(accountName),
-		),
-		lipgloss.JoinHorizontal(lipgloss.Left,
-			labelStyle.Render("Tags:"),
-			valueStyle.Render(tagsStr),
-		),
+		createDetailRow("Category:", t.category.Name, styles),
+		createDetailRow("Account:", data.accountName, styles),
+		createDetailRow("Tags:", data.tagsStr, styles),
 	}
 
-	// Add optional fields if they exist
-	if t.t.RecurringID != 0 {
-		details = append(details, lipgloss.JoinHorizontal(lipgloss.Left,
-			labelStyle.Render("Recurring ID:"),
-			valueStyle.Render(strconv.FormatInt(t.t.RecurringID, 10)),
-		))
-	}
-
-	if t.t.GroupID != 0 {
-		details = append(details, lipgloss.JoinHorizontal(lipgloss.Left,
-			labelStyle.Render("Group ID:"),
-			valueStyle.Render(strconv.FormatInt(t.t.GroupID, 10)),
-		))
-	}
-
-	if t.t.ParentID != 0 {
-		details = append(details, lipgloss.JoinHorizontal(lipgloss.Left,
-			labelStyle.Render("Parent ID:"),
-			valueStyle.Render(strconv.FormatInt(t.t.ParentID, 10)),
-		))
-	}
-
-	if t.t.ExternalID != "" {
-		details = append(details, lipgloss.JoinHorizontal(lipgloss.Left,
-			labelStyle.Render("External ID:"),
-			valueStyle.Render(t.t.ExternalID),
-		))
-	}
-
-	if t.t.IsGroup {
-		details = append(details, lipgloss.JoinHorizontal(lipgloss.Left,
-			labelStyle.Render("Group Transaction:"),
-			valueStyle.Render("Yes"),
-		))
-	}
+	// Add optional fields
+	details = appendOptionalFields(details, t, styles)
 
 	// Add notes section
-	notesSection := lipgloss.JoinHorizontal(lipgloss.Left,
-		labelStyle.Render("Notes:"),
-		valueStyle.Render(notesStr),
+	notesSection := createDetailRow("Notes:", data.notesStr, styles)
+	details = append(details, notesSection)
+
+	return details
+}
+
+func createDetailRow(label, value string, styles detailedTransactionStyles) string {
+	return lipgloss.JoinHorizontal(lipgloss.Left,
+		styles.labelStyle.Render(label),
+		styles.valueStyle.Render(value),
 	)
+}
 
-	// Combine all details
-	allDetails := append(details, notesSection)
-	content := lipgloss.JoinVertical(lipgloss.Left, allDetails...)
+func appendOptionalFields(details []string, t *transactionItem, styles detailedTransactionStyles) []string {
+	if t.t.RecurringID != 0 {
+		details = append(details, createDetailRow("Recurring ID:", strconv.FormatInt(t.t.RecurringID, 10), styles))
+	}
+	if t.t.GroupID != 0 {
+		details = append(details, createDetailRow("Group ID:", strconv.FormatInt(t.t.GroupID, 10), styles))
+	}
+	if t.t.ParentID != 0 {
+		details = append(details, createDetailRow("Parent ID:", strconv.FormatInt(t.t.ParentID, 10), styles))
+	}
+	if t.t.ExternalID != "" {
+		details = append(details, createDetailRow("External ID:", t.t.ExternalID, styles))
+	}
+	if t.t.IsGroup {
+		details = append(details, createDetailRow("Group Transaction:", "Yes", styles))
+	}
+	return details
+}
 
-	// Add instructions
-	instructionsStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#666666")).
-		Italic(true).
-		MarginTop(2)
-
-	instructions := instructionsStyle.Render("Press 'esc' to return to transaction list")
-
-	// Final layout
-	finalContent := lipgloss.JoinVertical(lipgloss.Left,
-		header,
-		containerStyle.Render(content),
-		instructions,
-	)
-
-	return finalContent
+func createInstructions(styles detailedTransactionStyles) string {
+	return styles.instructionStyle.Render("Press 'esc' to return to transaction list")
 }

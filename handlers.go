@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
@@ -319,26 +318,4 @@ func (m model) updateTransactionStatus(t *lm.Transaction) tea.Cmd {
 
 		return updateTransactionMsg{t: t, fieldUpdated: "status"}
 	}
-}
-
-func (m model) handleInsertTransactionSuccess(msg insertTransactionSuccessMsg) (tea.Model, tea.Cmd) {
-	log.Debug("transaction inserted successfully", "id", msg.transactionID)
-
-	// Show success message
-	statusCmd := m.transactions.NewStatusMessage(
-		fmt.Sprintf("Transaction inserted successfully (ID: %d)", msg.transactionID),
-	)
-
-	return m, statusCmd
-}
-
-func (m model) handleInsertTransactionError(msg insertTransactionErrorMsg) (tea.Model, tea.Cmd) {
-	log.Error("failed to insert transaction", "error", msg.error)
-
-	// Show error message
-	statusCmd := m.transactions.NewStatusMessage(
-		fmt.Sprintf("Failed to insert transaction: %v", msg.error),
-	)
-
-	return m, statusCmd
 }

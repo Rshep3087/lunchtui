@@ -127,12 +127,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case getBudgetsMsg:
 		return m.handleGetBudgets(msg)
-
-	case insertTransactionSuccessMsg:
-		return m.handleInsertTransactionSuccess(msg)
-
-	case insertTransactionErrorMsg:
-		return m.handleInsertTransactionError(msg)
 	}
 
 	var cmd tea.Cmd
@@ -166,7 +160,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func rootAction(ctx context.Context, c *cli.Command) error {
+func rootAction(_ context.Context, c *cli.Command) error {
 	if c.Bool("debug") {
 		f, err := tea.LogToFileWith("lunchtui.log", "lunchtui", log.Default())
 		if err != nil {

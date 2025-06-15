@@ -144,13 +144,13 @@ func insertTransactionAction(ctx context.Context, c *cli.Command) error {
 
 	// Validate and parse the amount
 	amountStr := c.String("amount")
-	if _, err := strconv.ParseFloat(amountStr, 64); err != nil {
+	if _, err = strconv.ParseFloat(amountStr, 64); err != nil {
 		return fmt.Errorf("invalid amount: %s", amountStr)
 	}
 
 	// Validate date format
 	dateStr := c.String("date")
-	if _, err := time.Parse("2006-01-02", dateStr); err != nil {
+	if _, err = time.Parse("2006-01-02", dateStr); err != nil {
 		return fmt.Errorf("invalid date format: %s (expected YYYY-MM-DD)", dateStr)
 	}
 
@@ -165,7 +165,8 @@ func insertTransactionAction(ctx context.Context, c *cli.Command) error {
 	if tagStrings := c.StringSlice("tags"); len(tagStrings) > 0 {
 		tagIDs = make([]int, 0, len(tagStrings))
 		for _, tagStr := range tagStrings {
-			tagID, err := strconv.Atoi(tagStr)
+			var tagID int
+			tagID, err = strconv.Atoi(tagStr)
 			if err != nil {
 				return fmt.Errorf("invalid tag ID: %s", tagStr)
 			}
@@ -220,7 +221,7 @@ func insertTransactionAction(ctx context.Context, c *cli.Command) error {
 		return errors.New("no transaction IDs returned")
 	}
 
-	// Success output
-	fmt.Printf("Transaction inserted successfully with ID: %d\n", resp.IDs[0])
+	// Success
+	log.Infof("Transaction inserted successfully with ID: %d", resp.IDs[0])
 	return nil
 }

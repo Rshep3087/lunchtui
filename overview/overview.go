@@ -363,9 +363,13 @@ func (m *Model) summaryView() string {
 
 	// Display savings rate
 	if m.summary.savingsRate >= 0 {
-		b.WriteString(fmt.Sprintf("Savings Rate: %s", m.Styles.IncomeStyle.Render(fmt.Sprintf("%.1f%%", m.summary.savingsRate))))
+		b.WriteString(fmt.Sprintf(
+			"Savings Rate: %s", m.Styles.IncomeStyle.Render(fmt.Sprintf("%.1f%%", m.summary.savingsRate)),
+		))
 	} else {
-		b.WriteString(fmt.Sprintf("Savings Rate: %s", m.Styles.SpentStyle.Render(fmt.Sprintf("%.1f%%", m.summary.savingsRate))))
+		b.WriteString(fmt.Sprintf(
+			"Savings Rate: %s", m.Styles.SpentStyle.Render(fmt.Sprintf("%.1f%%", m.summary.savingsRate)),
+		))
 	}
 
 	return lipgloss.JoinVertical(lipgloss.Top,

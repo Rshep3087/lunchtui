@@ -96,8 +96,31 @@ func handleKeyPress(msg tea.KeyMsg, m *model) (tea.Model, tea.Cmd) {
 	k := msg.String()
 	log.Debug("key pressed", "key", k)
 
-	// always quit on ctrl+c
-	if k == "ctrl+c" {
+	// Handle special keys first
+	if model, cmd := handleSpecialKeys(k, m); cmd != nil {
+		return model, cmd
+	}
+
+	// Check if input is blocked by active forms
+	if isInputBlocked(m) {
+		return m, nil
+	}
+
+	// Handle navigation keys
+	if model, cmd := handleNavigationKeys(k, m); cmd != nil {
+		return model, cmd
+	}
+
+	// Handle session state changes
+	if model, cmd := handleSessionStateKeys(k, m); cmd != nil {
+		return model, cmd
+	}
+
+	return m, nil
+}
+
+func handleSpecialKeys(k string, m *model) (tea.Model, tea.Cmd) {
+	if k == "ctrl+c" || k == "q" {
 		return m, tea.Quit
 	}
 
@@ -105,69 +128,75 @@ func handleKeyPress(msg tea.KeyMsg, m *model) (tea.Model, tea.Cmd) {
 		return handleEscape(m)
 	}
 
-	// check if any of the models that support filtering.
+	return m, nil
+}
+
+func isInputBlocked(m *model) bool {
 	if m.transactions.FilterState() == list.Filtering {
-		return m, nil
+		return true
 	}
 
 	if m.categoryForm != nil && m.categoryForm.State == huh.StateNormal {
-		return m, nil
+		return true
 	}
 
 	if m.insertTransactionForm != nil && m.insertTransactionForm.State == huh.StateNormal {
-		return m, nil
+		return true
 	}
 
-	if k == "q" {
-		return m, tea.Quit
+	if m.sessionState == loading {
+		return true
 	}
 
-	if k == "]" {
+	return false
+}
+
+func handleNavigationKeys(k string, m *model) (tea.Model, tea.Cmd) {
+	switch k {
+	case "]":
 		return advancePeriod(m)
-	}
-
-	if k == "[" {
+	case "[":
 		return retrievePreviousPeriod(m)
-	}
-
-	if k == "s" {
+	case "s":
 		return switchPeriodType(m)
 	}
 
-	// should this be deleted?
-	if m.sessionState == loading {
-		return m, nil
-	}
+	return m, nil
+}
 
-	if k == "t" && m.sessionState != transactions {
-		m.previousSessionState = m.sessionState
-		m.sessionState = transactions
-		return m, nil
-	}
-
-	if k == "r" && m.sessionState != recurringExpenses {
-		m.previousSessionState = m.sessionState
-		m.recurringExpenses.SetFocus(true)
-		m.sessionState = recurringExpenses
-		return m, nil
-	}
-
-	if k == "o" && m.sessionState != overviewState {
-		m.previousSessionState = m.sessionState
-		m.sessionState = overviewState
-		return m, nil
-	}
-
-	if k == "b" && m.sessionState != budgets {
-		m.previousSessionState = budgets
-		m.loadingState.unset("budgets")
-		m.sessionState = loading
-		return m, m.getBudgets
-	}
-
-	if k == "?" && m.sessionState != transactions {
-		m.help.ShowAll = !m.help.ShowAll
-		return m, nil
+func handleSessionStateKeys(k string, m *model) (tea.Model, tea.Cmd) {
+	switch k {
+	case "t":
+		if m.sessionState != transactions {
+			m.previousSessionState = m.sessionState
+			m.sessionState = transactions
+			return m, nil
+		}
+	case "r":
+		if m.sessionState != recurringExpenses {
+			m.previousSessionState = m.sessionState
+			m.recurringExpenses.SetFocus(true)
+			m.sessionState = recurringExpenses
+			return m, nil
+		}
+	case "o":
+		if m.sessionState != overviewState {
+			m.previousSessionState = m.sessionState
+			m.sessionState = overviewState
+			return m, nil
+		}
+	case "b":
+		if m.sessionState != budgets {
+			m.previousSessionState = budgets
+			m.loadingState.unset("budgets")
+			m.sessionState = loading
+			return m, m.getBudgets
+		}
+	case "?":
+		if m.sessionState != transactions {
+			m.help.ShowAll = !m.help.ShowAll
+			return m, nil
+		}
 	}
 
 	return m, nil
