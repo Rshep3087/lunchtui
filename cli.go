@@ -344,7 +344,7 @@ func outputCategoriesTable(categories []*lm.Category) error {
 	t := table.New().
 		Border(lipgloss.NormalBorder()).
 		BorderStyle(lipgloss.NewStyle().Foreground(purple)).
-		StyleFunc(func(row, col int) lipgloss.Style {
+		StyleFunc(func(row, _ int) lipgloss.Style {
 			switch {
 			case row == table.HeaderRow:
 				return headerStyle
@@ -363,7 +363,7 @@ func outputCategoriesTable(categories []*lm.Category) error {
 			description = "-"
 		}
 		t.Row(
-			fmt.Sprintf("%d", category.ID),
+			strconv.FormatInt(category.ID, 10),
 			category.Name,
 			description,
 			strconv.FormatBool(category.IsIncome),

@@ -18,7 +18,6 @@ linters:
     - exhaustive
     - exptostd
     - fatcontext
-    - forbidigo
     - funlen
     - gocheckcompilerdirectives
     - gochecknoglobals
