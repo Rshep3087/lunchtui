@@ -20,10 +20,6 @@ func (m model) View() string {
 		b.WriteString(detailedTransactionView(m))
 	case categorizeTransaction:
 		b.WriteString(categorizeTransactionView(m))
-	case insertTransaction:
-		// Insert transaction functionality is disabled
-		b.WriteString("Insert transaction functionality is currently disabled. Press 'esc' to return.")
-		// b.WriteString(insertTransactionView(m))
 	case recurringExpenses:
 		b.WriteString(m.recurringExpenses.View())
 	case budgets:
@@ -51,8 +47,6 @@ func (m model) renderTitle() string {
 		currentPage = "transaction details"
 	case categorizeTransaction:
 		currentPage = "categorize transaction"
-	case insertTransaction:
-		currentPage = "insert transaction"
 	case recurringExpenses:
 		currentPage = "recurring expenses"
 	case budgets:

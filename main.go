@@ -138,9 +138,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case categorizeTransaction:
 		return updateCategorizeTransaction(msg, &m)
 
-	case insertTransaction:
-		return updateInsertTransaction(msg, &m)
-
 	case detailedTransaction:
 		return updateDetailedTransaction(msg, m)
 

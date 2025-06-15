@@ -22,10 +22,27 @@ func advancePeriod(m *model) (tea.Model, tea.Cmd) {
 	case budgets:
 		m.loadingState.unset("budgets")
 		return m, m.getBudgets
-	default:
+	case overviewState:
+		m.loadingState.unset("transactions")
+		return m, m.getTransactions
+	case transactions:
+		m.loadingState.unset("transactions")
+		return m, m.getTransactions
+	case detailedTransaction:
+		m.loadingState.unset("transactions")
+		return m, m.getTransactions
+	case categorizeTransaction:
+		m.loadingState.unset("transactions")
+		return m, m.getTransactions
+	case loading:
+		m.loadingState.unset("transactions")
+		return m, m.getTransactions
+	case recurringExpenses:
 		m.loadingState.unset("transactions")
 		return m, m.getTransactions
 	}
+
+	return m, nil
 }
 
 // retrievePreviousPeriod retrieves the previous period by one month or year depending on the period type.
@@ -46,10 +63,27 @@ func retrievePreviousPeriod(m *model) (tea.Model, tea.Cmd) {
 	case budgets:
 		m.loadingState.unset("budgets")
 		return m, m.getBudgets
-	default:
+	case overviewState:
+		m.loadingState.unset("transactions")
+		return m, m.getTransactions
+	case transactions:
+		m.loadingState.unset("transactions")
+		return m, m.getTransactions
+	case detailedTransaction:
+		m.loadingState.unset("transactions")
+		return m, m.getTransactions
+	case categorizeTransaction:
+		m.loadingState.unset("transactions")
+		return m, m.getTransactions
+	case loading:
+		m.loadingState.unset("transactions")
+		return m, m.getTransactions
+	case recurringExpenses:
 		m.loadingState.unset("transactions")
 		return m, m.getTransactions
 	}
+
+	return m, nil
 }
 
 func switchPeriodType(m *model) (tea.Model, tea.Cmd) {
@@ -67,8 +101,25 @@ func switchPeriodType(m *model) (tea.Model, tea.Cmd) {
 	case budgets:
 		m.loadingState.unset("budgets")
 		return m, m.getBudgets
-	default:
+	case overviewState:
+		m.loadingState.unset("transactions")
+		return m, m.getTransactions
+	case transactions:
+		m.loadingState.unset("transactions")
+		return m, m.getTransactions
+	case detailedTransaction:
+		m.loadingState.unset("transactions")
+		return m, m.getTransactions
+	case categorizeTransaction:
+		m.loadingState.unset("transactions")
+		return m, m.getTransactions
+	case loading:
+		m.loadingState.unset("transactions")
+		return m, m.getTransactions
+	case recurringExpenses:
 		m.loadingState.unset("transactions")
 		return m, m.getTransactions
 	}
+
+	return m, nil
 }
