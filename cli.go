@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"sort"
 	"strconv"
 	"time"
@@ -253,6 +254,13 @@ func createCategoriesListCommand() *cli.Command {
 				Aliases: []string{"o"},
 				Usage:   "Output format: table or json",
 				Value:   "table",
+				Validator: func(s string) error {
+					validFormats := []string{"table", "json"}
+					if !slices.Contains(validFormats, s) {
+						return fmt.Errorf("invalid output format: %s (must be one of %v)", s, validFormats)
+					}
+					return nil
+				},
 			},
 		},
 		Action: categoriesListAction,
