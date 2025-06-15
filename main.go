@@ -157,7 +157,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func rootAction(_ context.Context, c *cli.Command) error {
+func rootAction(ctx context.Context, c *cli.Command) error {
 	if c.Bool("debug") {
 		f, err := tea.LogToFileWith("lunchtui.log", "lunchtui", log.Default())
 		if err != nil {
@@ -168,7 +168,7 @@ func rootAction(_ context.Context, c *cli.Command) error {
 		log.SetLevel(log.DebugLevel)
 	}
 
-	lmc, err := lm.NewClient(c.String("token"))
+	lmc, err := getClientFromContext(ctx)
 	if err != nil {
 		return err
 	}

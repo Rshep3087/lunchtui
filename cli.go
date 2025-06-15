@@ -17,6 +17,23 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+// contextKey is used as a key for storing values in context.
+type contextKey string
+
+const (
+	// clientContextKey is the key for storing the Lunch Money client in context.
+	clientContextKey contextKey = "lunchMoneyClient"
+)
+
+// getClientFromContext retrieves the Lunch Money client from context.
+func getClientFromContext(ctx context.Context) (*lm.Client, error) {
+	client, ok := ctx.Value(clientContextKey).(*lm.Client)
+	if !ok {
+		return nil, errors.New("lunch money client not found in context")
+	}
+	return client, nil
+}
+
 // createRootCommand creates the root CLI command with subcommands.
 func createRootCommand() *cli.Command {
 	return &cli.Command{
@@ -37,6 +54,15 @@ func createRootCommand() *cli.Command {
 			} else {
 				log.SetLevel(log.InfoLevel)
 			}
+
+			// Create Lunch Money client and store in context
+			lmc, err := lm.NewClient(c.String("token"))
+			if err != nil {
+				return ctx, fmt.Errorf("failed to create Lunch Money client: %w", err)
+			}
+
+			// Store client in context
+			ctx = context.WithValue(ctx, clientContextKey, lmc)
 
 			return ctx, nil
 		},
@@ -148,9 +174,9 @@ func createTransactionInsertCommand() *cli.Command {
 
 // insertTransactionAction handles the transaction insert CLI command.
 func insertTransactionAction(ctx context.Context, c *cli.Command) error {
-	lmc, err := lm.NewClient(c.String("token"))
+	lmc, err := getClientFromContext(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to create Lunch Money client: %w", err)
+		return err
 	}
 
 	// Validate and parse the amount
@@ -274,10 +300,9 @@ func createCategoriesListCommand() *cli.Command {
 
 // categoriesListAction handles the categories list CLI command.
 func categoriesListAction(ctx context.Context, c *cli.Command) error {
-	// Create Lunch Money client
-	lmc, err := lm.NewClient(c.String("token"))
+	lmc, err := getClientFromContext(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to create Lunch Money client: %w", err)
+		return err
 	}
 
 	// Fetch categories
