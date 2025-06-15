@@ -29,6 +29,17 @@ func createRootCommand() *cli.Command {
 			createTransactionCommand(),
 			createCategoriesCommand(),
 		},
+		Before: func(ctx context.Context, c *cli.Command) (context.Context, error) {
+			// Setup logging if debug is enabled
+			if c.Bool("debug") {
+				log.SetLevel(log.DebugLevel)
+				log.Debug("Debug logging enabled")
+			} else {
+				log.SetLevel(log.InfoLevel)
+			}
+
+			return ctx, nil
+		},
 	}
 }
 
@@ -137,12 +148,6 @@ func createTransactionInsertCommand() *cli.Command {
 
 // insertTransactionAction handles the transaction insert CLI command.
 func insertTransactionAction(ctx context.Context, c *cli.Command) error {
-	// Setup logging if debug is enabled
-	if c.Bool("debug") {
-		log.SetLevel(log.DebugLevel)
-	}
-
-	// Create Lunch Money client
 	lmc, err := lm.NewClient(c.String("token"))
 	if err != nil {
 		return fmt.Errorf("failed to create Lunch Money client: %w", err)
@@ -269,17 +274,6 @@ func createCategoriesListCommand() *cli.Command {
 
 // categoriesListAction handles the categories list CLI command.
 func categoriesListAction(ctx context.Context, c *cli.Command) error {
-	// Setup logging if debug is enabled
-	if c.Bool("debug") {
-		log.SetLevel(log.DebugLevel)
-	}
-
-	// Validate output format
-	outputFormat := c.String("output")
-	if outputFormat != "table" && outputFormat != "json" {
-		return fmt.Errorf("invalid output format: %s (must be 'table' or 'json')", outputFormat)
-	}
-
 	// Create Lunch Money client
 	lmc, err := lm.NewClient(c.String("token"))
 	if err != nil {
@@ -305,13 +299,13 @@ func categoriesListAction(ctx context.Context, c *cli.Command) error {
 	})
 
 	// Output based on format
-	switch outputFormat {
+	switch c.String("output") {
 	case "json":
 		return outputJSON(categories)
 	case "table":
 		return outputCategoriesTable(categories)
 	default:
-		return fmt.Errorf("unsupported output format: %s", outputFormat)
+		return errors.New("unsupported output format")
 	}
 }
 
