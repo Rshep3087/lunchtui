@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 	"time"
 
@@ -22,6 +23,7 @@ func createRootCommand() *cli.Command {
 		Action:                rootAction,
 		Commands: []*cli.Command{
 			createTransactionCommand(),
+			createCategoriesCommand(),
 		},
 	}
 }
@@ -223,5 +225,70 @@ func insertTransactionAction(ctx context.Context, c *cli.Command) error {
 
 	// Success
 	log.Infof("Transaction inserted successfully with ID: %d", resp.IDs[0])
+	return nil
+}
+
+// createCategoriesCommand creates the categories command with subcommands.
+func createCategoriesCommand() *cli.Command {
+	return &cli.Command{
+		Name:  "categories",
+		Usage: "Category management commands",
+		Commands: []*cli.Command{
+			createCategoriesListCommand(),
+		},
+	}
+}
+
+// createCategoriesListCommand creates the categories list subcommand.
+func createCategoriesListCommand() *cli.Command {
+	return &cli.Command{
+		Name:   "list",
+		Usage:  "List all categories with their IDs and details",
+		Action: categoriesListAction,
+	}
+}
+
+// categoriesListAction handles the categories list CLI command.
+func categoriesListAction(ctx context.Context, c *cli.Command) error {
+	// Setup logging if debug is enabled
+	if c.Bool("debug") {
+		log.SetLevel(log.DebugLevel)
+	}
+
+	// Create Lunch Money client
+	lmc, err := lm.NewClient(c.String("token"))
+	if err != nil {
+		return fmt.Errorf("failed to create Lunch Money client: %w", err)
+	}
+
+	// Fetch categories
+	categories, err := lmc.GetCategories(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to fetch categories: %w", err)
+	}
+
+	// Sort categories by name for consistent output
+	sort.Slice(categories, func(i, j int) bool {
+		return categories[i].Name < categories[j].Name
+	})
+
+	// Display categories
+	fmt.Printf("Categories:\n\n")
+	for _, category := range categories {
+		fmt.Printf("ID: %d\n", category.ID)
+		fmt.Printf("Name: %s\n", category.Name)
+		if category.Description != "" {
+			fmt.Printf("Description: %s\n", category.Description)
+		}
+		fmt.Printf("\n")
+	}
+
+	// Also display the special "Uncategorized" category
+	fmt.Printf("ID: 0\n")
+	fmt.Printf("Name: Uncategorized\n")
+	fmt.Printf("Description: Transactions without a category\n")
+	fmt.Printf("\n")
+
+	fmt.Printf("Total categories: %d\n", len(categories)+1)
 	return nil
 }
