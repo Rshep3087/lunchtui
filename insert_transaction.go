@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strconv"
@@ -70,7 +71,7 @@ func newInsertTransactionForm(categories []*lm.Category, plaidAccounts map[int64
 				Placeholder("Enter payee name...").
 				Validate(func(s string) error {
 					if s == "" {
-						return fmt.Errorf("payee is required")
+						return errors.New("payee is required")
 					}
 					return nil
 				}),
@@ -82,10 +83,10 @@ func newInsertTransactionForm(categories []*lm.Category, plaidAccounts map[int64
 				Placeholder("Enter amount (e.g., -50.00 or 100.00)...").
 				Validate(func(s string) error {
 					if s == "" {
-						return fmt.Errorf("amount is required")
+						return errors.New("amount is required")
 					}
 					if _, err := strconv.ParseFloat(s, 64); err != nil {
-						return fmt.Errorf("amount must be a valid number")
+						return errors.New("amount must be a valid number")
 					}
 					return nil
 				}),
@@ -98,10 +99,10 @@ func newInsertTransactionForm(categories []*lm.Category, plaidAccounts map[int64
 				Placeholder("YYYY-MM-DD").
 				Validate(func(s string) error {
 					if s == "" {
-						return fmt.Errorf("date is required")
+						return errors.New("date is required")
 					}
 					if _, err := time.Parse("2006-01-02", s); err != nil {
-						return fmt.Errorf("date must be in YYYY-MM-DD format")
+						return errors.New("date must be in YYYY-MM-DD format")
 					}
 					return nil
 				}),
@@ -260,13 +261,13 @@ func submitInsertTransactionForm(m model) tea.Msg {
 	log.Debug("transaction inserted", "response", resp)
 
 	if len(resp.IDs) == 0 {
-		return insertTransactionErrorMsg{error: fmt.Errorf("no transaction IDs returned")}
+		return insertTransactionErrorMsg{error: errors.New("no transaction IDs returned")}
 	}
 
 	return insertTransactionSuccessMsg{transactionID: resp.IDs[0]}
 }
 
-// Message types for insert transaction responses
+// Message types for insert transaction responses.
 type insertTransactionSuccessMsg struct {
 	transactionID int64
 }

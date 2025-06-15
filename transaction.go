@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -436,7 +437,7 @@ func detailedTransactionView(m model) string {
 	details := []string{
 		lipgloss.JoinHorizontal(lipgloss.Left,
 			labelStyle.Render("ID:"),
-			valueStyle.Render(fmt.Sprintf("%d", t.t.ID)),
+			valueStyle.Render(strconv.FormatInt(t.t.ID, 10)),
 		),
 		lipgloss.JoinHorizontal(lipgloss.Left,
 			labelStyle.Render("Payee:"),
@@ -476,21 +477,21 @@ func detailedTransactionView(m model) string {
 	if t.t.RecurringID != 0 {
 		details = append(details, lipgloss.JoinHorizontal(lipgloss.Left,
 			labelStyle.Render("Recurring ID:"),
-			valueStyle.Render(fmt.Sprintf("%d", t.t.RecurringID)),
+			valueStyle.Render(strconv.FormatInt(t.t.RecurringID, 10)),
 		))
 	}
 
 	if t.t.GroupID != 0 {
 		details = append(details, lipgloss.JoinHorizontal(lipgloss.Left,
 			labelStyle.Render("Group ID:"),
-			valueStyle.Render(fmt.Sprintf("%d", t.t.GroupID)),
+			valueStyle.Render(strconv.FormatInt(t.t.GroupID, 10)),
 		))
 	}
 
 	if t.t.ParentID != 0 {
 		details = append(details, lipgloss.JoinHorizontal(lipgloss.Left,
 			labelStyle.Render("Parent ID:"),
-			valueStyle.Render(fmt.Sprintf("%d", t.t.ParentID)),
+			valueStyle.Render(strconv.FormatInt(t.t.ParentID, 10)),
 		))
 	}
 

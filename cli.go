@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -216,7 +217,7 @@ func insertTransactionAction(ctx context.Context, c *cli.Command) error {
 	log.Debug("transaction inserted", "response", resp)
 
 	if len(resp.IDs) == 0 {
-		return fmt.Errorf("no transaction IDs returned")
+		return errors.New("no transaction IDs returned")
 	}
 
 	// Success output

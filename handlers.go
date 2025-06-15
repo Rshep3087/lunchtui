@@ -12,7 +12,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// Message types for different API responses
+// Message types for different API responses.
 type (
 	getRecurringExpensesMsg struct {
 		recurringExpenses []*lm.RecurringExpense
@@ -51,7 +51,7 @@ type (
 	}
 )
 
-// Message handlers
+// Message handlers.
 func (m model) handleWindowSize(msg tea.WindowSizeMsg) (tea.Model, tea.Cmd) {
 	h, v := m.styles.docStyle.GetFrameSize()
 
@@ -184,7 +184,7 @@ func (m model) handleGetBudgets(msg getBudgetsMsg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-// API call functions
+// API call functions.
 func (m model) getRecurringExpenses() tea.Msg {
 	ctx := context.Background()
 

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -510,7 +510,7 @@ func TestInsertTransactionMessageHandling(t *testing.T) {
 	be.Nonzero(t, cmd)
 
 	// Test error message handling
-	errorMsg := insertTransactionErrorMsg{error: fmt.Errorf("test error")}
+	errorMsg := insertTransactionErrorMsg{error: errors.New("test error")}
 	_, cmd = m.handleInsertTransactionError(errorMsg)
 
 	// Should return a status command

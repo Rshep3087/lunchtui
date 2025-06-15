@@ -2,6 +2,7 @@ package overview
 
 import (
 	"fmt"
+	"strconv"
 
 	"slices"
 	"strings"
@@ -331,8 +332,8 @@ func (m *Model) transactionMetricsView() string {
 	var b strings.Builder
 
 	b.WriteString(fmt.Sprintf("Total: %d\n", m.transactionMetrics.total))
-	b.WriteString(fmt.Sprintf("Pending: %s\n", m.Styles.SpentStyle.Render(fmt.Sprintf("%d", m.transactionMetrics.pending))))
-	b.WriteString(fmt.Sprintf("Unreviewed: %s", m.Styles.SpentStyle.Render(fmt.Sprintf("%d", m.transactionMetrics.unreviewed))))
+	b.WriteString(fmt.Sprintf("Pending: %s\n", m.Styles.SpentStyle.Render(strconv.Itoa(m.transactionMetrics.pending))))
+	b.WriteString(fmt.Sprintf("Unreviewed: %s", m.Styles.SpentStyle.Render(strconv.Itoa(m.transactionMetrics.unreviewed))))
 
 	return lipgloss.JoinVertical(lipgloss.Top,
 		lipgloss.NewStyle().Bold(true).Render("Transaction Metrics"),

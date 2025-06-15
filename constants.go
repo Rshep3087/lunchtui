@@ -1,12 +1,12 @@
 package main
 
-// Period types
+// Period types.
 const (
 	monthlyPeriodType = "month"
 	annualPeriodType  = "year"
 )
 
-// Session states
+// Session states.
 type sessionState int
 
 const (

@@ -15,7 +15,7 @@ type budgetItem struct {
 	category *lm.Category
 }
 
-// Implement list.Item interface for budgetItem
+// Implement list.Item interface for budgetItem.
 func (b budgetItem) Title() string {
 	return b.b.CategoryName
 }
@@ -46,7 +46,7 @@ func (b budgetItem) FilterValue() string {
 	return b.b.CategoryName
 }
 
-// createBudgetList creates a new list model for budgets
+// createBudgetList creates a new list model for budgets.
 func createBudgetList(delegate list.DefaultDelegate) list.Model {
 	budgetList := list.New([]list.Item{}, delegate, 0, 0)
 	budgetList.SetShowTitle(false)
@@ -54,7 +54,7 @@ func createBudgetList(delegate list.DefaultDelegate) list.Model {
 	return budgetList
 }
 
-// updateBudgets handles the budgets view updates
+// updateBudgets handles the budgets view updates.
 func updateBudgets(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 	// Period navigation and other keys are handled in handleKeyPress
 	// so we just need to handle the list updates here
@@ -63,7 +63,7 @@ func updateBudgets(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-// budgetsView renders the budgets view
+// budgetsView renders the budgets view.
 func budgetsView(m model) string {
 	return m.budgets.View()
 }
