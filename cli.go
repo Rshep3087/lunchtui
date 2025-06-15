@@ -2,11 +2,16 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
+	"sort"
 	"strconv"
 	"time"
 
+	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss/table"
 	"github.com/charmbracelet/log"
 	lm "github.com/icco/lunchmoney"
 	"github.com/urfave/cli/v3"
@@ -22,6 +27,18 @@ func createRootCommand() *cli.Command {
 		Action:                rootAction,
 		Commands: []*cli.Command{
 			createTransactionCommand(),
+			createCategoriesCommand(),
+		},
+		Before: func(ctx context.Context, c *cli.Command) (context.Context, error) {
+			// Setup logging if debug is enabled
+			if c.Bool("debug") {
+				log.SetLevel(log.DebugLevel)
+				log.Debug("Debug logging enabled")
+			} else {
+				log.SetLevel(log.InfoLevel)
+			}
+
+			return ctx, nil
 		},
 	}
 }
@@ -131,12 +148,6 @@ func createTransactionInsertCommand() *cli.Command {
 
 // insertTransactionAction handles the transaction insert CLI command.
 func insertTransactionAction(ctx context.Context, c *cli.Command) error {
-	// Setup logging if debug is enabled
-	if c.Bool("debug") {
-		log.SetLevel(log.DebugLevel)
-	}
-
-	// Create Lunch Money client
 	lmc, err := lm.NewClient(c.String("token"))
 	if err != nil {
 		return fmt.Errorf("failed to create Lunch Money client: %w", err)
@@ -223,5 +234,141 @@ func insertTransactionAction(ctx context.Context, c *cli.Command) error {
 
 	// Success
 	log.Infof("Transaction inserted successfully with ID: %d", resp.IDs[0])
+	return nil
+}
+
+// createCategoriesCommand creates the categories command with subcommands.
+func createCategoriesCommand() *cli.Command {
+	return &cli.Command{
+		Name:  "categories",
+		Usage: "Category management commands",
+		Commands: []*cli.Command{
+			createCategoriesListCommand(),
+		},
+	}
+}
+
+// createCategoriesListCommand creates the categories list subcommand.
+func createCategoriesListCommand() *cli.Command {
+	return &cli.Command{
+		Name:  "list",
+		Usage: "List all categories with their IDs and details",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:    "output",
+				Aliases: []string{"o"},
+				Usage:   "Output format: table or json",
+				Value:   "table",
+				Validator: func(s string) error {
+					validFormats := []string{"table", "json"}
+					if !slices.Contains(validFormats, s) {
+						return fmt.Errorf("invalid output format: %s (must be one of %v)", s, validFormats)
+					}
+					return nil
+				},
+			},
+		},
+		Action: categoriesListAction,
+	}
+}
+
+// categoriesListAction handles the categories list CLI command.
+func categoriesListAction(ctx context.Context, c *cli.Command) error {
+	// Create Lunch Money client
+	lmc, err := lm.NewClient(c.String("token"))
+	if err != nil {
+		return fmt.Errorf("failed to create Lunch Money client: %w", err)
+	}
+
+	// Fetch categories
+	categories, err := lmc.GetCategories(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to fetch categories: %w", err)
+	}
+
+	// Sort categories by name for consistent output
+	sort.Slice(categories, func(i, j int) bool {
+		return categories[i].Name < categories[j].Name
+	})
+
+	// Add the special "Uncategorized" category
+	categories = append(categories, &lm.Category{
+		ID:          0,
+		Name:        "uncategorized",
+		Description: "Transactions without a category",
+	})
+
+	// Output based on format
+	switch c.String("output") {
+	case "json":
+		return outputJSON(categories)
+	case "table":
+		return outputCategoriesTable(categories)
+	default:
+		return errors.New("unsupported output format")
+	}
+}
+
+// outputCategoriesJSON outputs categories in JSON format.
+func outputJSON(data any) error {
+	jsonData, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal JSON: %w", err)
+	}
+
+	fmt.Println(string(jsonData))
+	return nil
+}
+
+// outputCategoriesTable outputs categories in table format.
+func outputCategoriesTable(categories []*lm.Category) error {
+	// Define table styles
+	var (
+		purple    = lipgloss.Color("99")
+		gray      = lipgloss.Color("245")
+		lightGray = lipgloss.Color("241")
+
+		headerStyle  = lipgloss.NewStyle().Foreground(purple).Bold(true).Align(lipgloss.Center)
+		cellStyle    = lipgloss.NewStyle().Padding(0, 1)
+		oddRowStyle  = cellStyle.Foreground(gray)
+		evenRowStyle = cellStyle.Foreground(lightGray)
+	)
+
+	// Create table
+	t := table.New().
+		Border(lipgloss.NormalBorder()).
+		BorderStyle(lipgloss.NewStyle().Foreground(purple)).
+		StyleFunc(func(row, _ int) lipgloss.Style {
+			switch {
+			case row == table.HeaderRow:
+				return headerStyle
+			case row%2 == 0:
+				return evenRowStyle
+			default:
+				return oddRowStyle
+			}
+		}).
+		Headers("ID", "NAME", "DESCRIPTION", "IS INCOME", "EXCLUDE FROM BUDGET", "EXCLUDE FROM TOTALS", "IS GROUP")
+
+	// Add categories to table
+	for _, category := range categories {
+		description := category.Description
+		if description == "" {
+			description = "-"
+		}
+		t.Row(
+			strconv.FormatInt(category.ID, 10),
+			category.Name,
+			description,
+			strconv.FormatBool(category.IsIncome),
+			strconv.FormatBool(category.ExcludeFromBudget),
+			strconv.FormatBool(category.ExcludeFromTotals),
+			strconv.FormatBool(category.IsGroup),
+		)
+	}
+
+	// Print the table
+	fmt.Println(t)
+
 	return nil
 }
