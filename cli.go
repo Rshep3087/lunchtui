@@ -87,7 +87,7 @@ func createTransactionInsertCommand() *cli.Command {
 			},
 			&cli.StringFlag{
 				Name:     "amount",
-				Usage:    "Transaction amount (positive for income, negative for expense)",
+				Usage:    "Transaction amount (positive for expense, negative for income)",
 				Required: true,
 			},
 			&cli.StringFlag{
@@ -111,7 +111,7 @@ func createTransactionInsertCommand() *cli.Command {
 			&cli.StringFlag{
 				Name:  "currency",
 				Usage: "Currency code",
-				Value: "USD",
+				Value: "usd",
 			},
 			&cli.StringSliceFlag{
 				Name:  "tags",

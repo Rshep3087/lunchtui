@@ -230,7 +230,6 @@ func createTransactionList(delegate list.DefaultDelegate, tlKeyMap *transactionL
 			tlKeyMap.categorizeTransaction,
 			tlKeyMap.filterUncleared,
 			tlKeyMap.refreshTransactions,
-			tlKeyMap.insertTransaction,
 		}
 	}
 	return transactionList

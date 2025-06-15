@@ -68,7 +68,6 @@ type transactionListKeyMap struct {
 	filterUncategorized   key.Binding
 	refreshTransactions   key.Binding
 	showDetailed          key.Binding
-	insertTransaction     key.Binding
 }
 
 func newTransactionListKeyMap() *transactionListKeyMap {
