@@ -383,7 +383,9 @@ func createOutputFormatFlag() *cli.StringFlag {
 // outputCategoriesTable outputs categories in table format.
 func outputCategoriesTable(categories []*lm.Category) error {
 	// Create table
-	t := createStyledTable("ID", "NAME", "DESCRIPTION", "IS INCOME", "EXCLUDE FROM BUDGET", "EXCLUDE FROM TOTALS", "IS GROUP")
+	t := createStyledTable(
+		"ID", "NAME", "DESCRIPTION", "IS INCOME", "EXCLUDE FROM BUDGET", "EXCLUDE FROM TOTALS", "IS GROUP",
+	)
 
 	// Add categories to table
 	for _, category := range categories {
@@ -487,9 +489,9 @@ func accountsListAction(ctx context.Context, c *cli.Command) error {
 
 	// Fetch assets
 	go func() {
-		assets, err := lmc.GetAssets(ctx)
-		if err != nil {
-			errorChan <- fmt.Errorf("failed to fetch assets: %w", err)
+		assets, assetsError := lmc.GetAssets(ctx)
+		if assetsError != nil {
+			errorChan <- fmt.Errorf("failed to fetch assets: %w", assetsError)
 			return
 		}
 		assetsChan <- assets
@@ -497,9 +499,9 @@ func accountsListAction(ctx context.Context, c *cli.Command) error {
 
 	// Fetch plaid accounts
 	go func() {
-		plaidAccounts, err := lmc.GetPlaidAccounts(ctx)
-		if err != nil {
-			errorChan <- fmt.Errorf("failed to fetch plaid accounts: %w", err)
+		plaidAccounts, plaidAccountsErr := lmc.GetPlaidAccounts(ctx)
+		if plaidAccountsErr != nil {
+			errorChan <- fmt.Errorf("failed to fetch plaid accounts: %w", plaidAccountsErr)
 			return
 		}
 		plaidAccountsChan <- plaidAccounts
@@ -512,8 +514,8 @@ func accountsListAction(ctx context.Context, c *cli.Command) error {
 		select {
 		case assets = <-assetsChan:
 		case plaidAccounts = <-plaidAccountsChan:
-		case err := <-errorChan:
-			return err
+		case fetchError := <-errorChan:
+			return fetchError
 		}
 	}
 
