@@ -17,15 +17,16 @@ func TestBudgetsNavigation(t *testing.T) {
 	m := model{
 		sessionState:         overviewState,
 		previousSessionState: overviewState,
-		loadingState:         newLoadingState("budgets"),
+		loadingState:         newLoadingState("categories", "transactions", "user", "accounts", "tags"),
 	}
 
 	// Test navigating to budgets
 	resultModel, cmd := handleKeyPress(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'b'}}, &m)
 	result := resultModel.(*model)
 
-	if result.sessionState != loading {
-		t.Errorf("Expected session state to be loading, got %v", result.sessionState)
+	// Budget loading doesn't block UI, so we go directly to budgets state
+	if result.sessionState != budgets {
+		t.Errorf("Expected session state to be budgets, got %v", result.sessionState)
 	}
 
 	if result.previousSessionState != budgets {

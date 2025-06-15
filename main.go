@@ -197,7 +197,6 @@ func rootAction(_ context.Context, c *cli.Command) error {
 			"user",
 			"accounts",
 			"tags",
-			"budgets",
 		),
 	}
 

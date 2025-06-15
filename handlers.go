@@ -177,9 +177,6 @@ func (m model) handleGetBudgets(msg getBudgetsMsg) (tea.Model, tea.Cmd) {
 	cmd := m.budgets.SetItems(items)
 	m.period = msg.period
 
-	m.loadingState.set("budgets")
-	m.sessionState = m.checkIfLoading()
-
 	return m, cmd
 }
 
