@@ -15,34 +15,19 @@ func advancePeriod(m *model) (tea.Model, tea.Cmd) {
 	}
 
 	m.previousSessionState = m.sessionState
-	m.sessionState = loading
 
 	// Reload data based on current session state
 	switch m.previousSessionState {
 	case budgets:
-		m.loadingState.unset("budgets")
+		// Budget loading doesn't block UI, stay in budgets state
+		m.sessionState = budgets
 		return m, m.getBudgets
-	case overviewState:
-		m.loadingState.unset("transactions")
-		return m, m.getTransactions
-	case transactions:
-		m.loadingState.unset("transactions")
-		return m, m.getTransactions
-	case detailedTransaction:
-		m.loadingState.unset("transactions")
-		return m, m.getTransactions
-	case categorizeTransaction:
-		m.loadingState.unset("transactions")
-		return m, m.getTransactions
-	case loading:
-		m.loadingState.unset("transactions")
-		return m, m.getTransactions
-	case recurringExpenses:
+	default:
+		// All other states need to wait for transactions to load
+		m.sessionState = loading
 		m.loadingState.unset("transactions")
 		return m, m.getTransactions
 	}
-
-	return m, nil
 }
 
 // retrievePreviousPeriod retrieves the previous period by one month or year depending on the period type.
@@ -56,34 +41,19 @@ func retrievePreviousPeriod(m *model) (tea.Model, tea.Cmd) {
 	}
 
 	m.previousSessionState = m.sessionState
-	m.sessionState = loading
 
 	// Reload data based on current session state
 	switch m.previousSessionState {
 	case budgets:
-		m.loadingState.unset("budgets")
+		// Budget loading doesn't block UI, stay in budgets state
+		m.sessionState = budgets
 		return m, m.getBudgets
-	case overviewState:
-		m.loadingState.unset("transactions")
-		return m, m.getTransactions
-	case transactions:
-		m.loadingState.unset("transactions")
-		return m, m.getTransactions
-	case detailedTransaction:
-		m.loadingState.unset("transactions")
-		return m, m.getTransactions
-	case categorizeTransaction:
-		m.loadingState.unset("transactions")
-		return m, m.getTransactions
-	case loading:
-		m.loadingState.unset("transactions")
-		return m, m.getTransactions
-	case recurringExpenses:
+	default:
+		// All other states need to wait for transactions to load
+		m.sessionState = loading
 		m.loadingState.unset("transactions")
 		return m, m.getTransactions
 	}
-
-	return m, nil
 }
 
 func switchPeriodType(m *model) (tea.Model, tea.Cmd) {
@@ -94,32 +64,17 @@ func switchPeriodType(m *model) (tea.Model, tea.Cmd) {
 	}
 
 	m.previousSessionState = m.sessionState
-	m.sessionState = loading
 
 	// Reload data based on current session state
 	switch m.previousSessionState {
 	case budgets:
-		m.loadingState.unset("budgets")
+		// Budget loading doesn't block UI, stay in budgets state
+		m.sessionState = budgets
 		return m, m.getBudgets
-	case overviewState:
-		m.loadingState.unset("transactions")
-		return m, m.getTransactions
-	case transactions:
-		m.loadingState.unset("transactions")
-		return m, m.getTransactions
-	case detailedTransaction:
-		m.loadingState.unset("transactions")
-		return m, m.getTransactions
-	case categorizeTransaction:
-		m.loadingState.unset("transactions")
-		return m, m.getTransactions
-	case loading:
-		m.loadingState.unset("transactions")
-		return m, m.getTransactions
-	case recurringExpenses:
+	default:
+		// All other states need to wait for transactions to load
+		m.sessionState = loading
 		m.loadingState.unset("transactions")
 		return m, m.getTransactions
 	}
-
-	return m, nil
 }

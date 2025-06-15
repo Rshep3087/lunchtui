@@ -15,7 +15,6 @@ linters:
     - errcheck
     - errname
     - errorlint
-    - exhaustive
     - exptostd
     - fatcontext
     - funlen
@@ -66,7 +65,6 @@ linters:
     - testpackage
     - tparallel
     - unconvert
-    - unparam
     - unused
     - usestdlibvars
     - usetesting
@@ -88,10 +86,6 @@ linters:
               desc: Use github.com/gofrs/uuid/v5 or later, it was not a go module before v5
     errcheck:
       check-type-assertions: true
-    exhaustive:
-      check:
-        - switch
-        - map
     exhaustruct:
       exclude:
         - ^net/http.Client$

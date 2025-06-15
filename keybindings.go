@@ -188,8 +188,7 @@ func handleSessionStateKeys(k string, m *model) (tea.Model, tea.Cmd) {
 	case "b":
 		if m.sessionState != budgets {
 			m.previousSessionState = budgets
-			m.loadingState.unset("budgets")
-			m.sessionState = loading
+			m.sessionState = budgets
 			return m, m.getBudgets
 		}
 	case "?":
