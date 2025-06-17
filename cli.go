@@ -46,6 +46,7 @@ func createRootCommand() *cli.Command {
 			createTransactionCommand(),
 			createCategoriesCommand(),
 			createAccountsCommand(),
+			createUserCommand(),
 		},
 		Before: func(ctx context.Context, c *cli.Command) (context.Context, error) {
 			// Setup logging if debug is enabled
@@ -570,6 +571,87 @@ func outputAccountsTable(accounts []Account) error {
 			account.Status,
 			account.AccountType,
 		)
+	}
+
+	// Print the table
+	fmt.Println(t)
+
+	return nil
+}
+
+// createUserCommand creates the user command with subcommands.
+func createUserCommand() *cli.Command {
+	return &cli.Command{
+		Name:  "user",
+		Usage: "User management commands",
+		Commands: []*cli.Command{
+			createUserGetCommand(),
+		},
+	}
+}
+
+// createUserGetCommand creates the user get subcommand.
+func createUserGetCommand() *cli.Command {
+	return &cli.Command{
+		Name:  "get",
+		Usage: "Get user information",
+		Flags: []cli.Flag{
+			createOutputFormatFlag(),
+		},
+		Action: userGetAction,
+	}
+}
+
+// userGetAction handles the user get CLI command.
+func userGetAction(ctx context.Context, c *cli.Command) error {
+	lmc, err := getClientFromContext(ctx)
+	if err != nil {
+		return fmt.Errorf("getting Lunch Money client from context: %w", err)
+	}
+
+	// Fetch user information
+	user, err := lmc.GetUser(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to fetch user information: %w", err)
+	}
+
+	// Output based on format
+	switch c.String("output") {
+	case "json":
+		return outputJSON(user)
+	case "table":
+		return outputUserTable(user)
+	default:
+		return errors.New("unsupported output format")
+	}
+}
+
+// outputUserTable outputs user information in table format.
+func outputUserTable(user *lm.User) error {
+	// Create table
+	t := createStyledTable("FIELD", "VALUE")
+
+	// Add user information to table
+	if user.UserID != 0 {
+		t.Row("User ID", strconv.Itoa(user.UserID))
+	}
+	if user.UserName != "" {
+		t.Row("Username", user.UserName)
+	}
+	if user.UserEmail != "" {
+		t.Row("Email", user.UserEmail)
+	}
+	if user.PrimaryCurrency != "" {
+		t.Row("Primary Currency", user.PrimaryCurrency)
+	}
+	if user.APIKeyLabel != "" {
+		t.Row("API Key Label", user.APIKeyLabel)
+	}
+	if user.BudgetName != "" {
+		t.Row("Budget Name", user.BudgetName)
+	}
+	if user.AccountID != 0 {
+		t.Row("Account ID", strconv.Itoa(user.AccountID))
 	}
 
 	// Print the table
