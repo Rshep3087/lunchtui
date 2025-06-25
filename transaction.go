@@ -23,7 +23,7 @@ type transactionItem struct {
 }
 
 func (t transactionItem) Title() string {
-	return t.t.Payee
+	return fmt.Sprintf("%s (%d)", t.t.Payee, t.t.ID)
 }
 
 func (t transactionItem) Description() string {
