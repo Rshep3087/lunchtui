@@ -60,10 +60,12 @@ func (m *Model) calculateSpendingBreakdown() []table.Row {
 		amount = amount.Absolute()
 
 		if _, exists := categoryTotals[category.Name]; !exists {
-			categoryTotals[category.Name] = money.New(0, "USD")
+			categoryTotals[category.Name] = money.New(0, amount.Currency().Code)
 		}
 
-		categoryTotals[category.Name], _ = categoryTotals[category.Name].Add(amount)
+		if categoryTotals[category.Name] != nil {
+			categoryTotals[category.Name], _ = categoryTotals[category.Name].Add(amount)
+		}
 	}
 
 	var sortedTotals []categoryTotal
