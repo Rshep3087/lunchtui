@@ -70,11 +70,16 @@ func (m *Model) calculateSpendingBreakdown() []table.Row {
 
 	var sortedTotals []categoryTotal
 	for category, total := range categoryTotals {
-		sortedTotals = append(sortedTotals, categoryTotal{category: category, total: total})
+		if total != nil {
+			sortedTotals = append(sortedTotals, categoryTotal{category: category, total: total})
+		}
 	}
 
 	// sort the categories by the total spent
 	slices.SortFunc(sortedTotals, func(a categoryTotal, b categoryTotal) int {
+		if a.total == nil || b.total == nil {
+			return 0
+		}
 		x, _ := a.total.Compare(b.total)
 		return -x
 	})
