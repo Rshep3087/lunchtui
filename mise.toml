@@ -1,6 +1,7 @@
 [tools]
 go = "1.24.4"
 golangci-lint = "latest"
+goreleaser = 'latest'
 
 [env]
 '_'.file = '.env'
