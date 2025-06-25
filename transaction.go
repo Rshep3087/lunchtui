@@ -48,13 +48,26 @@ func (t transactionItem) Description() string {
 		tags = "no tags"
 	}
 
-	return fmt.Sprintf("%s | %s | %s | %s | %s | %s",
+	// Format notes with truncation
+	notes := t.t.Notes
+	if notes == "" {
+		notes = "no notes"
+	} else {
+		// Truncate notes to 40 characters and add ellipsis if longer
+		const maxNoteLength = 40
+		if len(notes) > maxNoteLength {
+			notes = notes[:maxNoteLength] + "..."
+		}
+	}
+
+	return fmt.Sprintf("%s | %s | %s | %s | %s | %s | %s",
 		t.t.Date,
 		t.category.Name,
 		amount.Display(),
 		account,
 		tags,
 		t.t.Status,
+		notes,
 	)
 }
 
