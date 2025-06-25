@@ -578,6 +578,7 @@ func buildTransactionDetailsWithNotes(data transactionDisplayData, styles detail
 		createDetailRow("ID:", strconv.FormatInt(t.t.ID, 10), styles),
 		createDetailRow("Payee:", t.t.Payee, styles),
 		createDetailRow("Amount:", data.amountStr, styles),
+		createDetailRow("Category:", t.category.Name, styles),
 		createDetailRow("Currency:", data.currencyStr, styles),
 		createDetailRow("Date:", t.t.Date, styles),
 		lipgloss.JoinHorizontal(lipgloss.Left,
