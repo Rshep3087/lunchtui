@@ -4,3 +4,4 @@ lunchtui.log
 # Added by goreleaser init:
 dist/
 .aider*
+.DS_Store

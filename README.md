@@ -10,7 +10,7 @@
 [![GitHub release](https://img.shields.io/github/release/Rshep3087/lunchtui.svg)](https://github.com/Rshep3087/lunchtui/releases/)
 [![GitHub stars](https://img.shields.io/github/stars/Rshep3087/lunchtui.svg)](https://github.com/Rshep3087/lunchtui/stargazers)
 
-<img width="1312" alt="lunchtui overview" src="https://github.com/user-attachments/assets/17424945-7767-4743-ab82-fb894f0e6563" />
+![overview](docs/SCR-20250624-ttcu.png)
 
 *Manage your finances directly from your terminal with style and efficiency*
 
@@ -201,6 +201,7 @@ export LUNCHMONEY_API_TOKEN="your-api-token-here"
 ## 📸 Screenshots
 
 ### 📈 Budget Tracking
+![budgets](docs/SCR-20250624-ttgl.png)
 *Monitor your spending against budgets with detailed progress tracking*
 
 **Key Features:**
@@ -217,12 +218,12 @@ export LUNCHMONEY_API_TOKEN="your-api-token-here"
 - Easy navigation between time periods
 
 ### 🔄 Recurring Expenses View
-<img width="1312" alt="Recurring expenses management" src="https://github.com/user-attachments/assets/81cba900-d185-41be-88d0-148a05a0f4f0" />
+![recurring expenses](docs/SCR-20250624-tthl.png)
 
 *Easily track and manage your recurring expenses and subscriptions*
 
 ### 📊 Transaction Browser
-<img width="1312" alt="Transaction browser interface" src="https://github.com/user-attachments/assets/8c1379f2-0c7c-4f09-80eb-b89ea31c3f10" />
+![alt text](docs/SCR-20250624-ttft.png)
 
 *Browse through your transactions with powerful filtering and search capabilities*
 
