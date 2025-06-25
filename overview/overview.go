@@ -48,7 +48,7 @@ func (m *Model) calculateSpendingBreakdown() []table.Row {
 
 	for _, t := range m.transactions {
 		category := m.categories[t.CategoryID]
-		if category.ExcludeFromTotals || category.IsIncome {
+		if category == nil || category.ExcludeFromTotals || category.IsIncome {
 			continue
 		}
 
@@ -407,7 +407,7 @@ func (m *Model) updateSummary() {
 
 	for _, t := range m.transactions {
 		category := m.categories[t.CategoryID]
-		if category.ExcludeFromTotals {
+		if category == nil || category.ExcludeFromTotals {
 			continue
 		}
 
@@ -417,7 +417,7 @@ func (m *Model) updateSummary() {
 			continue
 		}
 
-		if m.categories[t.CategoryID].IsIncome {
+		if category.IsIncome {
 			tie, additionError := totalIncomeEarned.Add(amount)
 			if additionError != nil {
 				log.Debug("adding amount to total income earned", "error", additionError)
