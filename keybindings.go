@@ -148,6 +148,11 @@ func isInputBlocked(m *model) bool {
 		return true
 	}
 
+	// Block input when editing transaction notes (except for detailed transaction handling)
+	if m.isEditingNotes {
+		return true
+	}
+
 	return false
 }
 
@@ -211,6 +216,13 @@ func handleEscape(m *model) (tea.Model, tea.Cmd) {
 	}
 
 	if m.sessionState == detailedTransaction {
+		// If editing notes, just exit edit mode without leaving detailed view
+		if m.isEditingNotes {
+			m.isEditingNotes = false
+			m.notesInput.Blur()
+			return m, nil
+		}
+		// Otherwise, exit detailed view
 		m.currentTransaction = nil
 		m.sessionState = transactions
 		return m, m.getTransactions

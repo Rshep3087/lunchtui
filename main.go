@@ -12,6 +12,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/log"
@@ -46,6 +47,10 @@ type model struct {
 	debitsAsNegative bool
 	// currentTransaction holds the currently selected transaction for detailed view
 	currentTransaction *transactionItem
+	// notesInput is the text input for editing transaction notes
+	notesInput textinput.Model
+	// isEditingNotes indicates if the user is currently editing transaction notes
+	isEditingNotes bool
 
 	categoryForm          *huh.Form
 	insertTransactionForm *huh.Form
@@ -203,6 +208,11 @@ func rootAction(ctx context.Context, c *cli.Command) error {
 	delegate := m.newItemDelegate(newDeleteKeyMap())
 	m.transactions = createTransactionList(delegate, tlKeyMap)
 	m.budgets = createBudgetList(delegate)
+
+	// Initialize text input for notes editing
+	m.notesInput = textinput.New()
+	m.notesInput.Placeholder = "Enter notes..."
+	m.notesInput.CharLimit = 500
 
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	if _, err = p.Run(); err != nil {

@@ -340,9 +340,85 @@ func (t transactionsStats) View() string {
 		Render(transactionStatus)
 }
 
-func updateDetailedTransaction(_ tea.Msg, m model) (tea.Model, tea.Cmd) {
-	// No specific key handling needed - escape is handled globally
+func updateDetailedTransaction(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+
+	// Handle key messages
+	if keyMsg, ok := msg.(tea.KeyMsg); ok {
+		if m.isEditingNotes {
+			// Handle keys while editing notes
+			switch keyMsg.String() {
+			case "enter":
+				// Save the notes and exit edit mode
+				newNotes := m.notesInput.Value()
+				m.isEditingNotes = false
+				m.notesInput.Blur()
+				return m, m.updateTransactionNotes(newNotes)
+			case "esc":
+				// Cancel editing and revert to view mode
+				m.isEditingNotes = false
+				m.notesInput.Blur()
+				return m, nil
+			default:
+				// Update the text input
+				m.notesInput, cmd = m.notesInput.Update(msg)
+				return m, cmd
+			}
+		} else {
+			// Handle keys in view mode
+			switch keyMsg.String() {
+			case "n":
+				// Enter edit mode for notes
+				m.isEditingNotes = true
+				m.notesInput.Focus()
+				// Pre-fill with current notes if they exist
+				if m.currentTransaction != nil && m.currentTransaction.t.Notes != "" {
+					m.notesInput.SetValue(m.currentTransaction.t.Notes)
+				} else {
+					m.notesInput.SetValue("")
+				}
+				return m, nil
+			}
+		}
+	}
+
+	// Update the text input if it's active
+	if m.isEditingNotes {
+		m.notesInput, cmd = m.notesInput.Update(msg)
+		return m, cmd
+	}
+
 	return m, nil
+}
+
+// updateTransactionNotes updates the notes for the current transaction.
+func (m model) updateTransactionNotes(newNotes string) tea.Cmd {
+	return func() tea.Msg {
+		if m.currentTransaction == nil {
+			return nil
+		}
+
+		ctx := context.Background()
+		updateReq := &lm.UpdateTransaction{
+			Notes: &newNotes,
+		}
+
+		resp, err := m.lmc.UpdateTransaction(ctx, m.currentTransaction.t.ID, updateReq)
+		if err != nil {
+			log.Error("failed to update transaction notes", "error", err)
+			return err
+		}
+
+		if !resp.Updated {
+			log.Debug("transaction notes not updated")
+			return nil
+		}
+
+		// Update the local transaction with new notes
+		m.currentTransaction.t.Notes = newNotes
+		log.Debug("transaction notes updated successfully", "notes", newNotes)
+		return updateTransactionMsg{t: m.currentTransaction.t, fieldUpdated: "notes"}
+	}
 }
 
 func detailedTransactionView(m model) string {
@@ -354,9 +430,9 @@ func detailedTransactionView(m model) string {
 	data := extractTransactionData(m.currentTransaction)
 
 	header := styles.headerStyle.Render("Transaction Details")
-	details := buildTransactionDetails(data, styles)
+	details := buildTransactionDetailsWithNotes(data, styles, m)
 	content := lipgloss.JoinVertical(lipgloss.Left, details...)
-	instructions := createInstructions(styles)
+	instructions := createInstructionsWithNotes(styles, m.isEditingNotes)
 
 	return lipgloss.JoinVertical(lipgloss.Left,
 		header,
@@ -481,7 +557,8 @@ func createStatusStyle(status string) lipgloss.Style {
 	}
 }
 
-func buildTransactionDetails(data transactionDisplayData, styles detailedTransactionStyles) []string {
+// buildTransactionDetailsWithNotes builds transaction details with support for notes editing.
+func buildTransactionDetailsWithNotes(data transactionDisplayData, styles detailedTransactionStyles, m model) []string {
 	t := data.transaction
 
 	details := []string{
@@ -492,19 +569,26 @@ func buildTransactionDetails(data transactionDisplayData, styles detailedTransac
 		createDetailRow("Date:", t.t.Date, styles),
 		lipgloss.JoinHorizontal(lipgloss.Left,
 			styles.labelStyle.Render("Status:"),
-			data.statusStyle.Render(strings.ToUpper(t.t.Status)),
+			data.statusStyle.Render(" "+t.t.Status),
 		),
-		createDetailRow("Category:", t.category.Name, styles),
-		createDetailRow("Account:", data.accountName, styles),
-		createDetailRow("Tags:", data.tagsStr, styles),
 	}
 
 	// Add optional fields
 	details = appendOptionalFields(details, t, styles)
 
-	// Add notes section
-	notesSection := createDetailRow("Notes:", data.notesStr, styles)
-	details = append(details, notesSection)
+	// Add notes section with editing support
+	if m.isEditingNotes {
+		// Show text input for editing
+		notesSection := lipgloss.JoinHorizontal(lipgloss.Left,
+			styles.labelStyle.Render("Notes:"),
+			" "+m.notesInput.View(),
+		)
+		details = append(details, notesSection)
+	} else {
+		// Show normal notes display
+		notesSection := createDetailRow("Notes:", data.notesStr, styles)
+		details = append(details, notesSection)
+	}
 
 	return details
 }
@@ -535,6 +619,10 @@ func appendOptionalFields(details []string, t *transactionItem, styles detailedT
 	return details
 }
 
-func createInstructions(styles detailedTransactionStyles) string {
-	return styles.instructionStyle.Render("Press 'esc' to return to transaction list")
+// createInstructionsWithNotes creates instructions with notes editing support.
+func createInstructionsWithNotes(styles detailedTransactionStyles, isEditingNotes bool) string {
+	if isEditingNotes {
+		return styles.instructionStyle.Render("Press 'enter' to save notes, 'esc' to cancel")
+	}
+	return styles.instructionStyle.Render("Press 'n' to edit notes, 'esc' to return to transaction list")
 }

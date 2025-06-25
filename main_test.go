@@ -7,6 +7,7 @@ import (
 
 	"github.com/carlmjohnson/be"
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	lm "github.com/icco/lunchmoney"
@@ -504,4 +505,106 @@ func TestCreateOutputFormatFlag(t *testing.T) {
 	err = flag.Validator("invalid")
 	be.Nonzero(t, err)
 	be.True(t, strings.Contains(err.Error(), "invalid output format"))
+}
+
+// TestNotesEditing tests the notes editing functionality
+func TestNotesEditing(t *testing.T) {
+	// Create a test model with a current transaction
+	m := model{
+		sessionState: detailedTransaction,
+		currentTransaction: &transactionItem{
+			t: &lm.Transaction{
+				ID:    123,
+				Payee: "Test Transaction",
+				Notes: "Original notes",
+			},
+		},
+		notesInput: textinput.New(),
+	}
+	m.notesInput.Placeholder = "Enter notes..."
+
+	t.Run("enter edit mode with n key", func(t *testing.T) {
+		// Simulate pressing 'n' key
+		updatedModel, _ := updateDetailedTransaction(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}}, m)
+		updatedM := updatedModel.(model)
+
+		if !updatedM.isEditingNotes {
+			t.Error("Expected isEditingNotes to be true after pressing 'n'")
+		}
+
+		if updatedM.notesInput.Value() != "Original notes" {
+			t.Errorf("Expected notes input to be pre-filled with 'Original notes', got '%s'", updatedM.notesInput.Value())
+		}
+	})
+
+	t.Run("cancel edit mode with escape", func(t *testing.T) {
+		// Start in edit mode
+		m.isEditingNotes = true
+		m.notesInput.Focus()
+
+		// Simulate pressing escape
+		updatedModel, _ := updateDetailedTransaction(tea.KeyMsg{Type: tea.KeyEsc}, m)
+		updatedM := updatedModel.(model)
+
+		if updatedM.isEditingNotes {
+			t.Error("Expected isEditingNotes to be false after pressing escape")
+		}
+	})
+
+	t.Run("escape handling in keybindings", func(t *testing.T) {
+		// Test detailed transaction with notes editing
+		m.isEditingNotes = true
+		updatedModel, _ := handleEscape(&m)
+		updatedM := updatedModel.(*model)
+
+		if updatedM.isEditingNotes {
+			t.Error("Expected isEditingNotes to be false after handleEscape")
+		}
+
+		if updatedM.sessionState != detailedTransaction {
+			t.Error("Expected to remain in detailedTransaction state when canceling notes editing")
+		}
+
+		// Test normal escape (should exit detailed view)
+		m.isEditingNotes = false
+		updatedModel, _ = handleEscape(&m)
+		updatedM = updatedModel.(*model)
+
+		if updatedM.sessionState == detailedTransaction {
+			t.Error("Expected to exit detailedTransaction state on normal escape")
+		}
+	})
+
+	t.Run("input blocking during notes editing", func(t *testing.T) {
+		m.isEditingNotes = true
+		if !isInputBlocked(&m) {
+			t.Error("Expected input to be blocked while editing notes")
+		}
+
+		m.isEditingNotes = false
+		if isInputBlocked(&m) {
+			t.Error("Expected input to not be blocked when not editing notes")
+		}
+	})
+
+	t.Run("save notes with enter key", func(t *testing.T) {
+		// Start in edit mode with modified notes
+		m.isEditingNotes = true
+		m.notesInput.Focus()
+		m.notesInput.SetValue("Updated notes")
+
+		// Simulate pressing enter - this would normally trigger updateTransactionNotes
+		// Since we can't easily test the API call, we just verify the state change
+		updatedModel, cmd := updateDetailedTransaction(tea.KeyMsg{Type: tea.KeyEnter}, m)
+		updatedM := updatedModel.(model)
+
+		if updatedM.isEditingNotes {
+			t.Error("Expected isEditingNotes to be false after pressing enter")
+		}
+
+		// Verify that a command was returned (the update function)
+		if cmd == nil {
+			t.Error("Expected a command to be returned for updating transaction notes")
+		}
+	})
 }
