@@ -464,16 +464,60 @@ func (m *Model) updateAccountTree() {
 	m.accountTree = tree.New()
 	m.accountTree.Root(m.Styles.TreeRootStyle.Render("Accounts"))
 
+	// organize the plaid accounts by the type into a map
+	plaidAccounts := make(map[string][]lm.PlaidAccount)
+	for _, a := range m.plaidAccounts {
+		plaidAccounts[a.Type] = append(plaidAccounts[a.Type], *a)
+	}
+
+	// get sorted plaid account type names for consistent ordering
+	plaidTypeNames := make([]string, 0, len(plaidAccounts))
+	for typeName := range plaidAccounts {
+		plaidTypeNames = append(plaidTypeNames, typeName)
+	}
+	slices.Sort(plaidTypeNames)
+
+	// add plaid accounts in sorted order
+	for _, typeName := range plaidTypeNames {
+		accountList := plaidAccounts[typeName]
+		// sort accounts within each type by name
+		slices.SortFunc(accountList, func(a, b lm.PlaidAccount) int {
+			return strings.Compare(a.Name, b.Name)
+		})
+
+		accountTree := tree.New().Root(m.titleCaser.String(m.Styles.AssetTypeStyle.Render(typeName)))
+		for _, a := range accountList {
+			pa := money.NewFromFloat(a.ToBase, m.currency)
+			text := fmt.Sprintf("%s (%s)", a.Name, pa.Display())
+			accountTree.Child(m.Styles.AccountStyle.Render(text))
+		}
+
+		m.accountTree.Child(accountTree)
+	}
+
 	// organize the assets by the type into a map
 	assets := make(map[string][]lm.Asset)
 	for _, a := range m.assets {
 		assets[a.TypeName] = append(assets[a.TypeName], *a)
 	}
 
-	// add a child for each asset
-	for typeName, assets := range assets {
+	// get sorted asset type names for consistent ordering
+	assetTypeNames := make([]string, 0, len(assets))
+	for typeName := range assets {
+		assetTypeNames = append(assetTypeNames, typeName)
+	}
+	slices.Sort(assetTypeNames)
+
+	// add a child for each asset type in sorted order
+	for _, typeName := range assetTypeNames {
+		assetList := assets[typeName]
+		// sort assets within each type by name
+		slices.SortFunc(assetList, func(a, b lm.Asset) int {
+			return strings.Compare(a.Name, b.Name)
+		})
+
 		assetTree := tree.New().Root(m.titleCaser.String(m.Styles.AssetTypeStyle.Render(typeName)))
-		for _, a := range assets {
+		for _, a := range assetList {
 			pa := money.NewFromFloat(a.ToBase, m.currency)
 			text := fmt.Sprintf("%s (%s)", a.Name, pa.Display())
 			assetTree.Child(m.Styles.AccountStyle.Render(text))
@@ -482,20 +526,4 @@ func (m *Model) updateAccountTree() {
 		m.accountTree.Child(assetTree)
 	}
 
-	// // organize the plaid accounts by the type into a map
-	plaidAccounts := make(map[string][]lm.PlaidAccount)
-	for _, a := range m.plaidAccounts {
-		plaidAccounts[a.Type] = append(plaidAccounts[a.Type], *a)
-	}
-
-	for typeName, accounts := range plaidAccounts {
-		accountTree := tree.New().Root(m.titleCaser.String(m.Styles.AssetTypeStyle.Render(typeName)))
-		for _, a := range accounts {
-			pa := money.NewFromFloat(a.ToBase, m.currency)
-			text := fmt.Sprintf("%s (%s)", a.Name, pa.Display())
-			accountTree.Child(m.Styles.AccountStyle.Render(text))
-		}
-
-		m.accountTree.Child(accountTree)
-	}
 }
