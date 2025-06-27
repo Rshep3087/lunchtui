@@ -175,8 +175,9 @@ func handleSessionStateKeys(k string, m *model) (tea.Model, tea.Cmd) {
 		if m.sessionState != transactions {
 			m.previousSessionState = m.sessionState
 			m.sessionState = transactions
-			return m, nil
+			return m, tea.Batch(m.getTransactions)
 		}
+
 	case "r":
 		if m.sessionState != recurringExpenses {
 			m.previousSessionState = m.sessionState
@@ -184,18 +185,21 @@ func handleSessionStateKeys(k string, m *model) (tea.Model, tea.Cmd) {
 			m.sessionState = recurringExpenses
 			return m, nil
 		}
+
 	case "o":
 		if m.sessionState != overviewState {
 			m.previousSessionState = m.sessionState
 			m.sessionState = overviewState
-			return m, nil
+			return m, tea.Batch(m.getTransactions, m.getAccounts)
 		}
+
 	case "b":
 		if m.sessionState != budgets {
 			m.previousSessionState = budgets
 			m.sessionState = budgets
 			return m, m.getBudgets
 		}
+
 	case "?":
 		if m.sessionState != transactions {
 			m.help.ShowAll = !m.help.ShowAll

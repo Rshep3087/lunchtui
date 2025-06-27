@@ -156,8 +156,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case recurringExpenses:
 		m.recurringExpenses, cmd = m.recurringExpenses.Update(msg)
 		return m, cmd
+
 	case budgets:
 		return updateBudgets(msg, m)
+
 	case loading:
 		m.loadingSpinner, cmd = m.loadingSpinner.Update(msg)
 		return m, cmd
@@ -195,11 +197,9 @@ func rootAction(ctx context.Context, c *cli.Command) error {
 		currentPeriod:        time.Now(),
 		period:               Period{},
 		periodType:           "month",
-		loadingSpinner: spinner.New(
-			spinner.WithSpinner(spinner.Dot),
-		),
-		overview:          overview.New(),
-		recurringExpenses: recurring.New(),
+		loadingSpinner:       spinner.New(spinner.WithSpinner(spinner.Dot)),
+		overview:             overview.New(),
+		recurringExpenses:    recurring.New(),
 		loadingState: newLoadingState(
 			"categories",
 			"transactions",
