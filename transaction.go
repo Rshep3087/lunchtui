@@ -115,13 +115,13 @@ func newTransactionListKeyMap() *transactionListKeyMap {
 func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case updateTransactionMsg:
-		log.Debug("updating transaction")
 		// create a copy of the transaction and update the status
 		// this keep the category, assets, plaidAccount, etc. intact
 		t, ok := m.transactions.SelectedItem().(transactionItem)
 		if !ok {
 			return m, nil
 		}
+		log.Debug("updating transaction", "transaction", msg.t.ID, "field", msg.fieldUpdated)
 
 		t.t = msg.t
 		// must set the new category on the transaction item
@@ -129,14 +129,16 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 		// in future, we could check the fieldUpdated to see what changed
 		t.category = m.idToCategory[t.t.CategoryID]
 
-		m.transactionsStats = newTransactionStats(m.transactions.Items())
-		// move the cursor down to the next item automatically
-		m.transactions.CursorDown()
-
 		setItemCmd := m.transactions.SetItem(m.transactions.Index(), t)
 		statusCmd := m.transactions.NewStatusMessage(
 			fmt.Sprintf("Updated %s for transaction: %s", msg.fieldUpdated, msg.t.Payee),
 		)
+
+		m.transactionsStats = newTransactionStats(m.transactions.Items())
+
+		// move the cursor down to the next item automatically
+		m.transactions.CursorDown()
+
 		return m, tea.Batch(setItemCmd, statusCmd)
 
 	case tea.KeyMsg:

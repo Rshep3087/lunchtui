@@ -39,7 +39,7 @@ func updateCategorizeTransaction(msg tea.Msg, m *model) (tea.Model, tea.Cmd) {
 
 	if m.categoryForm.State == huh.StateCompleted {
 		m.sessionState = m.previousSessionState
-		log.Debug("categorize transaction form completed", "state", m.sessionState)
+		log.Debug("categorize transaction form completed", "new_state", m.sessionState)
 	}
 
 	return m, cmd
