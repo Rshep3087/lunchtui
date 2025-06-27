@@ -238,13 +238,21 @@ func submitCategoryForm(m model, t transactionItem) tea.Msg {
 }
 
 func filterUnclearedTransactions(m model) (tea.Model, tea.Cmd) {
-	unclearedItems := make([]list.Item, 0)
-	for _, item := range m.transactions.Items() {
-		if t, ok := item.(transactionItem); ok && t.t.Status == "uncleared" {
-			unclearedItems = append(unclearedItems, item)
+	if m.isFilteredUncleared {
+		// If already filtered, show all transactions
+		m.transactions.SetItems(m.originalTransactions)
+		m.isFilteredUncleared = false
+	} else {
+		// If not filtered, show only uncleared transactions
+		unclearedItems := make([]list.Item, 0)
+		for _, item := range m.originalTransactions {
+			if t, ok := item.(transactionItem); ok && t.t.Status == "uncleared" {
+				unclearedItems = append(unclearedItems, item)
+			}
 		}
+		m.transactions.SetItems(unclearedItems)
+		m.isFilteredUncleared = true
 	}
-	m.transactions.SetItems(unclearedItems)
 
 	m.transactionsStats = newTransactionStats(m.transactions.Items())
 	return m, nil
@@ -252,12 +260,14 @@ func filterUnclearedTransactions(m model) (tea.Model, tea.Cmd) {
 
 func filterUncategorizedTransactions(m model) (tea.Model, tea.Cmd) {
 	uncategorizedItems := make([]list.Item, 0)
-	for _, item := range m.transactions.Items() {
+	for _, item := range m.originalTransactions {
 		if t, ok := item.(transactionItem); ok && t.t.CategoryID == 0 {
 			uncategorizedItems = append(uncategorizedItems, item)
 		}
 	}
 	m.transactions.SetItems(uncategorizedItems)
+	// Reset the uncleared filter state since we're applying a different filter
+	m.isFilteredUncleared = false
 
 	m.transactionsStats = newTransactionStats(m.transactions.Items())
 	return m, nil

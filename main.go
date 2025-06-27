@@ -45,6 +45,10 @@ type model struct {
 	transactionsStats *transactionsStats
 	// debitsAsNegative is a flag to show debits as negative numbers
 	debitsAsNegative bool
+	// originalTransactions stores the full list of transactions before filtering
+	originalTransactions []list.Item
+	// isFilteredUncleared tracks if the uncleared filter is currently applied
+	isFilteredUncleared bool
 	// currentTransaction holds the currently selected transaction for detailed view
 	currentTransaction *transactionItem
 	// notesInput is the text input for editing transaction notes

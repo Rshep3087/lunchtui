@@ -135,6 +135,10 @@ func (m model) handleGetTransactions(msg getsTransactionsMsg) (tea.Model, tea.Cm
 
 	cmd := m.transactions.SetItems(items)
 
+	// Store original transactions and reset filter state
+	m.originalTransactions = items
+	m.isFilteredUncleared = false
+
 	m.transactionsStats = newTransactionStats(items)
 	m.overview.SetTransactions(msg.ts)
 	m.period = msg.period

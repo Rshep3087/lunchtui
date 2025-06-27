@@ -409,6 +409,8 @@ func TestFilterUncategorizedTransactions(t *testing.T) {
 	m := model{}
 	m.transactions = list.New(transactions, list.NewDefaultDelegate(), 80, 20)
 	m.transactions.SetItems(transactions)
+	// Initialize originalTransactions for the filter to work properly
+	m.originalTransactions = transactions
 
 	// Apply the uncategorized filter
 	result, _ := filterUncategorizedTransactions(m)
@@ -607,4 +609,79 @@ func TestNotesEditing(t *testing.T) {
 			t.Error("Expected a command to be returned for updating transaction notes")
 		}
 	})
+}
+
+func TestFilterUnclearedTransactionsToggle(t *testing.T) {
+	// Create test transactions with different statuses
+	transactions := []list.Item{
+		transactionItem{
+			t:        &lm.Transaction{ID: 1, Status: "uncleared", Payee: "Uncleared 1"},
+			category: &lm.Category{ID: 1, Name: "Food"},
+		},
+		transactionItem{
+			t:        &lm.Transaction{ID: 2, Status: "cleared", Payee: "Cleared 1"},
+			category: &lm.Category{ID: 1, Name: "Food"},
+		},
+		transactionItem{
+			t:        &lm.Transaction{ID: 3, Status: "uncleared", Payee: "Uncleared 2"},
+			category: &lm.Category{ID: 2, Name: "Transport"},
+		},
+		transactionItem{
+			t:        &lm.Transaction{ID: 4, Status: "pending", Payee: "Pending 1"},
+			category: &lm.Category{ID: 2, Name: "Transport"},
+		},
+	}
+
+	// Create a model with transactions
+	m := model{}
+	m.transactions = list.New(transactions, list.NewDefaultDelegate(), 80, 20)
+	m.transactions.SetItems(transactions)
+	m.originalTransactions = transactions
+	m.isFilteredUncleared = false
+
+	// Test initial state - should show all transactions
+	if len(m.transactions.Items()) != 4 {
+		t.Errorf("Expected 4 total transactions initially, got %d", len(m.transactions.Items()))
+	}
+
+	// Apply uncleared filter for the first time
+	result, _ := filterUnclearedTransactions(m)
+	resultModel := result.(model)
+
+	// Should now show only uncleared transactions
+	filteredItems := resultModel.transactions.Items()
+	if len(filteredItems) != 2 {
+		t.Errorf("Expected 2 uncleared transactions after first filter, got %d", len(filteredItems))
+	}
+
+	// Check that filter state is updated
+	if !resultModel.isFilteredUncleared {
+		t.Error("Expected isFilteredUncleared to be true after applying filter")
+	}
+
+	// Verify that all remaining transactions are uncleared
+	for i, item := range filteredItems {
+		if trans, ok := item.(transactionItem); ok {
+			if trans.t.Status != "uncleared" {
+				t.Errorf("Transaction %d should be uncleared, got status: %s", i, trans.t.Status)
+			}
+		} else {
+			t.Errorf("Item %d is not a transactionItem", i)
+		}
+	}
+
+	// Apply uncleared filter again - should toggle back to show all transactions
+	result2, _ := filterUnclearedTransactions(resultModel)
+	resultModel2 := result2.(model)
+
+	// Should now show all transactions again
+	allItems := resultModel2.transactions.Items()
+	if len(allItems) != 4 {
+		t.Errorf("Expected 4 total transactions after toggle, got %d", len(allItems))
+	}
+
+	// Check that filter state is reset
+	if resultModel2.isFilteredUncleared {
+		t.Error("Expected isFilteredUncleared to be false after toggle")
+	}
 }
