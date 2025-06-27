@@ -21,3 +21,7 @@ description = "Create a new release"
 
 [tasks.version]
 run = "git tag $(svu n)"
+
+[tasks.tidy]
+description = 'Runs cmds to tidy up the project'
+run = ["go mod tidy",]

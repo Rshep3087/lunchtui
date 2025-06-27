@@ -15,6 +15,7 @@ import (
 	"github.com/charmbracelet/lipgloss/tree"
 	"github.com/charmbracelet/log"
 	lm "github.com/icco/lunchmoney"
+	"golang.org/x/net/html"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -519,11 +520,17 @@ func (m *Model) updateAccountTree() {
 		assetTree := tree.New().Root(m.titleCaser.String(m.Styles.AssetTypeStyle.Render(typeName)))
 		for _, a := range assetList {
 			pa := money.NewFromFloat(a.ToBase, m.currency)
-			text := fmt.Sprintf("%s (%s)", a.Name, pa.Display())
+
+			name := a.Name
+			if a.DisplayName != "" {
+				// url decodes the display name
+				name = html.UnescapeString(a.DisplayName)
+			}
+
+			text := fmt.Sprintf("%s (%s)", name, pa.Display())
 			assetTree.Child(m.Styles.AccountStyle.Render(text))
 		}
 
 		m.accountTree.Child(assetTree)
 	}
-
 }
