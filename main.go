@@ -176,7 +176,6 @@ func rootAction(ctx context.Context, c *cli.Command) error {
 		if !ok {
 			return cli.Exit("failed to assert config context value to *Config", 1)
 		}
-
 	}
 
 	debugEnabled := c.Bool("debug") || (config != nil && config.Debug)

@@ -64,7 +64,7 @@ func loadConfigFromFile(path string) (*Config, error) {
 	}
 
 	var config Config
-	if err := toml.Unmarshal(data, &config); err != nil {
+	if err = toml.Unmarshal(data, &config); err != nil {
 		return nil, fmt.Errorf("failed to parse TOML config file %s: %w", path, err)
 	}
 
