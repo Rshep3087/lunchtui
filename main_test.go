@@ -615,7 +615,7 @@ func TestFilterUnclearedTransactionsToggle(t *testing.T) {
 	// Create test transactions with different statuses
 	transactions := []list.Item{
 		transactionItem{
-			t:        &lm.Transaction{ID: 1, Status: "uncleared", Payee: "Uncleared 1"},
+			t:        &lm.Transaction{ID: 1, Status: unclearedStatus, Payee: "Uncleared 1"},
 			category: &lm.Category{ID: 1, Name: "Food"},
 		},
 		transactionItem{
@@ -623,7 +623,7 @@ func TestFilterUnclearedTransactionsToggle(t *testing.T) {
 			category: &lm.Category{ID: 1, Name: "Food"},
 		},
 		transactionItem{
-			t:        &lm.Transaction{ID: 3, Status: "uncleared", Payee: "Uncleared 2"},
+			t:        &lm.Transaction{ID: 3, Status: unclearedStatus, Payee: "Uncleared 2"},
 			category: &lm.Category{ID: 2, Name: "Transport"},
 		},
 		transactionItem{
@@ -662,7 +662,7 @@ func TestFilterUnclearedTransactionsToggle(t *testing.T) {
 	// Verify that all remaining transactions are uncleared
 	for i, item := range filteredItems {
 		if trans, ok := item.(transactionItem); ok {
-			if trans.t.Status != "uncleared" {
+			if trans.t.Status != unclearedStatus {
 				t.Errorf("Transaction %d should be uncleared, got status: %s", i, trans.t.Status)
 			}
 		} else {

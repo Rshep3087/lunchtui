@@ -246,7 +246,7 @@ func filterUnclearedTransactions(m model) (tea.Model, tea.Cmd) {
 		// If not filtered, show only uncleared transactions
 		unclearedItems := make([]list.Item, 0)
 		for _, item := range m.originalTransactions {
-			if t, ok := item.(transactionItem); ok && t.t.Status == "uncleared" {
+			if t, ok := item.(transactionItem); ok && t.t.Status == unclearedStatus {
 				unclearedItems = append(unclearedItems, item)
 			}
 		}
@@ -415,8 +415,7 @@ func updateDetailedTransaction(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 		return m, cmd
 	}
 
-	switch msg := msg.(type) {
-	case updateTransactionMsg:
+	if msg, ok := msg.(updateTransactionMsg); ok {
 		log.Debug("updating detailed transaction", "transaction", msg.t.ID, "field", msg.fieldUpdated)
 		// Update the current transaction with the new data
 		if m.currentTransaction == nil {
@@ -426,7 +425,7 @@ func updateDetailedTransaction(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 
 		m.currentTransaction.t = msg.t
 		// Update the category if it changed
-		if category, ok := m.idToCategory[msg.t.CategoryID]; ok {
+		if category, catOK := m.idToCategory[msg.t.CategoryID]; catOK {
 			m.currentTransaction.category = category
 		}
 

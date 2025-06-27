@@ -23,6 +23,9 @@ type contextKey string
 const (
 	// clientContextKey is the key for storing the Lunch Money client in context.
 	clientContextKey contextKey = "lunchMoneyClient"
+
+	jsonOutputFormat  = "json"
+	tableOutputFormat = "table"
 )
 
 // getClientFromContext retrieves the Lunch Money client from context.
@@ -133,7 +136,7 @@ func createTransactionInsertCommand() *cli.Command {
 			&cli.StringFlag{
 				Name:  "status",
 				Usage: "Transaction status (cleared, uncleared)",
-				Value: "uncleared",
+				Value: unclearedStatus,
 			},
 			&cli.Int64Flag{
 				Name:  "account",
@@ -198,7 +201,7 @@ func insertTransactionAction(ctx context.Context, c *cli.Command) error {
 
 	// Validate status
 	status := c.String("status")
-	if status != "cleared" && status != "uncleared" {
+	if status != "cleared" && status != unclearedStatus {
 		return fmt.Errorf("invalid status: %s (must be 'cleared' or 'uncleared')", status)
 	}
 
@@ -318,9 +321,9 @@ func categoriesListAction(ctx context.Context, c *cli.Command) error {
 
 	// Output based on format
 	switch c.String("output") {
-	case "json":
+	case jsonOutputFormat:
 		return outputJSON(categories)
-	case "table":
+	case tableOutputFormat:
 		return outputCategoriesTable(categories)
 	default:
 		return errors.New("unsupported output format")
@@ -373,9 +376,9 @@ func createOutputFormatFlag() *cli.StringFlag {
 		Name:    "output",
 		Aliases: []string{"o"},
 		Usage:   "Output format: table or json",
-		Value:   "table",
+		Value:   tableOutputFormat,
 		Validator: func(s string) error {
-			validFormats := []string{"table", "json"}
+			validFormats := []string{tableOutputFormat, jsonOutputFormat}
 			if !slices.Contains(validFormats, s) {
 				return fmt.Errorf("invalid output format: %s (must be one of %v)", s, validFormats)
 			}
@@ -539,9 +542,9 @@ func accountsListAction(ctx context.Context, c *cli.Command) error {
 
 	// Output based on format
 	switch c.String("output") {
-	case "json":
+	case jsonOutputFormat:
 		return outputJSON(accounts)
-	case "table":
+	case tableOutputFormat:
 		return outputAccountsTable(accounts)
 	default:
 		return errors.New("unsupported output format")
@@ -620,9 +623,9 @@ func userGetAction(ctx context.Context, c *cli.Command) error {
 
 	// Output based on format
 	switch c.String("output") {
-	case "json":
+	case jsonOutputFormat:
 		return outputJSON(user)
-	case "table":
+	case tableOutputFormat:
 		return outputUserTable(user)
 	default:
 		return errors.New("unsupported output format")
