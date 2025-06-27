@@ -129,16 +129,14 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 		// in future, we could check the fieldUpdated to see what changed
 		t.category = m.idToCategory[t.t.CategoryID]
 
+		m.transactionsStats = newTransactionStats(m.transactions.Items())
+		// move the cursor down to the next item automatically
+		m.transactions.CursorDown()
+
 		setItemCmd := m.transactions.SetItem(m.transactions.Index(), t)
 		statusCmd := m.transactions.NewStatusMessage(
 			fmt.Sprintf("Updated %s for transaction: %s", msg.fieldUpdated, msg.t.Payee),
 		)
-
-		m.transactionsStats = newTransactionStats(m.transactions.Items())
-
-		// move the cursor down to the next item automatically
-		m.transactions.CursorDown()
-
 		return m, tea.Batch(setItemCmd, statusCmd)
 
 	case tea.KeyMsg:
@@ -191,11 +189,9 @@ func categorizeTrans(m *model) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-	m.categoryForm = newCategorizeTransactionForm(m.categories)
-	m.categoryForm.SubmitCmd = func() tea.Msg {
-		return submitCategoryForm(*m, t)
-	}
+	m.categoryForm = m.newCategorizeTransactionForm(t)
 
+	m.previousSessionState = m.sessionState
 	m.sessionState = categorizeTransaction
 	return m, tea.Batch(m.categoryForm.Init(), tea.WindowSize())
 }
@@ -377,21 +373,27 @@ func updateDetailedTransaction(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 				m.notesInput, cmd = m.notesInput.Update(msg)
 				return m, cmd
 			}
-		} else {
-			// Handle keys in view mode
-			switch keyMsg.String() {
-			case "n":
-				// Enter edit mode for notes
-				m.isEditingNotes = true
-				m.notesInput.Focus()
-				// Pre-fill with current notes if they exist
-				if m.currentTransaction != nil && m.currentTransaction.t.Notes != "" {
-					m.notesInput.SetValue(m.currentTransaction.t.Notes)
-				} else {
-					m.notesInput.SetValue("")
-				}
-				return m, nil
+		}
+
+		// Handle keys in view mode
+		switch keyMsg.String() {
+		case "n":
+			// Enter edit mode for notes
+			m.isEditingNotes = true
+			m.notesInput.Focus()
+			// Pre-fill with current notes if they exist
+			if m.currentTransaction != nil && m.currentTransaction.t.Notes != "" {
+				m.notesInput.SetValue(m.currentTransaction.t.Notes)
+			} else {
+				m.notesInput.SetValue("")
 			}
+			return m, nil
+		case "c":
+			m.previousSessionState = m.sessionState
+			m.sessionState = categorizeTransaction
+
+			m.categoryForm = m.newCategorizeTransactionForm(*m.currentTransaction)
+			return m, tea.Batch(m.categoryForm.Init(), tea.WindowSize())
 		}
 	}
 
@@ -399,6 +401,24 @@ func updateDetailedTransaction(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 	if m.isEditingNotes {
 		m.notesInput, cmd = m.notesInput.Update(msg)
 		return m, cmd
+	}
+
+	switch msg := msg.(type) {
+	case updateTransactionMsg:
+		log.Debug("updating detailed transaction", "transaction", msg.t.ID, "field", msg.fieldUpdated)
+		// Update the current transaction with the new data
+		if m.currentTransaction == nil {
+			log.Error("current transaction is nil, cannot update")
+			return m, nil
+		}
+
+		m.currentTransaction.t = msg.t
+		// Update the category if it changed
+		if category, ok := m.idToCategory[msg.t.CategoryID]; ok {
+			m.currentTransaction.category = category
+		}
+
+		return m, nil
 	}
 
 	return m, nil
@@ -412,9 +432,7 @@ func (m model) updateTransactionNotes(newNotes string) tea.Cmd {
 		}
 
 		ctx := context.Background()
-		updateReq := &lm.UpdateTransaction{
-			Notes: &newNotes,
-		}
+		updateReq := &lm.UpdateTransaction{Notes: &newNotes}
 
 		resp, err := m.lmc.UpdateTransaction(ctx, m.currentTransaction.t.ID, updateReq)
 		if err != nil {
@@ -638,5 +656,7 @@ func createInstructionsWithNotes(styles detailedTransactionStyles, isEditingNote
 	if isEditingNotes {
 		return styles.instructionStyle.Render("Press 'enter' to save notes, 'esc' to cancel")
 	}
-	return styles.instructionStyle.Render("Press 'n' to edit notes, 'esc' to return to transaction list")
+	return styles.instructionStyle.Render(
+		"'n' to edit notes, 'c' to categorize transaction,\n'esc' to return to transaction list",
+	)
 }

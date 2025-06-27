@@ -5,26 +5,30 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
-	lm "github.com/icco/lunchmoney"
+	"github.com/charmbracelet/log"
 )
 
-func newCategorizeTransactionForm(categories []*lm.Category) *huh.Form {
-	sort.Slice(categories, func(i, j int) bool {
-		return categories[i].Name < categories[j].Name
+func (m *model) newCategorizeTransactionForm(t transactionItem) *huh.Form {
+	sort.Slice(m.categories, func(i, j int) bool {
+		return m.categories[i].Name < m.categories[j].Name
 	})
 
-	opts := make([]huh.Option[int64], len(categories))
-	for i, c := range categories {
+	opts := make([]huh.Option[int64], len(m.categories))
+	for i, c := range m.categories {
 		opts[i] = huh.NewOption(c.Name, c.ID)
 	}
 
-	return huh.NewForm(huh.NewGroup(
+	form := huh.NewForm(huh.NewGroup(
 		huh.NewSelect[int64]().
 			Title("New category").
 			Description("Select a new category for the transaction").
 			Options(opts...).
 			Key("category"),
 	))
+
+	form.SubmitCmd = func() tea.Msg { return submitCategoryForm(*m, t) }
+
+	return form
 }
 
 func updateCategorizeTransaction(msg tea.Msg, m *model) (tea.Model, tea.Cmd) {
@@ -34,7 +38,8 @@ func updateCategorizeTransaction(msg tea.Msg, m *model) (tea.Model, tea.Cmd) {
 	}
 
 	if m.categoryForm.State == huh.StateCompleted {
-		m.sessionState = transactions
+		m.sessionState = m.previousSessionState
+		log.Debug("categorize transaction form completed", "state", m.sessionState)
 	}
 
 	return m, cmd
