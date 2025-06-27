@@ -1,5 +1,0 @@
-# Nancy ignore file for dependency vulnerability scanning
-# Add CVE IDs here to ignore specific vulnerabilities
-# Format: CVE-YYYY-NNNN
-# Example:
-# CVE-2023-1234

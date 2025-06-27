@@ -20,41 +20,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.23'
-      
-      - name: Run gosec Security Scanner
-        uses: securecodewarrior/github-action-gosec@master
-        with:
-          args: '-fmt sarif -out gosec.sarif ./...'
-      
-      - name: Upload SARIF file
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: gosec.sarif
 
-  nancy:
-    name: Dependency Vulnerability Scan (nancy)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.23'
-      
-      - name: WriteGoList
-        run: go list -json -deps ./... > go.list
-      
-      - name: Run nancy
-        uses: sonatypecommunity/nancy-github-action@main
-        with:
-          nancyCommand: sleuth --exclude-vulnerability-file ./.github/.nancy-ignore
+      - name: Run Gosec Security Scanner
+        uses: securego/gosec@master
 
   govulncheck:
     name: Go Vulnerability Check
