@@ -63,6 +63,9 @@ func createRootCommand() *cli.Command {
 				return ctx, fmt.Errorf("failed to create Lunch Money client: %w", err)
 			}
 
+			loggingTransport := newLoggingTransport(lmc.HTTP.Transport, log.Default())
+			lmc.HTTP.Transport = loggingTransport
+
 			// Store client in context
 			ctx = context.WithValue(ctx, clientContextKey, lmc)
 
