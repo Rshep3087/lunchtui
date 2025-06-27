@@ -173,8 +173,7 @@ func defaultStyles() Styles {
 		TreeRootStyle:  lipgloss.NewStyle().Foreground(lipgloss.Color("#828282")),
 		AssetTypeStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#bbbbbb")),
 		AccountStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color("#d29b1d")),
-
-		SummaryStyle: lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(0, 1),
+		SummaryStyle:   lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(0, 1),
 	}
 }
 
@@ -253,9 +252,11 @@ func (m Model) View() string {
 }
 func (m *Model) SetSize(width, height int) {
 	m.setSize(width, height)
+	m.UpdateViewport()
 }
 
 func (m *Model) setSize(width, height int) {
+	log.Debug("setting overview viewport size", "width", width, "height", height)
 	m.Viewport.Width = width
 	m.Viewport.Height = height
 }
@@ -295,14 +296,27 @@ func (m *Model) UpdateViewport() {
 	)
 
 	mainContent := lipgloss.JoinHorizontal(lipgloss.Top,
-		accountTreeContent,
 		lipgloss.JoinVertical(lipgloss.Top,
 			m.userInfoView(),
 			m.transactionMetricsView(),
 			m.summaryView(),
-			spendingBreakdown,
 		),
+		accountTreeContent,
+		spendingBreakdown,
 	)
+
+	if m.Viewport.Width <= 122 {
+		log.Debug("narrow viewport detected, adjusting layout")
+		mainContent = lipgloss.JoinHorizontal(lipgloss.Top,
+			lipgloss.JoinVertical(lipgloss.Top,
+				m.userInfoView(),
+				m.transactionMetricsView(),
+				m.summaryView(),
+				spendingBreakdown,
+			),
+			accountTreeContent,
+		)
+	}
 
 	m.Viewport.SetContent(mainContent)
 }
