@@ -92,8 +92,10 @@ Once lunchtui is running, use these keyboard shortcuts to navigate:
 
 | Flag | Description | Default |
 |------|-------------|----------|
-| `--token` | Lunch Money API token | Uses `LUNCHMONEY_API_TOKEN` env var |
+| `--token` | Lunch Money API token | Uses `LUNCHMONEY_API_TOKEN` env var or config file |
 | `--debits-as-negative` | Show debits as negative numbers | `false` |
+| `--config` | Path to custom configuration file | Standard locations |
+| `--debug` | Enable debug logging | `false` |
 | `--help` | Show help message | - |
 
 ### Examples
@@ -105,8 +107,14 @@ lunchtui --token="your-token-here"
 # Show debits as negative values
 lunchtui --debits-as-negative
 
-# Combine options
-lunchtui --token="your-token" --debits-as-negative
+# Use a custom configuration file
+lunchtui --config /path/to/my-config.toml
+
+# Enable debug logging
+lunchtui --debug
+
+# Combine options (flags override config file)
+lunchtui --token="your-token" --debits-as-negative --debug
 ```
 
 ## 🔧 CLI Commands
@@ -186,16 +194,41 @@ lunchtui categories list --help
 
 ## 🔧 Configuration
 
+### Configuration File Support
+
+Lunchtui supports TOML configuration files to set default values for commonly used options. This eliminates the need to specify flags repeatedly.
+
+**Configuration file locations** (in order of precedence):
+- Current directory: `lunchtui.toml`
+- User config: `~/.config/lunchtui/config.toml`
+- User home: `~/.lunchtui.toml`
+- System-wide: `/etc/lunchtui/config.toml`
+
+**Example configuration file:**
+```toml
+# lunchtui.toml
+debug = true
+token = "your-api-token-here"
+debits_as_negative = false
+```
+
+You can also specify a custom config file with `--config path/to/config.toml`.
+
+**📋 For complete configuration documentation, see [CONFIG.md](CONFIG.md)**
+
 ### API Token Setup
 
 1. Log into your [Lunch Money account](https://my.lunchmoney.app/)
 2. Navigate to **Settings** → **Developers**
 3. Create a new API token
-4. Set the token as an environment variable:
+4. Set the token via configuration file or environment variable:
 
 ```bash
-# Add to your shell profile (.bashrc, .zshrc, etc.)
+# Option 1: Environment variable
 export LUNCHMONEY_API_TOKEN="your-api-token-here"
+
+# Option 2: Configuration file
+echo 'token = "your-api-token-here"' > lunchtui.toml
 ```
 
 ## 📸 Screenshots
