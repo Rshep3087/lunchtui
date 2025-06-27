@@ -1,4 +1,5 @@
 lunchtui.log
+lunchtui.toml
 .env
 .vscode
 # Added by goreleaser init:

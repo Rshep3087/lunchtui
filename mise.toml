@@ -7,8 +7,8 @@ goreleaser = 'latest'
 '_'.file = '.env'
 
 [tasks.run_dev]
-run = ["go install", "lunchtui --debug --debits-as-negative"]
-description = "Run the application with debits as negative"
+run = ["go install", "lunchtui"]
+description = "Run the application"
 
 [tasks.run_debug]
 run = "dlv debug --headless --api-version=2 --listen=127.0.0.1:43000 . -- --debits-as-negative"

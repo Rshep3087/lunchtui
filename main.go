@@ -169,7 +169,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func rootAction(ctx context.Context, c *cli.Command) error {
-	if c.Bool("debug") {
+	var config *Config
+	if cfg := ctx.Value(configContextKey); cfg != nil {
+		var ok bool
+		config, ok = cfg.(*Config)
+		if !ok {
+			return cli.Exit("failed to assert config context value to *Config", 1)
+		}
+
+	}
+
+	debugEnabled := c.Bool("debug") || (config != nil && config.Debug)
+	if debugEnabled {
 		f, err := tea.LogToFileWith("lunchtui.log", "lunchtui", log.Default())
 		if err != nil {
 			return err
@@ -177,12 +188,18 @@ func rootAction(ctx context.Context, c *cli.Command) error {
 		defer f.Close()
 
 		log.SetLevel(log.DebugLevel)
+		if config != nil {
+			log.Debug("Debug logging enabled", "configPath", config.configPathUsed)
+		}
 	}
 
 	lmc, err := getClientFromContext(ctx)
 	if err != nil {
 		return err
 	}
+
+	// Get debits-as-negative setting from command line or config
+	debitsAsNegative := c.Bool("debits-as-negative") || (config != nil && config.DebitsAsNegative)
 
 	tlKeyMap := newTransactionListKeyMap()
 	m := model{
@@ -193,7 +210,7 @@ func rootAction(ctx context.Context, c *cli.Command) error {
 		previousSessionState: overviewState,
 		lmc:                  lmc,
 		transactionsListKeys: tlKeyMap,
-		debitsAsNegative:     c.Bool("debits-as-negative"),
+		debitsAsNegative:     debitsAsNegative,
 		currentPeriod:        time.Now(),
 		period:               Period{},
 		periodType:           "month",

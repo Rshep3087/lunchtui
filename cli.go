@@ -23,6 +23,7 @@ type contextKey string
 const (
 	// clientContextKey is the key for storing the Lunch Money client in context.
 	clientContextKey contextKey = "lunchMoneyClient"
+	configContextKey contextKey = "config"
 
 	jsonOutputFormat  = "json"
 	tableOutputFormat = "table"
@@ -37,6 +38,78 @@ func getClientFromContext(ctx context.Context) (*lm.Client, error) {
 	return client, nil
 }
 
+// initializeCommandWithConfig initializes the command with configuration file support.
+func initializeCommandWithConfig(ctx context.Context, c *cli.Command) (context.Context, error) {
+	// Load configuration file
+	var config *Config
+	var configPath string
+	var err error
+
+	// First, check if a specific config file is provided
+	if c.String("config") != "" {
+		configPath = c.String("config")
+		config, err = loadConfigFromFile(configPath)
+		if err != nil {
+			return ctx, fmt.Errorf("failed to load specified config file %s: %w", configPath, err)
+		}
+		config.configPathUsed = configPath
+	} else {
+		// Look for config file in standard locations
+		config, configPath, err = loadConfig()
+		if err != nil {
+			return ctx, fmt.Errorf("failed to load configuration: %w", err)
+		}
+		config.configPathUsed = configPath
+	}
+
+	if configPath != "" {
+		log.Debug("Loaded configuration from file", "path", configPath)
+	} else {
+		log.Debug("No configuration file found, using defaults and command line arguments")
+	}
+
+	// Setup logging based on config and command line (command line takes precedence)
+	debugEnabled := c.Bool("debug") || (config != nil && config.Debug)
+	if debugEnabled {
+		log.SetLevel(log.DebugLevel)
+	} else {
+		log.SetLevel(log.InfoLevel)
+	}
+
+	// Get token from command line, environment, or config file
+	token := c.String("token")
+	if token == "" && config != nil && config.Token != "" {
+		token = config.Token
+	}
+
+	if token == "" {
+		return ctx, errors.New("API token is required (set via --token flag, " +
+			"LUNCHMONEY_API_TOKEN environment variable, or config file)")
+	}
+
+	// Create Lunch Money client and store in context
+	lmc, err := lm.NewClient(token)
+	if err != nil {
+		return ctx, fmt.Errorf("failed to create Lunch Money client: %w", err)
+	}
+
+	loggingTransport := newLoggingTransport(lmc.HTTP.Transport, log.Default())
+	lmc.HTTP.Transport = loggingTransport
+
+	// Store client and config in context
+	ctx = context.WithValue(ctx, clientContextKey, lmc)
+	if config != nil {
+		ctx = context.WithValue(ctx, configContextKey, config)
+	}
+
+	return ctx, nil
+}
+
+// rootActionWithConfig is the root action that handles configuration.
+func rootActionWithConfig(ctx context.Context, c *cli.Command) error {
+	return rootAction(ctx, c)
+}
+
 // createRootCommand creates the root CLI command with subcommands.
 func createRootCommand() *cli.Command {
 	return &cli.Command{
@@ -44,36 +117,14 @@ func createRootCommand() *cli.Command {
 		Usage:                 "A terminal UI and CLI for Lunch Money",
 		EnableShellCompletion: true,
 		Flags:                 globalFlags(),
-		Action:                rootAction,
+		Action:                rootActionWithConfig,
 		Commands: []*cli.Command{
 			createTransactionCommand(),
 			createCategoriesCommand(),
 			createAccountsCommand(),
 			createUserCommand(),
 		},
-		Before: func(ctx context.Context, c *cli.Command) (context.Context, error) {
-			// Setup logging if debug is enabled
-			if c.Bool("debug") {
-				log.SetLevel(log.DebugLevel)
-				log.Debug("Debug logging enabled")
-			} else {
-				log.SetLevel(log.InfoLevel)
-			}
-
-			// Create Lunch Money client and store in context
-			lmc, err := lm.NewClient(c.String("token"))
-			if err != nil {
-				return ctx, fmt.Errorf("failed to create Lunch Money client: %w", err)
-			}
-
-			loggingTransport := newLoggingTransport(lmc.HTTP.Transport, log.Default())
-			lmc.HTTP.Transport = loggingTransport
-
-			// Store client in context
-			ctx = context.WithValue(ctx, clientContextKey, lmc)
-
-			return ctx, nil
-		},
+		Before: initializeCommandWithConfig,
 	}
 }
 
@@ -81,10 +132,16 @@ func createRootCommand() *cli.Command {
 func globalFlags() []cli.Flag {
 	return []cli.Flag{
 		&cli.StringFlag{
+			Name:    "config",
+			Aliases: []string{"c"},
+			Usage:   "Path to configuration file (TOML format)",
+			Value:   "",
+		},
+		&cli.StringFlag{
 			Name:     "token",
 			Usage:    "The API token for Lunch Money",
 			Sources:  cli.EnvVars("LUNCHMONEY_API_TOKEN"),
-			Required: true,
+			Required: false, // We'll handle this in the Before hook
 		},
 		&cli.BoolFlag{
 			Name:  "debits-as-negative",
