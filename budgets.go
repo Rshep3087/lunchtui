@@ -30,13 +30,27 @@ func (b budgetItem) Description() string {
 		if data == nil {
 			continue
 		}
+
 		amount := "0"
 		if data.BudgetAmount != "" {
 			amount = string(data.BudgetAmount)
 		}
+
+		m, err := data.ParsedAmount()
+		if err != nil {
+			return fmt.Sprintf("Budget: %s %s | Spent: %s | Transactions: %d",
+				amount, data.BudgetCurrency, "N/A", data.NumTransactions)
+		}
+
 		spent := strconv.FormatFloat(data.SpendingToBase, 'f', 2, 64)
-		return fmt.Sprintf("Budget: %s %s | Spent: $%s | Transactions: %d",
-			amount, data.BudgetCurrency, spent, data.NumTransactions)
+		spentMoney, err := lm.ParseCurrency(spent, data.BudgetCurrency)
+		if err != nil {
+			return fmt.Sprintf("Budget: %s %s | Spent: %s | Transactions: %d",
+				amount, data.BudgetCurrency, "N/A", data.NumTransactions)
+		}
+
+		return fmt.Sprintf("Budget: %s | Spent: %s | Transactions: %d",
+			m.Display(), spentMoney.Display(), data.NumTransactions)
 	}
 
 	return "No budget data available"
