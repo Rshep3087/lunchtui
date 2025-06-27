@@ -507,7 +507,7 @@ func TestCreateOutputFormatFlag(t *testing.T) {
 	be.True(t, strings.Contains(err.Error(), "invalid output format"))
 }
 
-// TestNotesEditing tests the notes editing functionality
+// TestNotesEditing tests the notes editing functionality.
 func TestNotesEditing(t *testing.T) {
 	// Create a test model with a current transaction
 	m := model{
