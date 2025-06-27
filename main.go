@@ -45,6 +45,8 @@ type model struct {
 	transactionsStats *transactionsStats
 	// debitsAsNegative is a flag to show debits as negative numbers
 	debitsAsNegative bool
+	// hidePendingTransactions is a flag to hide pending transactions from all transaction lists
+	hidePendingTransactions bool
 	// originalTransactions stores the full list of transactions before filtering
 	originalTransactions []list.Item
 	// isFilteredUncleared tracks if the uncleared filter is currently applied
@@ -199,23 +201,26 @@ func rootAction(ctx context.Context, c *cli.Command) error {
 
 	// Get debits-as-negative setting from command line or config
 	debitsAsNegative := c.Bool("debits-as-negative") || (config != nil && config.DebitsAsNegative)
+	// Get hide-pending-transactions setting from command line or config
+	hidePendingTransactions := c.Bool("hide-pending-transactions") || (config != nil && config.HidePendingTransactions)
 
 	tlKeyMap := newTransactionListKeyMap()
 	m := model{
-		keys:                 initializeKeyMap(),
-		styles:               createStyles(),
-		help:                 createHelpModel(),
-		sessionState:         loading,
-		previousSessionState: overviewState,
-		lmc:                  lmc,
-		transactionsListKeys: tlKeyMap,
-		debitsAsNegative:     debitsAsNegative,
-		currentPeriod:        time.Now(),
-		period:               Period{},
-		periodType:           "month",
-		loadingSpinner:       spinner.New(spinner.WithSpinner(spinner.Dot)),
-		overview:             overview.New(),
-		recurringExpenses:    recurring.New(),
+		keys:                    initializeKeyMap(),
+		styles:                  createStyles(),
+		help:                    createHelpModel(),
+		sessionState:            loading,
+		previousSessionState:    overviewState,
+		lmc:                     lmc,
+		transactionsListKeys:    tlKeyMap,
+		debitsAsNegative:        debitsAsNegative,
+		hidePendingTransactions: hidePendingTransactions,
+		currentPeriod:           time.Now(),
+		period:                  Period{},
+		periodType:              "month",
+		loadingSpinner:          spinner.New(spinner.WithSpinner(spinner.Dot)),
+		overview:                overview.New(),
+		recurringExpenses:       recurring.New(),
 		loadingState: newLoadingState(
 			"categories",
 			"transactions",

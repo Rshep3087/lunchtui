@@ -16,6 +16,8 @@ type Config struct {
 	Token string `toml:"token"`
 	// DebitsAsNegative shows debits as negative numbers
 	DebitsAsNegative bool `toml:"debits_as_negative"`
+	// HidePendingTransactions hides pending transactions from all transaction lists
+	HidePendingTransactions bool `toml:"hide_pending_transactions"`
 
 	configPathUsed string // Path to the configuration file used
 }

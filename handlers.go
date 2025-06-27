@@ -123,8 +123,20 @@ func (m model) handleGetAccounts(msg getAccountsMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) handleGetTransactions(msg getsTransactionsMsg) (tea.Model, tea.Cmd) {
-	items := make([]list.Item, len(msg.ts))
-	for i, t := range msg.ts {
+	var filteredTransactions []*lm.Transaction
+	if m.hidePendingTransactions {
+		// Filter out pending transactions
+		for _, t := range msg.ts {
+			if t.Status != pendingStatus {
+				filteredTransactions = append(filteredTransactions, t)
+			}
+		}
+	} else {
+		filteredTransactions = msg.ts
+	}
+
+	items := make([]list.Item, len(filteredTransactions))
+	for i, t := range filteredTransactions {
 		items[i] = transactionItem{
 			t:            t,
 			category:     m.idToCategory[t.CategoryID],
@@ -140,7 +152,7 @@ func (m model) handleGetTransactions(msg getsTransactionsMsg) (tea.Model, tea.Cm
 	m.isFilteredUncleared = false
 
 	m.transactionsStats = newTransactionStats(items)
-	m.overview.SetTransactions(msg.ts)
+	m.overview.SetTransactions(filteredTransactions)
 	m.period = msg.period
 
 	m.loadingState.set("transactions")

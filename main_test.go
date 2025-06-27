@@ -317,13 +317,14 @@ func TestOverviewUserDisplay(t *testing.T) {
 
 func TestHandleGetTransactions(t *testing.T) {
 	tests := []struct {
-		name              string
-		transactions      []*lm.Transaction
-		expectedItems     int
-		expectedPeriod    Period
-		initialState      sessionState
-		expectedState     sessionState
-		expectedPrevState sessionState
+		name                    string
+		transactions            []*lm.Transaction
+		expectedItems           int
+		expectedPeriod          Period
+		initialState            sessionState
+		expectedState           sessionState
+		expectedPrevState       sessionState
+		hidePendingTransactions bool
 	}{
 		{
 			name: "handle get transactions",
@@ -336,9 +337,44 @@ func TestHandleGetTransactions(t *testing.T) {
 				start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 				end:   time.Date(2024, 1, 31, 23, 59, 59, 0, time.UTC),
 			},
-			initialState:      transactions,
-			expectedState:     transactions,
-			expectedPrevState: transactions,
+			initialState:            transactions,
+			expectedState:           transactions,
+			expectedPrevState:       transactions,
+			hidePendingTransactions: false,
+		},
+		{
+			name: "hide pending transactions",
+			transactions: []*lm.Transaction{
+				{ID: 1, Date: "2024-01-01", Status: "cleared"},
+				{ID: 2, Date: "2024-01-02", Status: "pending"},
+				{ID: 3, Date: "2024-01-03", Status: "uncleared"},
+			},
+			expectedItems: 2, // Should exclude the pending transaction
+			expectedPeriod: Period{
+				start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+				end:   time.Date(2024, 1, 31, 23, 59, 59, 0, time.UTC),
+			},
+			initialState:            transactions,
+			expectedState:           transactions,
+			expectedPrevState:       transactions,
+			hidePendingTransactions: true,
+		},
+		{
+			name: "show all transactions when flag is false",
+			transactions: []*lm.Transaction{
+				{ID: 1, Date: "2024-01-01", Status: "cleared"},
+				{ID: 2, Date: "2024-01-02", Status: "pending"},
+				{ID: 3, Date: "2024-01-03", Status: "uncleared"},
+			},
+			expectedItems: 3, // Should include all transactions
+			expectedPeriod: Period{
+				start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+				end:   time.Date(2024, 1, 31, 23, 59, 59, 0, time.UTC),
+			},
+			initialState:            transactions,
+			expectedState:           transactions,
+			expectedPrevState:       transactions,
+			hidePendingTransactions: false,
 		},
 	}
 
@@ -348,14 +384,15 @@ func TestHandleGetTransactions(t *testing.T) {
 
 			// Set up test model
 			m := &model{
-				sessionState:         tt.initialState,
-				loadingState:         newLoadingState("transactions"),
-				previousSessionState: tt.initialState,
-				idToCategory:         idc,
-				plaidAccounts:        map[int64]*lm.PlaidAccount{},
-				assets:               map[int64]*lm.Asset{},
-				transactions:         list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0),
-				overview:             overview.New(),
+				sessionState:            tt.initialState,
+				loadingState:            newLoadingState("transactions"),
+				previousSessionState:    tt.initialState,
+				idToCategory:            idc,
+				plaidAccounts:           map[int64]*lm.PlaidAccount{},
+				assets:                  map[int64]*lm.Asset{},
+				transactions:            list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0),
+				overview:                overview.New(),
+				hidePendingTransactions: tt.hidePendingTransactions,
 			}
 
 			m.overview.SetCategories(idc)

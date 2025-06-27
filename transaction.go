@@ -319,7 +319,7 @@ func newTransactionStats(ts []list.Item) *transactionsStats {
 		}
 
 		switch ti.t.Status {
-		case "pending":
+		case pendingStatus:
 			stats.pending++
 		case unclearedStatus:
 			stats.uncleared++
@@ -592,7 +592,7 @@ func createStatusStyle(status string) lipgloss.Style {
 		return baseStyle.Foreground(lipgloss.Color("#FAFAFA")).Background(lipgloss.Color("#22ba46"))
 	case unclearedStatus:
 		return baseStyle.Foreground(lipgloss.Color("#FAFAFA")).Background(lipgloss.Color("#e05951"))
-	case "pending":
+	case pendingStatus:
 		return baseStyle.Foreground(lipgloss.Color("#000000")).Background(lipgloss.Color("#7f7d78"))
 	default:
 		return baseStyle.Foreground(lipgloss.Color("#FAFAFA")).Background(lipgloss.Color("#666666"))

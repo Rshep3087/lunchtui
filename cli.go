@@ -148,6 +148,10 @@ func globalFlags() []cli.Flag {
 			Usage: "Show debits as negative numbers",
 		},
 		&cli.BoolFlag{
+			Name:  "hide-pending-transactions",
+			Usage: "Hide pending transactions from all transaction lists",
+		},
+		&cli.BoolFlag{
 			Name:  "debug",
 			Usage: "Enable debug logging",
 			Value: false,

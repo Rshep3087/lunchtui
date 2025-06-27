@@ -23,6 +23,7 @@ All global command-line flags can be configured in the configuration file:
 | `debug` | boolean | Enable debug logging | `false` |
 | `token` | string | Lunch Money API token | "" |
 | `debits_as_negative` | boolean | Show debits as negative numbers | `false` |
+| `hide_pending_transactions` | boolean | Hide pending transactions from all transaction lists | `false` |
 
 ## Example Configuration File
 
