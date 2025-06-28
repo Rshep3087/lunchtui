@@ -299,19 +299,19 @@ func (m *Model) UpdateViewport() {
 	)
 
 	mainContent := lipgloss.JoinHorizontal(lipgloss.Top,
-		lipgloss.JoinVertical(lipgloss.Top,
+		lipgloss.NewStyle().Margin(0, 1, 0, 1).Render(lipgloss.JoinVertical(lipgloss.Left,
 			m.userInfoView(),
 			m.transactionMetricsView(),
 			m.summaryView(),
-		),
-		accountTreeContent,
-		spendingBreakdown,
+		)),
+		lipgloss.NewStyle().Margin(0, 1, 0, 1).Render(accountTreeContent),
+		lipgloss.NewStyle().Margin(0, 1, 0, 1).Render(spendingBreakdown),
 	)
 
 	if m.Viewport.Width <= 122 {
 		log.Debug("narrow viewport detected, adjusting layout")
 		mainContent = lipgloss.JoinHorizontal(lipgloss.Top,
-			lipgloss.JoinVertical(lipgloss.Top,
+			lipgloss.JoinVertical(lipgloss.Left,
 				m.userInfoView(),
 				m.transactionMetricsView(),
 				m.summaryView(),
@@ -347,10 +347,12 @@ func (m *Model) userInfoView() string {
 		b.WriteString(fmt.Sprintf("API Key: %s", m.user.APIKeyLabel))
 	}
 
-	return lipgloss.JoinVertical(lipgloss.Top,
+	padded := lipgloss.NewStyle().PaddingBottom(1)
+
+	return padded.Render(lipgloss.JoinVertical(lipgloss.Top,
 		m.Styles.SectionHeaderStyle.Render("User Info"),
 		m.Styles.SummaryStyle.Render(b.String()),
-	)
+	))
 }
 
 func (m *Model) transactionMetricsView() string {
@@ -360,20 +362,20 @@ func (m *Model) transactionMetricsView() string {
 	b.WriteString(fmt.Sprintf("Pending: %s\n", m.Styles.SpentStyle.Render(strconv.Itoa(m.transactionMetrics.pending))))
 	b.WriteString(fmt.Sprintf("Unreviewed: %s", m.Styles.SpentStyle.Render(strconv.Itoa(m.transactionMetrics.unreviewed))))
 
-	return lipgloss.JoinVertical(lipgloss.Top,
+	return lipgloss.NewStyle().PaddingBottom(1).Render(lipgloss.JoinVertical(lipgloss.Top,
 		m.Styles.SectionHeaderStyle.Render("Transaction Metrics"),
 		m.Styles.SummaryStyle.Render(b.String()),
-	)
+	))
 }
 
 func (m *Model) summaryView() string {
 	if m.summary.totalIncomeEarned.Currency() == nil ||
 		m.summary.totalSpent.Currency() == nil ||
 		m.summary.netIncome.Currency() == nil {
-		return lipgloss.JoinVertical(lipgloss.Top,
+		return lipgloss.NewStyle().PaddingBottom(1).Render(lipgloss.JoinVertical(lipgloss.Top,
 			m.Styles.SectionHeaderStyle.Render("Period Summary"),
 			m.Styles.SummaryStyle.Render("No data available"),
-		)
+		))
 	}
 
 	var b strings.Builder
@@ -397,10 +399,10 @@ func (m *Model) summaryView() string {
 		))
 	}
 
-	return lipgloss.JoinVertical(lipgloss.Top,
+	return lipgloss.NewStyle().PaddingBottom(1).Render(lipgloss.JoinVertical(lipgloss.Top,
 		lipgloss.NewStyle().Bold(true).Render("Period Summary"),
 		m.Styles.SummaryStyle.Render(b.String()),
-	)
+	))
 }
 
 func (m *Model) updateTransactionMetrics() {
