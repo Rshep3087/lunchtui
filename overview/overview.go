@@ -164,16 +164,19 @@ type Styles struct {
 	AssetTypeStyle lipgloss.Style
 	AccountStyle   lipgloss.Style
 	SummaryStyle   lipgloss.Style
+	// SectionHeaderStyle is used for section headers in the overview
+	SectionHeaderStyle lipgloss.Style
 }
 
 func defaultStyles() Styles {
 	return Styles{
-		IncomeStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#00ff00")),
-		SpentStyle:     lipgloss.NewStyle().Foreground(lipgloss.Color("#ff0000")),
-		TreeRootStyle:  lipgloss.NewStyle().Foreground(lipgloss.Color("#828282")),
-		AssetTypeStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#bbbbbb")),
-		AccountStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color("#d29b1d")),
-		SummaryStyle:   lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(0, 1),
+		IncomeStyle:        lipgloss.NewStyle().Foreground(lipgloss.Color("#00ff00")),
+		SpentStyle:         lipgloss.NewStyle().Foreground(lipgloss.Color("#ff0000")),
+		TreeRootStyle:      lipgloss.NewStyle().Foreground(lipgloss.Color("#828282")),
+		AssetTypeStyle:     lipgloss.NewStyle().Foreground(lipgloss.Color("#bbbbbb")),
+		AccountStyle:       lipgloss.NewStyle().Foreground(lipgloss.Color("#d29b1d")),
+		SummaryStyle:       lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(0, 1),
+		SectionHeaderStyle: lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#ffffff")),
 	}
 }
 
@@ -264,7 +267,7 @@ func (m *Model) setSize(width, height int) {
 func (m *Model) UpdateViewport() {
 	netWorth := m.calculateNetWorth()
 	accountTreeContent := lipgloss.JoinVertical(lipgloss.Top,
-		lipgloss.NewStyle().Bold(true).Render("Accounts Overview"),
+		m.Styles.SectionHeaderStyle.Render("Accounts Overview"),
 		lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			Padding(0, 1).
@@ -288,7 +291,7 @@ func (m *Model) UpdateViewport() {
 	}
 
 	spendingBreakdown := lipgloss.JoinVertical(lipgloss.Top,
-		lipgloss.NewStyle().Bold(true).Render("Spending Breakdown"),
+		m.Styles.SectionHeaderStyle.Render("Spending Breakdown"),
 		lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			Padding(0, 1).
@@ -324,7 +327,7 @@ func (m *Model) UpdateViewport() {
 func (m *Model) userInfoView() string {
 	if m.user == nil {
 		return lipgloss.JoinVertical(lipgloss.Top,
-			lipgloss.NewStyle().Bold(true).Render("User Info"),
+			m.Styles.SectionHeaderStyle.Render("User Info"),
 			m.Styles.SummaryStyle.Render("Loading user information..."),
 		)
 	}
@@ -345,7 +348,7 @@ func (m *Model) userInfoView() string {
 	}
 
 	return lipgloss.JoinVertical(lipgloss.Top,
-		lipgloss.NewStyle().Bold(true).Render("User Info"),
+		m.Styles.SectionHeaderStyle.Render("User Info"),
 		m.Styles.SummaryStyle.Render(b.String()),
 	)
 }
@@ -358,7 +361,7 @@ func (m *Model) transactionMetricsView() string {
 	b.WriteString(fmt.Sprintf("Unreviewed: %s", m.Styles.SpentStyle.Render(strconv.Itoa(m.transactionMetrics.unreviewed))))
 
 	return lipgloss.JoinVertical(lipgloss.Top,
-		lipgloss.NewStyle().Bold(true).Render("Transaction Metrics"),
+		m.Styles.SectionHeaderStyle.Render("Transaction Metrics"),
 		m.Styles.SummaryStyle.Render(b.String()),
 	)
 }
@@ -368,7 +371,7 @@ func (m *Model) summaryView() string {
 		m.summary.totalSpent.Currency() == nil ||
 		m.summary.netIncome.Currency() == nil {
 		return lipgloss.JoinVertical(lipgloss.Top,
-			lipgloss.NewStyle().Bold(true).Render("Period Summary"),
+			m.Styles.SectionHeaderStyle.Render("Period Summary"),
 			m.Styles.SummaryStyle.Render("No data available"),
 		)
 	}
