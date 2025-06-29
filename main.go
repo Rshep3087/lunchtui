@@ -20,7 +20,21 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+// Config represents the application configuration structure.
+type Config struct {
+	// Debug enables debug logging
+	Debug bool `toml:"debug"`
+	// Token is the Lunch Money API token
+	Token string `toml:"token"`
+	// DebitsAsNegative shows debits as negative numbers
+	DebitsAsNegative bool `toml:"debits_as_negative"`
+	// HidePendingTransactions hides pending transactions from all transaction lists
+	HidePendingTransactions bool `toml:"hide_pending_transactions"`
+}
+
 type model struct {
+	// config holds the application configuration
+	config Config
 	// loadingSpinner is a spinner model for the initial loading state
 	loadingSpinner spinner.Model
 
@@ -171,16 +185,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func rootAction(ctx context.Context, c *cli.Command) error {
-	var config *Config
+	var config Config
 	if cfg := ctx.Value(configContextKey); cfg != nil {
 		var ok bool
-		config, ok = cfg.(*Config)
+		config, ok = cfg.(Config)
 		if !ok {
-			return cli.Exit("failed to assert config context value to *Config", 1)
+			return cli.Exit("failed to assert config context value to Config", 1)
 		}
 	}
 
-	debugEnabled := c.Bool("debug") || (config != nil && config.Debug)
+	debugEnabled := c.Bool("debug") || config.Debug
 	if debugEnabled {
 		f, err := tea.LogToFileWith("lunchtui.log", "lunchtui", log.Default())
 		if err != nil {
@@ -189,9 +203,7 @@ func rootAction(ctx context.Context, c *cli.Command) error {
 		defer f.Close()
 
 		log.SetLevel(log.DebugLevel)
-		if config != nil {
-			log.Debug("Debug logging enabled", "configPath", config.configPathUsed)
-		}
+		log.Debug("Debug logging enabled")
 	}
 
 	lmc, err := getClientFromContext(ctx)
@@ -200,12 +212,13 @@ func rootAction(ctx context.Context, c *cli.Command) error {
 	}
 
 	// Get debits-as-negative setting from command line or config
-	debitsAsNegative := c.Bool("debits-as-negative") || (config != nil && config.DebitsAsNegative)
+	debitsAsNegative := c.Bool("debits-as-negative") || config.DebitsAsNegative
 	// Get hide-pending-transactions setting from command line or config
-	hidePendingTransactions := c.Bool("hide-pending-transactions") || (config != nil && config.HidePendingTransactions)
+	hidePendingTransactions := c.Bool("hide-pending-transactions") || config.HidePendingTransactions
 
 	tlKeyMap := newTransactionListKeyMap()
 	m := model{
+		config:                  config,
 		keys:                    initializeKeyMap(),
 		styles:                  createStyles(),
 		help:                    createHelpModel(),

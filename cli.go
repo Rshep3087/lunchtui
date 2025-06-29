@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"slices"
 	"sort"
 	"strconv"
@@ -14,6 +16,8 @@ import (
 	"github.com/charmbracelet/lipgloss/table"
 	"github.com/charmbracelet/log"
 	lm "github.com/icco/lunchmoney"
+	altsrc "github.com/urfave/cli-altsrc/v3"
+	"github.com/urfave/cli-altsrc/v3/toml"
 	"github.com/urfave/cli/v3"
 )
 
@@ -40,55 +44,30 @@ func getClientFromContext(ctx context.Context) (*lm.Client, error) {
 
 // initializeCommandWithConfig initializes the command with configuration file support.
 func initializeCommandWithConfig(ctx context.Context, c *cli.Command) (context.Context, error) {
-	// Load configuration file
-	var config *Config
-	var configPath string
-	var err error
-
-	// First, check if a specific config file is provided
-	if c.String("config") != "" {
-		configPath = c.String("config")
-		config, err = loadConfigFromFile(configPath)
-		if err != nil {
-			return ctx, fmt.Errorf("failed to load specified config file %s: %w", configPath, err)
-		}
-		config.configPathUsed = configPath
-	} else {
-		// Look for config file in standard locations
-		config, configPath, err = loadConfig()
-		if err != nil {
-			return ctx, fmt.Errorf("failed to load configuration: %w", err)
-		}
-		config.configPathUsed = configPath
+	// Create config from command line values (which may come from config files via Sources)
+	config := Config{
+		Debug:                   c.Bool("debug"),
+		Token:                   c.String("token"),
+		DebitsAsNegative:        c.Bool("debits-as-negative"),
+		HidePendingTransactions: c.Bool("hide-pending-transactions"),
 	}
 
-	if configPath != "" {
-		log.Debug("Loaded configuration from file", "path", configPath)
-	} else {
-		log.Debug("No configuration file found, using defaults and command line arguments")
-	}
-
-	// Setup logging based on config and command line (command line takes precedence)
-	debugEnabled := c.Bool("debug") || (config != nil && config.Debug)
-	if debugEnabled {
+	// Setup logging based on config
+	if config.Debug {
 		log.SetLevel(log.DebugLevel)
+		log.Debug("Debug logging enabled")
 	} else {
 		log.SetLevel(log.InfoLevel)
 	}
 
-	// Get token from command line, environment, or config file
-	token := c.String("token")
-	if token == "" && config != nil && config.Token != "" {
-		token = config.Token
-	}
-
-	if token == "" {
+	// Validate that we have a token
+	if config.Token == "" {
 		return ctx, errors.New("API token is required (set via --token flag, " +
 			"LUNCHMONEY_API_TOKEN environment variable, or config file)")
 	}
 
 	// Create Lunch Money client and store in context
-	lmc, err := lm.NewClient(token)
+	lmc, err := lm.NewClient(config.Token)
 	if err != nil {
 		return ctx, fmt.Errorf("failed to create Lunch Money client: %w", err)
 	}
@@ -98,9 +77,7 @@ func initializeCommandWithConfig(ctx context.Context, c *cli.Command) (context.C
 
 	// Store client and config in context
 	ctx = context.WithValue(ctx, clientContextKey, lmc)
-	if config != nil {
-		ctx = context.WithValue(ctx, configContextKey, config)
-	}
+	ctx = context.WithValue(ctx, configContextKey, config)
 
 	return ctx, nil
 }
@@ -128,8 +105,49 @@ func createRootCommand() *cli.Command {
 	}
 }
 
+// getConfigFilePaths returns the list of possible configuration file paths
+// in order of precedence (first found wins).
+func getConfigFilePaths() []altsrc.Sourcer {
+	var paths []altsrc.Sourcer
+
+	// Current directory (highest precedence)
+	paths = append(paths, altsrc.StringSourcer("lunchtui.toml"))
+
+	// User config directory
+	if configDir, err := os.UserConfigDir(); err == nil {
+		paths = append(paths, altsrc.StringSourcer(filepath.Join(configDir, "lunchtui", "config.toml")))
+	}
+
+	// User home directory
+	if homeDir, err := os.UserHomeDir(); err == nil {
+		paths = append(paths, altsrc.StringSourcer(filepath.Join(homeDir, ".lunchtui.toml")))
+		paths = append(paths, altsrc.StringSourcer(filepath.Join(homeDir, ".config", "lunchtui", "config.toml")))
+	}
+
+	// System-wide config directory (lowest precedence)
+	paths = append(paths, altsrc.StringSourcer("/etc/lunchtui/config.toml"))
+
+	return paths
+}
+
 // globalFlags returns the global flags available to all commands.
 func globalFlags() []cli.Flag {
+	configFiles := getConfigFilePaths()
+
+	// Create TOML sources for each config file
+	var tokenSources []cli.ValueSource
+	var debugSources []cli.ValueSource
+	var debitsAsNegativeSources []cli.ValueSource
+	var hidePendingSources []cli.ValueSource
+
+	tokenSources = append(tokenSources, cli.EnvVar("LUNCHMONEY_API_TOKEN"))
+	for _, configFile := range configFiles {
+		tokenSources = append(tokenSources, toml.TOML("token", configFile))
+		debugSources = append(debugSources, toml.TOML("debug", configFile))
+		debitsAsNegativeSources = append(debitsAsNegativeSources, toml.TOML("debits_as_negative", configFile))
+		hidePendingSources = append(hidePendingSources, toml.TOML("hide_pending_transactions", configFile))
+	}
+
 	return []cli.Flag{
 		&cli.StringFlag{
 			Name:    "config",
@@ -140,21 +158,24 @@ func globalFlags() []cli.Flag {
 		&cli.StringFlag{
 			Name:     "token",
 			Usage:    "The API token for Lunch Money",
-			Sources:  cli.EnvVars("LUNCHMONEY_API_TOKEN"),
+			Sources:  cli.NewValueSourceChain(tokenSources...),
 			Required: false, // We'll handle this in the Before hook
 		},
 		&cli.BoolFlag{
-			Name:  "debits-as-negative",
-			Usage: "Show debits as negative numbers",
+			Name:    "debits-as-negative",
+			Usage:   "Show debits as negative numbers",
+			Sources: cli.NewValueSourceChain(debitsAsNegativeSources...),
 		},
 		&cli.BoolFlag{
-			Name:  "hide-pending-transactions",
-			Usage: "Hide pending transactions from all transaction lists",
+			Name:    "hide-pending-transactions",
+			Usage:   "Hide pending transactions from all transaction lists",
+			Sources: cli.NewValueSourceChain(hidePendingSources...),
 		},
 		&cli.BoolFlag{
-			Name:  "debug",
-			Usage: "Enable debug logging",
-			Value: false,
+			Name:    "debug",
+			Usage:   "Enable debug logging",
+			Value:   false,
+			Sources: cli.NewValueSourceChain(debugSources...),
 		},
 	}
 }
