@@ -92,7 +92,7 @@ func TestHandleEscape(t *testing.T) {
 				categoryForm:         tt.categoryForm,
 			}
 
-			resultModel, _ := handleEscape(m)
+			resultModel, _ := handleEscape(tea.KeyMsg{}, m)
 			result := resultModel.(*model)
 
 			be.Equal(t, tt.expectedState, result.sessionState)
@@ -595,7 +595,7 @@ func TestNotesEditing(t *testing.T) {
 	t.Run("escape handling in keybindings", func(t *testing.T) {
 		// Test detailed transaction with notes editing
 		m.isEditingNotes = true
-		updatedModel, _ := handleEscape(&m)
+		updatedModel, _ := handleEscape(tea.KeyMsg{}, &m)
 		updatedM := updatedModel.(*model)
 
 		if updatedM.isEditingNotes {
@@ -608,7 +608,7 @@ func TestNotesEditing(t *testing.T) {
 
 		// Test normal escape (should exit detailed view)
 		m.isEditingNotes = false
-		updatedModel, _ = handleEscape(&m)
+		updatedModel, _ = handleEscape(tea.KeyMsg{}, &m)
 		updatedM = updatedModel.(*model)
 
 		if updatedM.sessionState == detailedTransaction {

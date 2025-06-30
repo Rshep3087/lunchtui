@@ -214,6 +214,7 @@ func main() {
 func createTransactionList(delegate list.DefaultDelegate, tlKeyMap *transactionListKeyMap) list.Model {
 	transactionList := list.New([]list.Item{}, delegate, 0, 0)
 	transactionList.SetShowTitle(false)
+	transactionList.DisableQuitKeybindings()
 	transactionList.StatusMessageLifetime = 3 * time.Second
 	transactionList.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{

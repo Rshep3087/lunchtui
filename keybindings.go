@@ -17,6 +17,7 @@ type keyMap struct {
 	nextPeriod     key.Binding
 	previousPeriod key.Binding
 	switchPeriod   key.Binding
+	escape         key.Binding
 	fullHelp       key.Binding
 	quit           key.Binding
 }
@@ -86,6 +87,10 @@ func initializeKeyMap() keyMap {
 			key.WithKeys("s"),
 			key.WithHelp("s", "switch range"),
 		),
+		escape: key.NewBinding(
+			key.WithKeys("esc"),
+			key.WithHelp("esc", "escape"),
+		),
 		fullHelp: key.NewBinding(
 			key.WithKeys("?"),
 			key.WithHelp("?", "help"),
@@ -103,7 +108,7 @@ func handleKeyPress(msg tea.KeyMsg, m *model) (tea.Model, tea.Cmd) {
 	log.Debug("key pressed", "key", k)
 
 	// Handle special keys first
-	if model, cmd := handleSpecialKeys(k, m); cmd != nil {
+	if model, cmd := handleSpecialKeys(msg, m); cmd != nil {
 		return model, cmd
 	}
 
@@ -125,13 +130,13 @@ func handleKeyPress(msg tea.KeyMsg, m *model) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func handleSpecialKeys(k string, m *model) (tea.Model, tea.Cmd) {
-	if k == "ctrl+c" || k == "q" {
+func handleSpecialKeys(msg tea.KeyMsg, m *model) (tea.Model, tea.Cmd) {
+	if key.Matches(msg, m.keys.quit) {
 		return m, tea.Quit
 	}
 
-	if k == "esc" {
-		return handleEscape(m)
+	if key.Matches(msg, m.keys.escape) {
+		return handleEscape(msg, m)
 	}
 
 	return m, nil
@@ -225,12 +230,20 @@ func handleSessionStateKeys(msg tea.KeyMsg, m *model) (tea.Model, tea.Cmd) {
 }
 
 // handleEscape resets the session state to the overview state.
-func handleEscape(m *model) (tea.Model, tea.Cmd) {
+func handleEscape(msg tea.KeyMsg, m *model) (tea.Model, tea.Cmd) {
 	if m.sessionState == categorizeTransaction {
 		m.previousSessionState = overviewState
 		m.sessionState = transactions
 		m.categoryForm.State = huh.StateAborted
 		return m, m.getTransactions
+	}
+
+	// handle if user is filtering transactions and presses escape
+	if m.sessionState == transactions && m.transactions.FilterState() == list.Filtering {
+		log.Debug("handling escape in transactions filtering")
+		var cmd tea.Cmd
+		m.transactions, cmd = m.transactions.Update(msg)
+		return m, cmd
 	}
 
 	if m.sessionState == detailedTransaction {
