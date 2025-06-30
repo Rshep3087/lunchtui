@@ -8,12 +8,14 @@ import (
 type styles struct {
 	docStyle   lipgloss.Style
 	titleStyle lipgloss.Style
+	errorStyle lipgloss.Style
 }
 
 func createStyles() styles {
 	return styles{
 		docStyle:   lipgloss.NewStyle().Margin(1, 2),
 		titleStyle: lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#000000", Dark: "#ffd644"}).Bold(true),
+		errorStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#ff0000")).Bold(true),
 	}
 }
 

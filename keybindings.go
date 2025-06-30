@@ -71,8 +71,8 @@ func initializeKeyMap() keyMap {
 			key.WithHelp("b", "budgets"),
 		),
 		config: key.NewBinding(
-			key.WithKeys("c"),
-			key.WithHelp("c", "configuration"),
+			key.WithKeys("g"),
+			key.WithHelp("g", "configuration"),
 		),
 		nextPeriod: key.NewBinding(
 			key.WithKeys("]"),
@@ -113,12 +113,12 @@ func handleKeyPress(msg tea.KeyMsg, m *model) (tea.Model, tea.Cmd) {
 	}
 
 	// Handle navigation keys
-	if model, cmd := handleNavigationKeys(k, m); cmd != nil {
+	if model, cmd := handleNavigationKeys(msg, m); cmd != nil {
 		return model, cmd
 	}
 
 	// Handle session state changes
-	if model, cmd := handleSessionStateKeys(k, m); cmd != nil {
+	if model, cmd := handleSessionStateKeys(msg, m); cmd != nil {
 		return model, cmd
 	}
 
@@ -162,29 +162,29 @@ func isInputBlocked(m *model) bool {
 	return false
 }
 
-func handleNavigationKeys(k string, m *model) (tea.Model, tea.Cmd) {
-	switch k {
-	case "]":
+func handleNavigationKeys(msg tea.KeyMsg, m *model) (tea.Model, tea.Cmd) {
+	switch {
+	case key.Matches(msg, m.keys.nextPeriod):
 		return advancePeriod(m)
-	case "[":
+	case key.Matches(msg, m.keys.previousPeriod):
 		return retrievePreviousPeriod(m)
-	case "s":
+	case key.Matches(msg, m.keys.switchPeriod):
 		return switchPeriodType(m)
 	}
 
 	return m, nil
 }
 
-func handleSessionStateKeys(k string, m *model) (tea.Model, tea.Cmd) {
-	switch k {
-	case "t":
+func handleSessionStateKeys(msg tea.KeyMsg, m *model) (tea.Model, tea.Cmd) {
+	switch {
+	case key.Matches(msg, m.keys.transactions):
 		if m.sessionState != transactions {
 			m.previousSessionState = m.sessionState
 			m.sessionState = transactions
 			return m, tea.Batch(m.getTransactions)
 		}
 
-	case "r":
+	case key.Matches(msg, m.keys.recurring):
 		if m.sessionState != recurringExpenses {
 			m.previousSessionState = m.sessionState
 			m.recurringExpenses.SetFocus(true)
@@ -192,21 +192,21 @@ func handleSessionStateKeys(k string, m *model) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
-	case "o":
+	case key.Matches(msg, m.keys.overview):
 		if m.sessionState != overviewState {
 			m.previousSessionState = m.sessionState
 			m.sessionState = overviewState
 			return m, tea.Batch(m.getTransactions, m.getAccounts)
 		}
 
-	case "b":
+	case key.Matches(msg, m.keys.budgets):
 		if m.sessionState != budgets {
 			m.previousSessionState = budgets
 			m.sessionState = budgets
 			return m, m.getBudgets
 		}
 
-	case "c":
+	case key.Matches(msg, m.keys.config):
 		if m.sessionState != configView {
 			m.previousSessionState = m.sessionState
 			m.configView.SetFocus(true)
@@ -214,7 +214,7 @@ func handleSessionStateKeys(k string, m *model) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
-	case "?":
+	case key.Matches(msg, m.keys.fullHelp):
 		if m.sessionState != transactions {
 			m.help.ShowAll = !m.help.ShowAll
 			return m, nil

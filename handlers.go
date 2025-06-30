@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
@@ -47,6 +48,11 @@ type (
 	getBudgetsMsg struct {
 		budgets []*lm.Budget
 		period  Period
+	}
+
+	// authErrorMsg is sent when a 401 Unauthorized error occurs.
+	authErrorMsg struct {
+		err error
 	}
 )
 
@@ -102,6 +108,12 @@ func (m model) handleGetCategories(msg getCategoriesMsg) (tea.Model, tea.Cmd) {
 	m.sessionState = m.checkIfLoading()
 
 	return m, tea.Batch(m.getTransactions, tea.WindowSize())
+}
+
+func (m model) handleGetRecurringExpenses(msg getRecurringExpensesMsg) (tea.Model, tea.Cmd) {
+	m.recurringExpenses.SetRecurringExpenses(msg.recurringExpenses)
+	m.loadingState.set("recurring expenses")
+	return m, m.recurringExpenses.Init()
 }
 
 func (m model) handleGetAccounts(msg getAccountsMsg) (tea.Model, tea.Cmd) {
@@ -197,12 +209,31 @@ func (m model) handleGetBudgets(msg getBudgetsMsg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
+// Helper function to check if an error is a 401 Unauthorized error.
+func is401Error(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	// Check if it's an HTTP error with status 401
+	errStr := err.Error()
+	return strings.Contains(errStr, "401") || strings.Contains(strings.ToLower(errStr), "unauthorized")
+}
+
+// Handle 401 errors by exiting the application with a helpful message.
+func handleAuthError(err error) tea.Msg {
+	return authErrorMsg{err: err}
+}
+
 // API call functions.
 func (m model) getRecurringExpenses() tea.Msg {
 	ctx := context.Background()
 
 	recurringExpenses, err := m.lmc.GetRecurringExpenses(ctx, nil)
 	if err != nil {
+		if is401Error(err) {
+			return handleAuthError(err)
+		}
 		return nil
 	}
 	log.Debug("got recurring expenses")
@@ -236,6 +267,9 @@ func (m model) getAccounts() tea.Msg {
 	})
 
 	if err := errGroup.Wait(); err != nil {
+		if is401Error(err) {
+			return handleAuthError(err)
+		}
 		return err
 	}
 
@@ -247,6 +281,9 @@ func (m model) getCategories() tea.Msg {
 
 	cs, err := m.lmc.GetCategories(ctx)
 	if err != nil {
+		if is401Error(err) {
+			return handleAuthError(err)
+		}
 		return nil
 	}
 
@@ -267,6 +304,9 @@ func (m model) getTransactions() tea.Msg {
 		EndDate:         &ed,
 	})
 	if err != nil {
+		if is401Error(err) {
+			return handleAuthError(err)
+		}
 		return nil
 	}
 
@@ -281,6 +321,9 @@ func (m model) getTransactions() tea.Msg {
 func (m model) getUser() tea.Msg {
 	u, err := m.lmc.GetUser(context.Background())
 	if err != nil {
+		if is401Error(err) {
+			return handleAuthError(err)
+		}
 		return nil
 	}
 
@@ -292,6 +335,9 @@ func (m model) getTags() tea.Msg {
 
 	tags, err := m.lmc.GetTags(ctx)
 	if err != nil {
+		if is401Error(err) {
+			return handleAuthError(err)
+		}
 		return nil
 	}
 
@@ -311,6 +357,9 @@ func (m model) getBudgets() tea.Msg {
 		EndDate:   ed,
 	})
 	if err != nil {
+		if is401Error(err) {
+			return handleAuthError(err)
+		}
 		return nil
 	}
 
@@ -323,6 +372,9 @@ func (m model) updateTransactionStatus(t *lm.Transaction) tea.Cmd {
 
 		resp, err := m.lmc.UpdateTransaction(ctx, t.ID, &lm.UpdateTransaction{Status: &t.Status})
 		if err != nil {
+			if is401Error(err) {
+				return handleAuthError(err)
+			}
 			return err
 		}
 

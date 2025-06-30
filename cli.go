@@ -52,12 +52,11 @@ func initializeCommandWithConfig(ctx context.Context, c *cli.Command) (context.C
 		HidePendingTransactions: c.Bool("hide-pending-transactions"),
 	}
 
+	log.SetLevel(log.InfoLevel)
+
 	// Setup logging based on config
 	if config.Debug {
 		log.SetLevel(log.DebugLevel)
-		log.Debug("Debug logging enabled")
-	} else {
-		log.SetLevel(log.InfoLevel)
 	}
 
 	// Validate that we have a token

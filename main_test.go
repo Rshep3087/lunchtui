@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -19,6 +20,7 @@ func TestBudgetsNavigation(t *testing.T) {
 		sessionState:         overviewState,
 		previousSessionState: overviewState,
 		loadingState:         newLoadingState("categories", "transactions", "user", "accounts", "tags"),
+		keys:                 initializeKeyMap(),
 	}
 
 	// Test navigating to budgets
@@ -720,5 +722,53 @@ func TestFilterUnclearedTransactionsToggle(t *testing.T) {
 	// Check that filter state is reset
 	if resultModel2.isFilteredUncleared {
 		t.Error("Expected isFilteredUncleared to be false after toggle")
+	}
+}
+
+func TestIs401Error(t *testing.T) {
+	testCases := []struct {
+		name     string
+		err      error
+		expected bool
+	}{
+		{
+			name:     "nil error",
+			err:      nil,
+			expected: false,
+		},
+		{
+			name:     "401 status code error",
+			err:      errors.New("HTTP 401 Unauthorized"),
+			expected: true,
+		},
+		{
+			name:     "lowercase unauthorized error",
+			err:      errors.New("request failed: unauthorized access"),
+			expected: true,
+		},
+		{
+			name:     "mixed case unauthorized error",
+			err:      errors.New("API error: Unauthorized token"),
+			expected: true,
+		},
+		{
+			name:     "different HTTP error",
+			err:      errors.New("HTTP 404 Not Found"),
+			expected: false,
+		},
+		{
+			name:     "generic error",
+			err:      errors.New("something went wrong"),
+			expected: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := is401Error(tc.err)
+			if result != tc.expected {
+				t.Errorf("is401Error(%v) = %v, expected %v", tc.err, result, tc.expected)
+			}
+		})
 	}
 }

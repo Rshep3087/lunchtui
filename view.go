@@ -28,6 +28,9 @@ func (m model) View() string {
 		b.WriteString(m.configView.View())
 	case loading:
 		b.WriteString(fmt.Sprintf("%s Loading data...", m.loadingSpinner.View()))
+	case errorState:
+		b.WriteString(m.styles.errorStyle.Render(fmt.Sprintf("%s - 'q' to quit", m.errorMsg)))
+		return m.styles.docStyle.Render(b.String())
 	}
 
 	b.WriteString("\n\n")
@@ -39,34 +42,14 @@ func (m model) View() string {
 func (m model) renderTitle() string {
 	var b strings.Builder
 
-	var currentPage string
-	switch m.sessionState {
-	case overviewState:
-		currentPage = "overview"
-	case transactions:
-		currentPage = "transactions"
-	case detailedTransaction:
-		currentPage = "transaction details"
-	case categorizeTransaction:
-		currentPage = "categorize transaction"
-	case recurringExpenses:
-		currentPage = "recurring expenses"
-	case budgets:
-		currentPage = "budgets"
-	case configView:
-		currentPage = "configuration"
-	case loading:
-		currentPage = "loading"
-	}
-
 	if m.period.String() == "" {
-		b.WriteString(m.styles.titleStyle.Render(fmt.Sprintf("lunchtui | %s", currentPage)))
+		b.WriteString(m.styles.titleStyle.Render(fmt.Sprintf("lunchtui | %s", m.sessionState.String())))
 		return b.String()
 	}
 
 	b.WriteString(m.styles.titleStyle.Render(
 		fmt.Sprintf("lunchtui | %s | %s | %s",
-			currentPage,
+			m.sessionState.String(),
 			m.period.String(),
 			m.periodType,
 		),

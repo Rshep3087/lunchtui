@@ -47,6 +47,8 @@ type model struct {
 	transactionsListKeys *transactionListKeyMap
 	// sessionState is the current state of the session
 	sessionState sessionState
+	// errorMsg is the error message to display in the error state
+	errorMsg string
 	// previousSessionState is the state before the current session state
 	previousSessionState sessionState
 	// transactions is a bubbletea list model of financial transactions
@@ -110,85 +112,9 @@ func (m model) Init() tea.Cmd {
 		m.getAccounts,
 		m.loadingSpinner.Tick,
 		m.getRecurringExpenses,
-		m.recurringExpenses.Init(),
 		m.getTags,
 		m.getBudgets,
 	)
-}
-
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	// always check for quit key first
-	if msg, ok := msg.(tea.KeyMsg); ok {
-		if model, cmd := handleKeyPress(msg, &m); cmd != nil {
-			log.Debug("key press handled, cmd returned")
-			return model, cmd
-		}
-	}
-
-	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		return m.handleWindowSize(msg)
-
-	case spinner.TickMsg:
-		return m.handleSpinnerTick(msg)
-
-	// set the categories on the model,
-	// send a cmd to get transactions
-	case getCategoriesMsg:
-		return m.handleGetCategories(msg)
-
-	case getAccountsMsg:
-		return m.handleGetAccounts(msg)
-
-	case getsTransactionsMsg:
-		return m.handleGetTransactions(msg)
-
-	case getUserMsg:
-		return m.handleGetUser(msg)
-
-	case getRecurringExpensesMsg:
-		m.recurringExpenses.SetRecurringExpenses(msg.recurringExpenses)
-		return m, nil
-
-	case getTagsMsg:
-		return m.handleGetTags(msg)
-
-	case getBudgetsMsg:
-		return m.handleGetBudgets(msg)
-	}
-
-	var cmd tea.Cmd
-	switch m.sessionState {
-	case overviewState:
-		m.overview, cmd = m.overview.Update(msg)
-		return m, cmd
-
-	case categorizeTransaction:
-		return updateCategorizeTransaction(msg, &m)
-
-	case detailedTransaction:
-		return updateDetailedTransaction(msg, m)
-
-	case transactions:
-		return updateTransactions(msg, m)
-
-	case recurringExpenses:
-		m.recurringExpenses, cmd = m.recurringExpenses.Update(msg)
-		return m, cmd
-
-	case budgets:
-		return updateBudgets(msg, m)
-
-	case configView:
-		m.configView, cmd = m.configView.Update(msg)
-		return m, cmd
-
-	case loading:
-		m.loadingSpinner, cmd = m.loadingSpinner.Update(msg)
-		return m, cmd
-	}
-
-	return m, nil
 }
 
 func rootAction(ctx context.Context, c *cli.Command) error {
@@ -210,7 +136,6 @@ func rootAction(ctx context.Context, c *cli.Command) error {
 		defer f.Close()
 
 		log.SetLevel(log.DebugLevel)
-		log.Debug("Debug logging enabled")
 	}
 
 	lmc, err := getClientFromContext(ctx)
