@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	configview "github.com/rshep3087/lunchtui/config"
 	"github.com/rshep3087/lunchtui/overview"
 	"github.com/rshep3087/lunchtui/recurring"
 
@@ -93,6 +94,8 @@ type model struct {
 	recurringExpenses recurring.Model
 	// budgets is a bubbletea list model of budgets
 	budgets list.Model
+	// configView is a model for the configuration view
+	configView configview.Model
 	// lmc is the Lunch Money client
 	lmc *lm.Client
 
@@ -176,6 +179,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case budgets:
 		return updateBudgets(msg, m)
 
+	case configView:
+		m.configView, cmd = m.configView.Update(msg)
+		return m, cmd
+
 	case loading:
 		m.loadingSpinner, cmd = m.loadingSpinner.Update(msg)
 		return m, cmd
@@ -234,6 +241,7 @@ func rootAction(ctx context.Context, c *cli.Command) error {
 		loadingSpinner:          spinner.New(spinner.WithSpinner(spinner.Dot)),
 		overview:                overview.New(),
 		recurringExpenses:       recurring.New(),
+		configView:              configview.New(),
 		loadingState: newLoadingState(
 			"categories",
 			"transactions",
@@ -251,6 +259,15 @@ func rootAction(ctx context.Context, c *cli.Command) error {
 	m.notesInput = textinput.New()
 	m.notesInput.Placeholder = "Enter notes..."
 	m.notesInput.CharLimit = 500
+
+	// Initialize config view with current configuration
+	configData := configview.Config{
+		Debug:                   config.Debug,
+		Token:                   config.Token,
+		DebitsAsNegative:        config.DebitsAsNegative,
+		HidePendingTransactions: config.HidePendingTransactions,
+	}
+	m.configView.SetConfig(configData)
 
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	if _, err = p.Run(); err != nil {

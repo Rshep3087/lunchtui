@@ -17,6 +17,7 @@ const (
 	loading
 	recurringExpenses
 	budgets
+	configView
 )
 
 func (ss sessionState) String() string {
@@ -35,6 +36,8 @@ func (ss sessionState) String() string {
 		return "recurring expenses"
 	case budgets:
 		return "budgets"
+	case configView:
+		return "configuration"
 	}
 
 	return "unknown"

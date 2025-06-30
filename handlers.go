@@ -60,7 +60,8 @@ func (m model) handleWindowSize(msg tea.WindowSizeMsg) (tea.Model, tea.Cmd) {
 	m.overview.Viewport.Height = msg.Height - takenHeight
 
 	m.transactions.SetSize(msg.Width-h, msg.Height-v-takenHeight)
-	m.budgets.SetSize(msg.Width-h, msg.Height-v-takenHeight)
+	m.budgets.SetSize(msg.Width-h, msg.Height-v-3)
+	m.configView.SetSize(msg.Width-h, msg.Height-v-3)
 	m.recurringExpenses.SetSize(msg.Width-h, msg.Height-v-3)
 
 	m.help.Width = msg.Width

@@ -13,6 +13,7 @@ type keyMap struct {
 	overview       key.Binding
 	recurring      key.Binding
 	budgets        key.Binding
+	config         key.Binding
 	nextPeriod     key.Binding
 	previousPeriod key.Binding
 	switchPeriod   key.Binding
@@ -39,6 +40,7 @@ func (km keyMap) FullHelp() [][]key.Binding {
 			km.transactions,
 			km.budgets,
 			km.recurring,
+			km.config,
 			km.quit,
 			km.fullHelp,
 		},
@@ -67,6 +69,10 @@ func initializeKeyMap() keyMap {
 		budgets: key.NewBinding(
 			key.WithKeys("b"),
 			key.WithHelp("b", "budgets"),
+		),
+		config: key.NewBinding(
+			key.WithKeys("c"),
+			key.WithHelp("c", "configuration"),
 		),
 		nextPeriod: key.NewBinding(
 			key.WithKeys("]"),
@@ -198,6 +204,14 @@ func handleSessionStateKeys(k string, m *model) (tea.Model, tea.Cmd) {
 			m.previousSessionState = budgets
 			m.sessionState = budgets
 			return m, m.getBudgets
+		}
+
+	case "c":
+		if m.sessionState != configView {
+			m.previousSessionState = m.sessionState
+			m.configView.SetFocus(true)
+			m.sessionState = configView
+			return m, nil
 		}
 
 	case "?":

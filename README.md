@@ -83,6 +83,7 @@ Once lunchtui is running, use these keyboard shortcuts to navigate:
 | `t` | Transactions | Browse and manage your transactions |
 | `b` | Budgets | View budget progress and spending by category |
 | `r` | Recurring | Monitor recurring expenses and subscriptions |
+| `c` | Configuration | View current configuration settings (sensitive values are masked) |
 | `[` / `]` | - | Navigate between previous/next time periods |
 | `s` | - | Switch between time period types (month/year) |
 | `?` | - | Toggle help menu |
