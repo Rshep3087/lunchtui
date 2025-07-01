@@ -15,16 +15,20 @@ func TestUpdateAccountTree_CombinesDuplicateTypes(t *testing.T) {
 	// Create plaid accounts with investment type
 	plaidAccounts := map[int64]*lm.PlaidAccount{
 		1: {
-			ID:     1,
-			Name:   "Investment Account 1",
-			Type:   "investment",
-			ToBase: 1000.0,
+			ID:       1,
+			Name:     "Investment Account 1",
+			Type:     "investment",
+			Balance:  "1000.00",
+			ToBase:   1000.0,
+			Currency: "USD",
 		},
 		2: {
-			ID:     2,
-			Name:   "Investment Account 2",
-			Type:   "depository",
-			ToBase: 2000.0,
+			ID:       2,
+			Name:     "Investment Account 2",
+			Type:     "depository",
+			Balance:  "2000.00",
+			ToBase:   2000.0,
+			Currency: "USD",
 		},
 	}
 
@@ -34,13 +38,17 @@ func TestUpdateAccountTree_CombinesDuplicateTypes(t *testing.T) {
 			ID:       1,
 			Name:     "Asset Investment 1",
 			TypeName: "investment",
+			Balance:  "3000.00",
 			ToBase:   3000.0,
+			Currency: "USD",
 		},
 		2: {
 			ID:       2,
 			Name:     "Real Estate",
 			TypeName: "real estate",
+			Balance:  "4000.00",
 			ToBase:   4000.0,
+			Currency: "USD",
 		},
 	}
 
@@ -103,10 +111,12 @@ func TestUpdateAccountTree_OnlyPlaidAccounts(t *testing.T) {
 
 	plaidAccounts := map[int64]*lm.PlaidAccount{
 		1: {
-			ID:     1,
-			Name:   "Checking Account",
-			Type:   "depository",
-			ToBase: 1500.0,
+			ID:       1,
+			Name:     "Checking Account",
+			Type:     "depository",
+			Balance:  "1500.00",
+			ToBase:   1500.0,
+			Currency: "USD",
 		},
 	}
 
@@ -131,7 +141,9 @@ func TestUpdateAccountTree_OnlyAssets(t *testing.T) {
 			ID:       1,
 			Name:     "Stock Portfolio",
 			TypeName: "investment",
+			Balance:  "5000.00",
 			ToBase:   5000.0,
+			Currency: "USD",
 		},
 	}
 
