@@ -372,13 +372,12 @@ func (m *Model) UpdateViewport() {
 
 	var spendingBreakdownData string
 	m.spendingBreakdown = m.CalculateSpendingBreakdown()
-	if m.spendingBreakdown == nil {
-		spendingBreakdownData = "No data available"
-	} else {
-		spendingBreakdownData = m.spendingBreakdown.String()
-		if strings.TrimSpace(spendingBreakdownData) == "" {
-			spendingBreakdownData = "No data available"
-		}
+	// if there are no children in the spending breakdown, display a message
+	// otherwise, render the spending breakdown tree
+	spendingBreakdownData = m.spendingBreakdown.String()
+
+	if m.spendingBreakdown.Children().Length() == 0 || strings.TrimSpace(spendingBreakdownData) == "" {
+		spendingBreakdownData = "No spending data available\nfor this period."
 	}
 
 	spendingBreakdown := lipgloss.JoinVertical(lipgloss.Top,
