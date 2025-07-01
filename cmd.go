@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/charmbracelet/fang"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/table"
 	"github.com/charmbracelet/log"
@@ -69,28 +70,22 @@ var rootCmd = &cobra.Command{
 
 		return nil
 	},
-	RunE: func(_ *cobra.Command, _ []string) error {
+	RunE: func(c *cobra.Command, _ []string) error {
 		// Start TUI when no subcommands are provided
-		return startTUI()
+		config := Config{
+			Debug:                   debug,
+			Token:                   token,
+			DebitsAsNegative:        debitNeg,
+			HidePendingTransactions: hidePend,
+		}
+
+		return rootAction(c.Context(), config, lmc)
 	},
-}
-
-// startTUI launches the terminal UI.
-func startTUI() error {
-	config := Config{
-		Debug:                   debug,
-		Token:                   token,
-		DebitsAsNegative:        debitNeg,
-		HidePendingTransactions: hidePend,
-	}
-
-	return rootAction(context.Background(), config, lmc)
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		log.Error("lunchtui ran into an error", "error", err)
+	if err := fang.Execute(context.Background(), rootCmd); err != nil {
 		os.Exit(1)
 	}
 }
