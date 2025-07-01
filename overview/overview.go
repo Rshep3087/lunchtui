@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/Rhymond/go-money"
-	"github.com/charmbracelet/bubbles/table"
+
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -31,68 +31,166 @@ type Model struct {
 	assets             map[int64]*lm.Asset
 	plaidAccounts      map[int64]*lm.PlaidAccount
 	accountTree        *tree.Tree
-	spendingBreakdown  table.Model
+	spendingBreakdown  *tree.Tree
 	currency           string
 	titleCaser         cases.Caser
 	user               *lm.User
 }
 
-type categoryTotal struct {
-	category string
-	total    *money.Money
+type spendingData struct {
+	categoryTotals      map[int64]*money.Money
+	groupTotals         map[int64]*money.Money
+	groupCategories     map[int64][]int64 // group_id -> []category_ids
+	groupNames          map[int64]string  // group_id -> group_name
+	ungroupedCategories []int64           // categories with GroupID == 0
 }
 
-func (m *Model) calculateSpendingBreakdown() []table.Row {
-	var rows []table.Row
+func (m *Model) CalculateSpendingBreakdown() *tree.Tree {
+	spendingTree := tree.New()
+	spendingTree.Root("Categories")
 
-	categoryTotals := make(map[string]*money.Money)
+	data := m.collectSpendingData()
+	m.addUngroupedCategoriesToTree(spendingTree, data)
+	m.addGroupedCategoriesToTree(spendingTree, data)
 
+	return spendingTree
+}
+
+func (m *Model) collectSpendingData() *spendingData {
+	data := &spendingData{
+		categoryTotals:      make(map[int64]*money.Money),
+		groupTotals:         make(map[int64]*money.Money),
+		groupCategories:     make(map[int64][]int64),
+		groupNames:          make(map[int64]string),
+		ungroupedCategories: make([]int64, 0),
+	}
+
+	// First pass: collect group information
+	for _, category := range m.categories {
+		if category.IsGroup {
+			data.groupNames[category.ID] = category.Name
+			data.groupTotals[category.ID] = money.New(0, m.currency)
+		}
+	}
+
+	// Second pass: calculate totals and organize categories
 	for _, t := range m.transactions {
-		category := m.categories[t.CategoryID]
-		if category == nil || category.ExcludeFromTotals || category.IsIncome {
-			continue
-		}
-
-		amount, err := t.ParsedAmount()
-		if err != nil {
-			continue
-		}
-
-		amount = amount.Absolute()
-
-		if _, exists := categoryTotals[category.Name]; !exists {
-			categoryTotals[category.Name] = money.New(0, amount.Currency().Code)
-		}
-
-		if categoryTotals[category.Name] != nil {
-			categoryTotals[category.Name], _ = categoryTotals[category.Name].Add(amount)
-		}
+		m.processTransaction(t, data)
 	}
 
-	var sortedTotals []categoryTotal
-	for category, total := range categoryTotals {
-		if total != nil {
-			sortedTotals = append(sortedTotals, categoryTotal{category: category, total: total})
-		}
+	return data
+}
+
+func (m *Model) processTransaction(t *lm.Transaction, data *spendingData) {
+	category := m.categories[t.CategoryID]
+	if category == nil || category.ExcludeFromTotals || category.IsIncome || category.IsGroup {
+		return
 	}
 
-	// sort the categories by the total spent
-	slices.SortFunc(sortedTotals, func(a categoryTotal, b categoryTotal) int {
-		if a.total == nil || b.total == nil {
+	amount, err := t.ParsedAmount()
+	if err != nil {
+		return
+	}
+
+	amount = amount.Absolute()
+
+	// Initialize category total if not exists
+	if _, exists := data.categoryTotals[category.ID]; !exists {
+		data.categoryTotals[category.ID] = money.New(0, amount.Currency().Code)
+	}
+
+	// Add to category total
+	if data.categoryTotals[category.ID] != nil {
+		data.categoryTotals[category.ID], _ = data.categoryTotals[category.ID].Add(amount)
+	}
+
+	// Organize by group
+	if category.GroupID == 0 {
+		if !slices.Contains(data.ungroupedCategories, category.ID) {
+			data.ungroupedCategories = append(data.ungroupedCategories, category.ID)
+		}
+	} else {
+		if !slices.Contains(data.groupCategories[category.GroupID], category.ID) {
+			data.groupCategories[category.GroupID] = append(data.groupCategories[category.GroupID], category.ID)
+		}
+		if data.groupTotals[category.GroupID] != nil {
+			data.groupTotals[category.GroupID], _ = data.groupTotals[category.GroupID].Add(amount)
+		}
+	}
+}
+
+func (m *Model) sortCategoriesByTotal(categoryIDs []int64, categoryTotals map[int64]*money.Money) {
+	slices.SortFunc(categoryIDs, func(a, b int64) int {
+		totalA := categoryTotals[a]
+		totalB := categoryTotals[b]
+		if totalA == nil || totalB == nil {
 			return 0
 		}
-		x, _ := a.total.Compare(b.total)
-		return -x
+		x, _ := totalA.Compare(totalB)
+		return -x // Descending order
 	})
+}
 
-	for _, total := range sortedTotals {
-		rows = append(rows, table.Row{
-			total.category,
-			total.total.Display(),
-		})
+func (m *Model) addUngroupedCategoriesToTree(spendingTree *tree.Tree, data *spendingData) {
+	m.sortCategoriesByTotal(data.ungroupedCategories, data.categoryTotals)
+	for _, categoryID := range data.ungroupedCategories {
+		category := m.categories[categoryID]
+		total := data.categoryTotals[categoryID]
+		if category != nil && total != nil && total.Amount() > 0 {
+			categoryText := fmt.Sprintf("%s %s", category.Name, total.Display())
+			spendingTree.Child(categoryText)
+		}
 	}
+}
 
-	return rows
+func (m *Model) addGroupedCategoriesToTree(spendingTree *tree.Tree, data *spendingData) {
+	sortedGroupIDs := m.getSortedGroupIDs(data)
+
+	for _, groupID := range sortedGroupIDs {
+		groupName := data.groupNames[groupID]
+		groupTotal := data.groupTotals[groupID]
+		categoriesInGroup := data.groupCategories[groupID]
+
+		if groupTotal == nil || groupTotal.Amount() <= 0 {
+			continue
+		}
+
+		// Create group header with total
+		groupText := fmt.Sprintf("▼ %s %s", groupName, groupTotal.Display())
+		groupTree := tree.New().Root(groupText)
+
+		// Sort and add categories within group
+		m.sortCategoriesByTotal(categoriesInGroup, data.categoryTotals)
+		for _, categoryID := range categoriesInGroup {
+			category := m.categories[categoryID]
+			total := data.categoryTotals[categoryID]
+			if category != nil && total != nil && total.Amount() > 0 {
+				categoryText := fmt.Sprintf("%s %s", category.Name, total.Display())
+				groupTree.Child(categoryText)
+			}
+		}
+
+		spendingTree.Child(groupTree)
+	}
+}
+
+func (m *Model) getSortedGroupIDs(data *spendingData) []int64 {
+	var sortedGroupIDs []int64
+	for groupID := range data.groupTotals {
+		if len(data.groupCategories[groupID]) > 0 {
+			sortedGroupIDs = append(sortedGroupIDs, groupID)
+		}
+	}
+	slices.SortFunc(sortedGroupIDs, func(a, b int64) int {
+		totalA := data.groupTotals[a]
+		totalB := data.groupTotals[b]
+		if totalA == nil || totalB == nil {
+			return 0
+		}
+		x, _ := totalA.Compare(totalB)
+		return -x // Descending order
+	})
+	return sortedGroupIDs
 }
 
 func (m *Model) calculateNetWorth() *money.Money {
@@ -224,16 +322,8 @@ func New(opts ...Option) Model {
 
 	m.accountTree.Root(m.Styles.TreeRootStyle.Render("Accounts"))
 
-	tableStyle := table.DefaultStyles()
-	tableStyle.Selected = lipgloss.NewStyle()
-	m.spendingBreakdown = table.New(
-		table.WithColumns([]table.Column{
-			{Title: "Category", Width: 20},
-			{Title: "Total Spent", Width: 15},
-		}),
-		table.WithFocused(false),
-		table.WithStyles(tableStyle),
-	)
+	m.spendingBreakdown = tree.New()
+	m.spendingBreakdown.Root("")
 
 	for _, opt := range opts {
 		opt(&m)
@@ -281,13 +371,14 @@ func (m *Model) UpdateViewport() {
 	)
 
 	var spendingBreakdownData string
-	rows := m.calculateSpendingBreakdown()
-	if len(rows) == 0 {
+	m.spendingBreakdown = m.CalculateSpendingBreakdown()
+	if m.spendingBreakdown == nil {
 		spendingBreakdownData = "No data available"
 	} else {
-		m.spendingBreakdown.SetRows(rows)
-		m.spendingBreakdown.SetHeight(len(rows))
-		spendingBreakdownData = m.spendingBreakdown.View()
+		spendingBreakdownData = m.spendingBreakdown.String()
+		if strings.TrimSpace(spendingBreakdownData) == "" {
+			spendingBreakdownData = "No data available"
+		}
 	}
 
 	spendingBreakdown := lipgloss.JoinVertical(lipgloss.Top,
