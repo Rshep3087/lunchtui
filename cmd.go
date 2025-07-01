@@ -36,7 +36,7 @@ var rootCmd = &cobra.Command{
 	Use:   "lunchtui",
 	Short: "A terminal UI and CLI for Lunch Money",
 	Long:  `A comprehensive terminal-based interface and CLI for managing your Lunch Money financial data.`,
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+	PersistentPreRunE: func(_ *cobra.Command, _ []string) error {
 		// Initialize configuration
 		config := Config{
 			Debug:                   debug,
@@ -69,7 +69,7 @@ var rootCmd = &cobra.Command{
 
 		return nil
 	},
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		// Start TUI when no subcommands are provided
 		return startTUI()
 	},
@@ -103,16 +103,17 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "enable debug logging")
 	rootCmd.PersistentFlags().StringVar(&token, "token", "", "the API token for Lunch Money")
 	rootCmd.PersistentFlags().BoolVar(&debitNeg, "debits-as-negative", false, "show debits as negative numbers")
-	rootCmd.PersistentFlags().BoolVar(&hidePend, "hide-pending-transactions", false, "hide pending transactions from all transaction lists")
+	rootCmd.PersistentFlags().BoolVar(&hidePend, "hide-pending-transactions", false,
+		"hide pending transactions from all transaction lists")
 
 	// Bind flags to viper
-	viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
-	viper.BindPFlag("token", rootCmd.PersistentFlags().Lookup("token"))
-	viper.BindPFlag("debits_as_negative", rootCmd.PersistentFlags().Lookup("debits-as-negative"))
-	viper.BindPFlag("hide_pending_transactions", rootCmd.PersistentFlags().Lookup("hide-pending-transactions"))
+	_ = viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
+	_ = viper.BindPFlag("token", rootCmd.PersistentFlags().Lookup("token"))
+	_ = viper.BindPFlag("debits_as_negative", rootCmd.PersistentFlags().Lookup("debits-as-negative"))
+	_ = viper.BindPFlag("hide_pending_transactions", rootCmd.PersistentFlags().Lookup("hide-pending-transactions"))
 
 	// Bind environment variables
-	viper.BindEnv("token", "LUNCHMONEY_API_TOKEN")
+	_ = viper.BindEnv("token", "LUNCHMONEY_API_TOKEN")
 
 	// Add subcommands
 	rootCmd.AddCommand(transactionCmd)
@@ -141,7 +142,7 @@ func initConfig() {
 		viper.SetConfigType("toml")
 
 		// User config directory
-		if configDir, err := os.UserConfigDir(); err == nil {
+		if configDir, configErr := os.UserConfigDir(); configErr == nil {
 			viper.AddConfigPath(filepath.Join(configDir, "lunchtui"))
 		}
 
@@ -156,25 +157,25 @@ func initConfig() {
 	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		log.Debug("Using config file", "file", viper.ConfigFileUsed())
-
-		// Update global variables from viper
-		if !rootCmd.PersistentFlags().Changed("debug") {
-			debug = viper.GetBool("debug")
-		}
-		if !rootCmd.PersistentFlags().Changed("token") {
-			token = viper.GetString("token")
-		}
-		if !rootCmd.PersistentFlags().Changed("debits-as-negative") {
-			debitNeg = viper.GetBool("debits_as_negative")
-		}
-		if !rootCmd.PersistentFlags().Changed("hide-pending-transactions") {
-			hidePend = viper.GetBool("hide_pending_transactions")
-		}
-	} else {
-		// Config file not found or error reading it
+	if err := viper.ReadInConfig(); err != nil {
 		log.Debug("Config file not found or error reading", "error", err)
+		return
+	}
+
+	log.Debug("Using config file", "file", viper.ConfigFileUsed())
+
+	// Update global variables from viper
+	if !rootCmd.PersistentFlags().Changed("debug") {
+		debug = viper.GetBool("debug")
+	}
+	if !rootCmd.PersistentFlags().Changed("token") {
+		token = viper.GetString("token")
+	}
+	if !rootCmd.PersistentFlags().Changed("debits-as-negative") {
+		debitNeg = viper.GetBool("debits_as_negative")
+	}
+	if !rootCmd.PersistentFlags().Changed("hide-pending-transactions") {
+		hidePend = viper.GetBool("hide_pending_transactions")
 	}
 }
 

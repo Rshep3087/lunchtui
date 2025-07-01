@@ -115,7 +115,7 @@ func (m model) Init() tea.Cmd {
 	)
 }
 
-func rootAction(ctx context.Context, config Config, lmc *lm.Client) error {
+func rootAction(_ context.Context, config Config, lmc *lm.Client) error {
 	debugEnabled := config.Debug
 	if debugEnabled {
 		f, err := tea.LogToFileWith("lunchtui.log", "lunchtui", log.Default())

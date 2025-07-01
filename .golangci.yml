@@ -19,8 +19,9 @@ linters:
     - fatcontext
     - funlen
     - gocheckcompilerdirectives
-    - gochecknoglobals
-    - gochecknoinits
+    # Disabled: incompatible with typical Cobra application patterns
+    # - gochecknoglobals  # Cobra apps use global vars for commands and config
+    # - gochecknoinits    # Cobra apps use init() functions for command setup
     - gochecksumtype
     - gocognit
     - goconst

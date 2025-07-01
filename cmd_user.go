@@ -34,7 +34,7 @@ func init() {
 	userGetCmd.Flags().StringP("output", "o", tableOutputFormat, "Output format: table or json")
 }
 
-func userGetRun(cmd *cobra.Command, args []string) error {
+func userGetRun(cmd *cobra.Command, _ []string) error {
 	ctx := context.Background()
 
 	// Get output format

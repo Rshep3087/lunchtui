@@ -35,7 +35,7 @@ func init() {
 	categoriesListCmd.Flags().StringP("output", "o", tableOutputFormat, "Output format: table or json")
 }
 
-func categoriesListRun(cmd *cobra.Command, args []string) error {
+func categoriesListRun(cmd *cobra.Command, _ []string) error {
 	ctx := context.Background()
 
 	// Get output format

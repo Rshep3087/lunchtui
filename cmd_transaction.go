@@ -33,8 +33,10 @@ func init() {
 
 	// Transaction insert flags
 	transactionInsertCmd.Flags().String("payee", "", "The payee or merchant name (required)")
-	transactionInsertCmd.Flags().String("amount", "", "Transaction amount (positive for expense, negative for income) (required)")
-	transactionInsertCmd.Flags().String("date", time.Now().Format("2006-01-02"), "Transaction date (YYYY-MM-DD, defaults to today)")
+	transactionInsertCmd.Flags().String("amount", "",
+		"Transaction amount (positive for expense, negative for income) (required)")
+	transactionInsertCmd.Flags().String("date", time.Now().Format("2006-01-02"),
+		"Transaction date (YYYY-MM-DD, defaults to today)")
 	transactionInsertCmd.Flags().Int64("category", 0, "Category ID for the transaction")
 	transactionInsertCmd.Flags().String("status", unclearedStatus, "Transaction status (cleared, uncleared)")
 	transactionInsertCmd.Flags().Int64("account", 0, "Account ID (plaid account or asset)")
@@ -47,11 +49,11 @@ func init() {
 	transactionInsertCmd.Flags().Bool("skip-balance-update", false, "Skip balance update")
 
 	// Mark required flags
-	transactionInsertCmd.MarkFlagRequired("payee")
-	transactionInsertCmd.MarkFlagRequired("amount")
+	_ = transactionInsertCmd.MarkFlagRequired("payee")
+	_ = transactionInsertCmd.MarkFlagRequired("amount")
 }
 
-func transactionInsertRun(cmd *cobra.Command, args []string) error {
+func transactionInsertRun(cmd *cobra.Command, _ []string) error {
 	ctx := context.Background()
 
 	// Get flag values

@@ -78,7 +78,7 @@ func init() {
 	accountsListCmd.Flags().StringP("output", "o", tableOutputFormat, "Output format: table or json")
 }
 
-func accountsListRun(cmd *cobra.Command, args []string) error {
+func accountsListRun(cmd *cobra.Command, _ []string) error {
 	ctx := context.Background()
 
 	// Get output format
