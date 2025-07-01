@@ -525,28 +525,8 @@ func TestConvertPlaidAccountToAccount(t *testing.T) {
 	be.Equal(t, "plaid", account.AccountType)
 }
 
-func TestCreateOutputFormatFlag(t *testing.T) {
-	flag := createOutputFormatFlag()
-
-	be.Equal(t, "output", flag.Name)
-	be.Equal(t, "o", flag.Aliases[0])
-	be.Equal(t, 1, len(flag.Aliases))
-	be.Equal(t, "Output format: table or json", flag.Usage)
-	be.Equal(t, "table", flag.Value)
-	be.Nonzero(t, flag.Validator)
-
-	// Test validator with valid formats
-	err := flag.Validator("table")
-	be.NilErr(t, err)
-
-	err = flag.Validator("json")
-	be.NilErr(t, err)
-
-	// Test validator with invalid format
-	err = flag.Validator("invalid")
-	be.Nonzero(t, err)
-	be.True(t, strings.Contains(err.Error(), "invalid output format"))
-}
+// TestCreateOutputFormatFlag was removed as part of migration from urfave/cli to cobra
+// The output format validation is now handled directly in the cobra command functions
 
 // TestNotesEditing tests the notes editing functionality.
 func TestNotesEditing(t *testing.T) {

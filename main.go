@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"os"
 	"time"
 
 	configview "github.com/rshep3087/lunchtui/config"
@@ -18,7 +17,6 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/log"
 	lm "github.com/icco/lunchmoney"
-	"github.com/urfave/cli/v3"
 )
 
 // Config represents the application configuration structure.
@@ -117,17 +115,8 @@ func (m model) Init() tea.Cmd {
 	)
 }
 
-func rootAction(ctx context.Context, c *cli.Command) error {
-	var config Config
-	if cfg := ctx.Value(configContextKey); cfg != nil {
-		var ok bool
-		config, ok = cfg.(Config)
-		if !ok {
-			return cli.Exit("failed to assert config context value to Config", 1)
-		}
-	}
-
-	debugEnabled := c.Bool("debug") || config.Debug
+func rootAction(ctx context.Context, config Config, lmc *lm.Client) error {
+	debugEnabled := config.Debug
 	if debugEnabled {
 		f, err := tea.LogToFileWith("lunchtui.log", "lunchtui", log.Default())
 		if err != nil {
@@ -138,15 +127,10 @@ func rootAction(ctx context.Context, c *cli.Command) error {
 		log.SetLevel(log.DebugLevel)
 	}
 
-	lmc, err := getClientFromContext(ctx)
-	if err != nil {
-		return err
-	}
-
-	// Get debits-as-negative setting from command line or config
-	debitsAsNegative := c.Bool("debits-as-negative") || config.DebitsAsNegative
-	// Get hide-pending-transactions setting from command line or config
-	hidePendingTransactions := c.Bool("hide-pending-transactions") || config.HidePendingTransactions
+	// Get debits-as-negative setting from config
+	debitsAsNegative := config.DebitsAsNegative
+	// Get hide-pending-transactions setting from config
+	hidePendingTransactions := config.HidePendingTransactions
 
 	tlKeyMap := newTransactionListKeyMap()
 	m := model{
@@ -195,7 +179,7 @@ func rootAction(ctx context.Context, c *cli.Command) error {
 	m.configView.SetConfig(configData)
 
 	p := tea.NewProgram(m, tea.WithAltScreen())
-	if _, err = p.Run(); err != nil {
+	if _, err := p.Run(); err != nil {
 		return err
 	}
 
@@ -203,12 +187,7 @@ func rootAction(ctx context.Context, c *cli.Command) error {
 }
 
 func main() {
-	app := createRootCommand()
-
-	if err := app.Run(context.TODO(), os.Args); err != nil {
-		log.Error("lunchtui ran into an error", "error", err)
-		os.Exit(1)
-	}
+	Execute()
 }
 
 func createTransactionList(delegate list.DefaultDelegate, tlKeyMap *transactionListKeyMap) list.Model {
