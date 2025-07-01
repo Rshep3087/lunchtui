@@ -10,7 +10,7 @@ require (
 	github.com/charmbracelet/huh v0.7.0
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/charmbracelet/log v0.4.2
-	github.com/icco/lunchmoney v0.6.0
+	github.com/icco/lunchmoney v0.6.1
 	github.com/urfave/cli/v3 v3.3.8
 	golang.org/x/net v0.41.0
 	golang.org/x/sync v0.15.0

@@ -479,77 +479,85 @@ func (m *Model) updateSummary() {
 	}
 }
 
+// accountItem is a helper struct to hold account information for the tree view.
+type accountItem struct {
+	name    string
+	amount  *money.Money
+	isAsset bool
+}
+
 func (m *Model) updateAccountTree() {
 	log.Debug("updating account tree")
 	m.accountTree = tree.New()
 	m.accountTree.Root(m.Styles.TreeRootStyle.Render("Accounts"))
 
-	// organize the plaid accounts by the type into a map
-	plaidAccounts := make(map[string][]lm.PlaidAccount)
+	// Combine both plaid accounts and assets into a single map by type
+	combinedAccounts := make(map[string][]accountItem)
+
+	// Add plaid accounts
 	for _, a := range m.plaidAccounts {
-		plaidAccounts[a.Type] = append(plaidAccounts[a.Type], *a)
+		pa, err := a.ParsedAmount()
+		if err != nil {
+			log.Debug("parsing plaid account amount", "error", err)
+			continue
+		}
+
+		// Use the display name if available, otherwise use the account name
+		name := a.Name
+		if a.DisplayName != "" {
+			name = html.UnescapeString(a.DisplayName)
+		}
+
+		item := accountItem{
+			name:    name,
+			amount:  pa,
+			isAsset: false,
+		}
+		combinedAccounts[a.Type] = append(combinedAccounts[a.Type], item)
 	}
 
-	// get sorted plaid account type names for consistent ordering
-	plaidTypeNames := make([]string, 0, len(plaidAccounts))
-	for typeName := range plaidAccounts {
-		plaidTypeNames = append(plaidTypeNames, typeName)
-	}
-	slices.Sort(plaidTypeNames)
+	// Add assets
+	for _, a := range m.assets {
+		pa, err := a.ParsedAmount()
+		if err != nil {
+			log.Debug("parsing asset amount", "error", err)
+			continue
+		}
 
-	// add plaid accounts in sorted order
-	for _, typeName := range plaidTypeNames {
-		accountList := plaidAccounts[typeName]
-		// sort accounts within each type by name
-		slices.SortFunc(accountList, func(a, b lm.PlaidAccount) int {
-			return strings.Compare(a.Name, b.Name)
+		name := a.Name
+		if a.DisplayName != "" {
+			// url decodes the display name
+			name = html.UnescapeString(a.DisplayName)
+		}
+		item := accountItem{
+			name:    name,
+			amount:  pa,
+			isAsset: true,
+		}
+		combinedAccounts[a.TypeName] = append(combinedAccounts[a.TypeName], item)
+	}
+
+	// Get sorted type names for consistent ordering
+	typeNames := make([]string, 0, len(combinedAccounts))
+	for typeName := range combinedAccounts {
+		typeNames = append(typeNames, typeName)
+	}
+	slices.Sort(typeNames)
+
+	// Build the tree with combined accounts
+	for _, typeName := range typeNames {
+		accountList := combinedAccounts[typeName]
+		// Sort accounts within each type by name
+		slices.SortFunc(accountList, func(a, b accountItem) int {
+			return strings.Compare(a.name, b.name)
 		})
 
 		accountTree := tree.New().Root(m.titleCaser.String(m.Styles.AssetTypeStyle.Render(typeName)))
-		for _, a := range accountList {
-			pa := money.NewFromFloat(a.ToBase, m.currency)
-			text := fmt.Sprintf("%s (%s)", a.Name, pa.Display())
+		for _, item := range accountList {
+			text := fmt.Sprintf("%s (%s)", item.name, item.amount.Display())
 			accountTree.Child(m.Styles.AccountStyle.Render(text))
 		}
 
 		m.accountTree.Child(accountTree)
-	}
-
-	// organize the assets by the type into a map
-	assets := make(map[string][]lm.Asset)
-	for _, a := range m.assets {
-		assets[a.TypeName] = append(assets[a.TypeName], *a)
-	}
-
-	// get sorted asset type names for consistent ordering
-	assetTypeNames := make([]string, 0, len(assets))
-	for typeName := range assets {
-		assetTypeNames = append(assetTypeNames, typeName)
-	}
-	slices.Sort(assetTypeNames)
-
-	// add a child for each asset type in sorted order
-	for _, typeName := range assetTypeNames {
-		assetList := assets[typeName]
-		// sort assets within each type by name
-		slices.SortFunc(assetList, func(a, b lm.Asset) int {
-			return strings.Compare(a.Name, b.Name)
-		})
-
-		assetTree := tree.New().Root(m.titleCaser.String(m.Styles.AssetTypeStyle.Render(typeName)))
-		for _, a := range assetList {
-			pa := money.NewFromFloat(a.ToBase, m.currency)
-
-			name := a.Name
-			if a.DisplayName != "" {
-				// url decodes the display name
-				name = html.UnescapeString(a.DisplayName)
-			}
-
-			text := fmt.Sprintf("%s (%s)", name, pa.Display())
-			assetTree.Child(m.Styles.AccountStyle.Render(text))
-		}
-
-		m.accountTree.Child(assetTree)
 	}
 }
