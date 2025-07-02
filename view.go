@@ -47,13 +47,17 @@ func (m model) renderTitle() string {
 		return b.String()
 	}
 
-	b.WriteString(m.styles.titleStyle.Render(
-		fmt.Sprintf("lunchtui | %s | %s | %s",
-			m.sessionState.String(),
-			m.period.String(),
-			m.periodType,
-		),
-	))
+	title := []string{
+		m.sessionState.String(),
+		m.period.String(),
+		m.periodType,
+	}
+
+	if !m.config.ShowUserInfo && m.user != nil {
+		title = append(title, m.user.BudgetName)
+	}
+
+	b.WriteString(m.styles.titleStyle.Render(strings.Join(title, " | ")))
 
 	return b.String()
 }
