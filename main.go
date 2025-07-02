@@ -7,6 +7,7 @@ import (
 	configview "github.com/rshep3087/lunchtui/config"
 	"github.com/rshep3087/lunchtui/overview"
 	"github.com/rshep3087/lunchtui/recurring"
+	"github.com/spf13/viper"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
@@ -29,6 +30,8 @@ type Config struct {
 	DebitsAsNegative bool `toml:"debits_as_negative"`
 	// HidePendingTransactions hides pending transactions from all transaction lists
 	HidePendingTransactions bool `toml:"hide_pending_transactions"`
+	// Show UserInfo shows user information in the overview
+	ShowUserInfo bool `toml:"show_user_info"`
 }
 
 type model struct {
@@ -127,6 +130,8 @@ func rootAction(_ context.Context, config Config, lmc *lm.Client) error {
 		log.SetLevel(log.DebugLevel)
 	}
 
+	log.Debug("config file used", "config", viper.ConfigFileUsed())
+
 	// Get debits-as-negative setting from config
 	debitsAsNegative := config.DebitsAsNegative
 	// Get hide-pending-transactions setting from config
@@ -148,9 +153,13 @@ func rootAction(_ context.Context, config Config, lmc *lm.Client) error {
 		period:                  Period{},
 		periodType:              "month",
 		loadingSpinner:          spinner.New(spinner.WithSpinner(spinner.Dot)),
-		overview:                overview.New(),
-		recurringExpenses:       recurring.New(),
-		configView:              configview.New(),
+		overview: overview.New(
+			overview.Config{
+				ShowUserInfo: config.ShowUserInfo,
+			},
+		),
+		recurringExpenses: recurring.New(),
+		configView:        configview.New(),
 		loadingState: newLoadingState(
 			"categories",
 			"transactions",

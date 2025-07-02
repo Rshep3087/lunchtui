@@ -9,7 +9,7 @@ import (
 
 func TestUpdateAccountTree_CombinesDuplicateTypes(t *testing.T) {
 	// Create a model with both plaid accounts and assets that have the same type
-	m := New()
+	m := New(Config{})
 	m.SetCurrency("USD")
 
 	// Create plaid accounts with investment type
@@ -94,7 +94,7 @@ func TestUpdateAccountTree_CombinesDuplicateTypes(t *testing.T) {
 
 func TestUpdateAccountTree_EmptyAccounts(t *testing.T) {
 	// Test that the function doesn't crash with empty accounts
-	m := New()
+	m := New(Config{})
 	m.SetCurrency("USD")
 	m.SetAccounts(map[int64]*lm.Asset{}, map[int64]*lm.PlaidAccount{})
 
@@ -106,7 +106,7 @@ func TestUpdateAccountTree_EmptyAccounts(t *testing.T) {
 
 func TestUpdateAccountTree_OnlyPlaidAccounts(t *testing.T) {
 	// Test with only plaid accounts
-	m := New()
+	m := New(Config{})
 	m.SetCurrency("USD")
 
 	plaidAccounts := map[int64]*lm.PlaidAccount{
@@ -133,7 +133,7 @@ func TestUpdateAccountTree_OnlyPlaidAccounts(t *testing.T) {
 
 func TestUpdateAccountTree_OnlyAssets(t *testing.T) {
 	// Test with only assets
-	m := New()
+	m := New(Config{})
 	m.SetCurrency("USD")
 
 	assets := map[int64]*lm.Asset{

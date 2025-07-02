@@ -24,82 +24,27 @@ const (
 
 // Global variables for configuration.
 var (
-	cfgFile  string
-	debug    bool
-	token    string
-	debitNeg bool
-	hidePend bool
-	lmc      *lm.Client
+	cfgFile string
+	lmc     *lm.Client
+
+	// local variables for root command.
+	showUserInfo bool
 )
-
-// rootCmd represents the base command when called without any subcommands.
-var rootCmd = &cobra.Command{
-	Use:   "lunchtui",
-	Short: "A terminal UI and CLI for Lunch Money",
-	Long:  `A comprehensive terminal-based interface and CLI for managing your Lunch Money financial data.`,
-	PersistentPreRunE: func(_ *cobra.Command, _ []string) error {
-		// Initialize configuration
-		config := Config{
-			Debug:                   debug,
-			Token:                   token,
-			DebitsAsNegative:        debitNeg,
-			HidePendingTransactions: hidePend,
-		}
-
-		// Setup logging
-		log.SetLevel(log.InfoLevel)
-		if config.Debug {
-			log.SetLevel(log.DebugLevel)
-		}
-
-		// Validate token
-		if config.Token == "" {
-			return errors.New("API token is required (set via --token flag, " +
-				"LUNCHMONEY_API_TOKEN environment variable, or config file)")
-		}
-
-		// Create Lunch Money client
-		var err error
-		lmc, err = lm.NewClient(config.Token)
-		if err != nil {
-			return fmt.Errorf("failed to create Lunch Money client: %w", err)
-		}
-
-		loggingTransport := newLoggingTransport(lmc.HTTP.Transport, log.Default())
-		lmc.HTTP.Transport = loggingTransport
-
-		return nil
-	},
-	RunE: func(c *cobra.Command, _ []string) error {
-		// Start TUI when no subcommands are provided
-		config := Config{
-			Debug:                   debug,
-			Token:                   token,
-			DebitsAsNegative:        debitNeg,
-			HidePendingTransactions: hidePend,
-		}
-
-		return rootAction(c.Context(), config, lmc)
-	},
-}
-
-// Execute adds all child commands to the root command and sets flags appropriately.
-func Execute() {
-	if err := fang.Execute(context.Background(), rootCmd); err != nil {
-		os.Exit(1)
-	}
-}
 
 func init() {
 	cobra.OnInitialize(initConfig)
 
 	// Global flags
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.lunchtui.toml)")
-	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "enable debug logging")
-	rootCmd.PersistentFlags().StringVar(&token, "token", "", "the API token for Lunch Money")
-	rootCmd.PersistentFlags().BoolVar(&debitNeg, "debits-as-negative", false, "show debits as negative numbers")
-	rootCmd.PersistentFlags().BoolVar(&hidePend, "hide-pending-transactions", false,
+	rootCmd.PersistentFlags().Bool("debug", false, "enable debug logging")
+	rootCmd.PersistentFlags().String("token", "", "the API token for Lunch Money")
+	rootCmd.PersistentFlags().Bool("debits-as-negative", false, "show debits as negative numbers")
+	rootCmd.PersistentFlags().Bool("hide-pending-transactions", false,
 		"hide pending transactions from all transaction lists")
+
+	// root comand flags
+	rootCmd.Flags().BoolVar(&showUserInfo, "show-user-info", true, "show user information in the overview")
+	_ = viper.BindPFlag("show_user_info", rootCmd.Flags().Lookup("show-user-info"))
 
 	// Bind flags to viper
 	_ = viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
@@ -156,21 +101,54 @@ func initConfig() {
 		log.Debug("Config file not found or error reading", "error", err)
 		return
 	}
+}
 
-	log.Debug("Using config file", "file", viper.ConfigFileUsed())
+// rootCmd represents the base command when called without any subcommands.
+var rootCmd = &cobra.Command{
+	Use:   "lunchtui",
+	Short: "A terminal UI and CLI for Lunch Money",
+	Long:  `A comprehensive terminal-based interface and CLI for managing your Lunch Money financial data.`,
+	PersistentPreRunE: func(_ *cobra.Command, _ []string) error {
+		// Validate token
+		if viper.GetString("token") == "" {
+			return errors.New("API token is required (set via --token flag, " +
+				"LUNCHMONEY_API_TOKEN environment variable, or config file)")
+		}
 
-	// Update global variables from viper
-	if !rootCmd.PersistentFlags().Changed("debug") {
-		debug = viper.GetBool("debug")
-	}
-	if !rootCmd.PersistentFlags().Changed("token") {
-		token = viper.GetString("token")
-	}
-	if !rootCmd.PersistentFlags().Changed("debits-as-negative") {
-		debitNeg = viper.GetBool("debits_as_negative")
-	}
-	if !rootCmd.PersistentFlags().Changed("hide-pending-transactions") {
-		hidePend = viper.GetBool("hide_pending_transactions")
+		// Create Lunch Money client
+		var err error
+		lmc, err = lm.NewClient(viper.GetString("token"))
+		if err != nil {
+			return fmt.Errorf("failed to create Lunch Money client: %w", err)
+		}
+
+		loggingTransport := newLoggingTransport(lmc.HTTP.Transport, log.Default())
+		lmc.HTTP.Transport = loggingTransport
+
+		if viper.GetBool("debug") {
+			log.SetLevel(log.DebugLevel)
+		}
+
+		return nil
+	},
+	RunE: func(c *cobra.Command, _ []string) error {
+		// Start TUI when no subcommands are provided
+		config := Config{
+			Debug:                   viper.GetBool("debug"),
+			Token:                   viper.GetString("token"),
+			DebitsAsNegative:        viper.GetBool("debits_as_negative"),
+			HidePendingTransactions: viper.GetBool("hide_pending_transactions"),
+			ShowUserInfo:            viper.GetBool("show_user_info"),
+		}
+
+		return rootAction(c.Context(), config, lmc)
+	},
+}
+
+// Execute adds all child commands to the root command and sets flags appropriately.
+func Execute() {
+	if err := fang.Execute(context.Background(), rootCmd); err != nil {
+		os.Exit(1)
 	}
 }
 

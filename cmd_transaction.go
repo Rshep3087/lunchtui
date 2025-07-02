@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/log"
 	lm "github.com/icco/lunchmoney"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // transactionCmd represents the transaction command.
@@ -127,7 +128,7 @@ func transactionInsertRun(cmd *cobra.Command, _ []string) error {
 		ApplyRules:        applyRules,
 		SkipDuplicates:    skipDuplicates,
 		CheckForRecurring: checkForRecurring,
-		DebitAsNegative:   debitNeg,
+		DebitAsNegative:   viper.GetBool("debits-as-negative"),
 		SkipBalanceUpdate: skipBalanceUpdate,
 		Transactions:      []lm.InsertTransaction{transaction},
 	}

@@ -273,7 +273,7 @@ func TestSwitchPeriodType(t *testing.T) {
 }
 
 func TestHandleGetUser(t *testing.T) {
-	ov := overview.New()
+	ov := overview.New(overview.Config{})
 	m := &model{
 		loadingState: loadingState{"user": false},
 		overview:     ov,
@@ -290,7 +290,7 @@ func TestHandleGetUser(t *testing.T) {
 
 func TestOverviewUserDisplay(t *testing.T) {
 	// Create an overview model
-	overview := overview.New()
+	overview := overview.New(overview.Config{})
 
 	// Create mock user data
 	mockUser := &lm.User{
@@ -393,7 +393,7 @@ func TestHandleGetTransactions(t *testing.T) {
 				plaidAccounts:           map[int64]*lm.PlaidAccount{},
 				assets:                  map[int64]*lm.Asset{},
 				transactions:            list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0),
-				overview:                overview.New(),
+				overview:                overview.New(overview.Config{ShowUserInfo: true}),
 				hidePendingTransactions: tt.hidePendingTransactions,
 			}
 

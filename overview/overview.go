@@ -20,8 +20,14 @@ import (
 	"golang.org/x/text/language"
 )
 
+// Config holds the configuration for the overview model.
+type Config struct {
+	ShowUserInfo bool
+}
+
 // Model deines the state for the overview widget for LunchTUI.
 type Model struct {
+	cfg                Config
 	Styles             Styles
 	Viewport           viewport.Model
 	summary            Summary
@@ -278,8 +284,6 @@ func defaultStyles() Styles {
 	}
 }
 
-type Option func(*Model)
-
 func (m *Model) SetTransactions(transactions []*lm.Transaction) {
 	m.transactions = transactions
 	m.updateSummary()
@@ -311,23 +315,22 @@ func (m *Model) SetUser(user *lm.User) {
 	m.UpdateViewport()
 }
 
-func New(opts ...Option) Model {
+func New(cfg Config) Model {
 	m := Model{
 		Styles:      defaultStyles(),
 		Viewport:    viewport.New(0, 20),
 		summary:     Summary{},
 		accountTree: tree.New(),
 		titleCaser:  cases.Title(language.English),
+		cfg: Config{
+			ShowUserInfo: true,
+		},
 	}
 
 	m.accountTree.Root(m.Styles.TreeRootStyle.Render("Accounts"))
 
 	m.spendingBreakdown = tree.New()
 	m.spendingBreakdown.Root("")
-
-	for _, opt := range opts {
-		opt(&m)
-	}
 
 	m.UpdateViewport()
 
@@ -375,7 +378,6 @@ func (m *Model) UpdateViewport() {
 	// if there are no children in the spending breakdown, display a message
 	// otherwise, render the spending breakdown tree
 	spendingBreakdownData = m.spendingBreakdown.String()
-
 	if m.spendingBreakdown.Children().Length() == 0 || strings.TrimSpace(spendingBreakdownData) == "" {
 		spendingBreakdownData = "No spending data available\nfor this period."
 	}
@@ -388,25 +390,26 @@ func (m *Model) UpdateViewport() {
 			Render(spendingBreakdownData),
 	)
 
+	var leftColumn []string
+	if m.cfg.ShowUserInfo {
+		log.Debug("showing user info in overview")
+		leftColumn = append(leftColumn, m.userInfoView())
+	}
+	leftColumn = append(leftColumn, m.transactionMetricsView())
+	leftColumn = append(leftColumn, m.summaryView())
+
 	mainContent := lipgloss.JoinHorizontal(lipgloss.Top,
-		lipgloss.NewStyle().Margin(0, 1, 0, 1).Render(lipgloss.JoinVertical(lipgloss.Left,
-			m.userInfoView(),
-			m.transactionMetricsView(),
-			m.summaryView(),
-		)),
+		lipgloss.NewStyle().Margin(0, 1, 0, 1).
+			Render(lipgloss.JoinVertical(lipgloss.Left, leftColumn...)),
 		lipgloss.NewStyle().Margin(0, 1, 0, 1).Render(accountTreeContent),
 		lipgloss.NewStyle().Margin(0, 1, 0, 1).Render(spendingBreakdown),
 	)
 
 	if m.Viewport.Width <= 122 {
+		leftColumn = append(leftColumn, spendingBreakdown)
 		log.Debug("narrow viewport detected, adjusting layout")
 		mainContent = lipgloss.JoinHorizontal(lipgloss.Top,
-			lipgloss.JoinVertical(lipgloss.Left,
-				m.userInfoView(),
-				m.transactionMetricsView(),
-				m.summaryView(),
-				spendingBreakdown,
-			),
+			lipgloss.JoinVertical(lipgloss.Left, leftColumn...),
 			accountTreeContent,
 		)
 	}
