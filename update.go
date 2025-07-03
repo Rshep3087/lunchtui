@@ -98,7 +98,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.insertTransactionForm.State == huh.StateCompleted {
 			m.previousSessionState = m.sessionState
 			m.sessionState = transactions
+
 			return m, func() tea.Msg {
+				if !m.insertTransactionForm.GetBool("submit") {
+					log.Debug("not submitting form")
+					return m.transactions.NewStatusMessage("Transaction not submitted")
+				}
+
 				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				defer cancel()
 
