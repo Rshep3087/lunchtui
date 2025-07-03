@@ -77,6 +77,10 @@ func (m model) handleWindowSize(msg tea.WindowSizeMsg) (tea.Model, tea.Cmd) {
 		m.categoryForm = m.categoryForm.WithHeight(msg.Height - 5).WithWidth(msg.Width)
 	}
 
+	if m.insertTransactionForm != nil {
+		m.insertTransactionForm = m.insertTransactionForm.WithHeight(msg.Height - 6).WithWidth(msg.Width)
+	}
+
 	return m, nil
 }
 
