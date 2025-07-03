@@ -20,6 +20,8 @@ github.com/charmbracelet/colorprofile v0.3.1 h1:k8dTHMd7fgw4bnFd7jXTLZrSU/CQrKnL
 github.com/charmbracelet/colorprofile v0.3.1/go.mod h1:/GkGusxNs8VB/RSOh3fu0TJmQ4ICMMPApIIVn0KszZ0=
 github.com/charmbracelet/fang v0.2.0 h1:F2sK2Zjy9kRYz/xUSF1o89DNj2BHKpxVKT7TA21KZi0=
 github.com/charmbracelet/fang v0.2.0/go.mod h1:TPpME1GkB6/4uR4wXmPnugTCkqRLgZkWSH+aMds6454=
+github.com/charmbracelet/fang v0.3.0 h1:Be6TB+ExS8VWizTQRJgjqbJBudKrmVUet65xmFPGhaA=
+github.com/charmbracelet/fang v0.3.0/go.mod h1:b0ZfEXZeBds0I27/wnTfnv2UVigFDXHhrFNwQztfA0M=
 github.com/charmbracelet/huh v0.7.0 h1:W8S1uyGETgj9Tuda3/JdVkc3x7DBLZYPZc4c+/rnRdc=
 github.com/charmbracelet/huh v0.7.0/go.mod h1:UGC3DZHlgOKHvHC07a5vHag41zzhpPFj34U92sOmyuk=
 github.com/charmbracelet/lipgloss v1.1.0 h1:vYXsiLHVkK7fp74RkV7b2kq9+zDLoEU4MZoFqR/noCY=
@@ -38,6 +40,8 @@ github.com/charmbracelet/x/errors v0.0.0-20240508181413-e8d8b6e2de86 h1:JSt3B+U9
 github.com/charmbracelet/x/errors v0.0.0-20240508181413-e8d8b6e2de86/go.mod h1:2P0UgXMEa6TsToMSuFqKFQR+fZTO9CNGUNokkPatT/0=
 github.com/charmbracelet/x/exp/charmtone v0.0.0-20250630141444-821143405392 h1:CmSXjYehcGME56Weq/plh5TgaSKbWHxqiNULe5DGIdw=
 github.com/charmbracelet/x/exp/charmtone v0.0.0-20250630141444-821143405392/go.mod h1:T9jr8CzFpjhFVHjNjKwbAD7KwBNyFnj2pntAO7F2zw0=
+github.com/charmbracelet/x/exp/charmtone v0.0.0-20250702191427-5bdfc8f2e4ff h1:lpv+k0hNnK09c1t9oYxoGNlw4srakKCVt8vNq8DF0sI=
+github.com/charmbracelet/x/exp/charmtone v0.0.0-20250702191427-5bdfc8f2e4ff/go.mod h1:T9jr8CzFpjhFVHjNjKwbAD7KwBNyFnj2pntAO7F2zw0=
 github.com/charmbracelet/x/exp/golden v0.0.0-20241011142426-46044092ad91 h1:payRxjMjKgx2PaCWLZ4p3ro9y97+TVLZNaRZgJwSVDQ=
 github.com/charmbracelet/x/exp/golden v0.0.0-20241011142426-46044092ad91/go.mod h1:wDlXFlCrmJ8J+swcL/MnGUuYnqgQdW9rhSD61oNMb6U=
 github.com/charmbracelet/x/exp/strings v0.0.0-20250630141444-821143405392 h1:6ipGA1NEA0AZG2UEf81RQGJvEPvYLn/M18mZcdt4J8g=
