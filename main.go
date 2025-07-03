@@ -44,8 +44,6 @@ type model struct {
 	help help.Model
 
 	overview overview.Model
-	// transactionsListKeys is the keybindings for the transactions list
-	transactionsListKeys *transactionListKeyMap
 	// sessionState is the current state of the session
 	sessionState sessionState
 	// errorMsg is the error message to display in the error state
@@ -53,7 +51,13 @@ type model struct {
 	// previousSessionState is the state before the current session state
 	previousSessionState sessionState
 	// transactions is a bubbletea list model of financial transactions
-	transactions  list.Model
+	transactions list.Model
+	// transactionsListKeys is the keybindings for the transactions list
+	transactionsListKeys *transactionListKeyMap
+	// inserteTransactionForm is the form for inserting a new transaction
+	insertTransactionForm *huh.Form
+
+	// period holds the current period for transactions
 	period        Period
 	currentPeriod time.Time
 	// periodType is the type of range for the transactions
@@ -76,8 +80,7 @@ type model struct {
 	// isEditingNotes indicates if the user is currently editing transaction notes
 	isEditingNotes bool
 
-	categoryForm          *huh.Form
-	insertTransactionForm *huh.Form
+	categoryForm *huh.Form
 	// idToCategory is a map of category ID to category
 	idToCategory map[int64]*lm.Category
 	// categories is a list of categories
@@ -209,6 +212,7 @@ func createTransactionList(delegate list.DefaultDelegate, tlKeyMap *transactionL
 			tlKeyMap.categorizeTransaction,
 			tlKeyMap.filterUncleared,
 			tlKeyMap.refreshTransactions,
+			tlKeyMap.insertTransaction,
 		}
 	}
 	return transactionList

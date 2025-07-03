@@ -1,11 +1,16 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"time"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/log"
+	"github.com/icco/lunchmoney"
 )
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -49,6 +54,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.sessionState = errorState
 		m.errorMsg = fmt.Sprintf("Check your API token: %s", msg.err.Error())
 		return m, nil
+
+	case insertTransactionMsg:
+		if msg.err != nil {
+			return m, m.transactions.NewStatusMessage(
+				fmt.Sprintf("Error inserting transaction: %s", msg.err.Error()),
+			)
+		}
+
+		return m, tea.Batch(
+			m.getTransactions,
+			m.transactions.NewStatusMessage("Transaction inserted successfully!"),
+		)
 	}
 
 	var cmd tea.Cmd
@@ -70,6 +87,61 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.recurringExpenses, cmd = m.recurringExpenses.Update(msg)
 		return m, cmd
 
+	case insertTransaction:
+		form, formCmd := m.insertTransactionForm.Update(msg)
+		if f, ok := form.(*huh.Form); ok {
+			m.insertTransactionForm = f
+		} else {
+			log.Debug("insertTransactionForm did not return a form, returning nil")
+			return m, nil
+		}
+
+		if m.insertTransactionForm.State == huh.StateCompleted {
+			m.previousSessionState = m.sessionState
+			m.sessionState = transactions
+			return m, func() tea.Msg {
+				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+				defer cancel()
+
+				cid, ok := m.insertTransactionForm.Get("category").(int64)
+				if !ok {
+					log.Error("category ID not found in form")
+					return insertTransactionMsg{err: errors.New("category ID not found in form")}
+				}
+
+				req := lunchmoney.InsertTransactionsRequest{
+					ApplyRules:        true,
+					SkipDuplicates:    true,
+					CheckForRecurring: true,
+					DebitAsNegative:   m.debitsAsNegative,
+					SkipBalanceUpdate: false,
+					Transactions: []lunchmoney.InsertTransaction{
+						{
+							Date:       m.insertTransactionForm.GetString("date"),
+							Payee:      m.insertTransactionForm.GetString("payee"),
+							Amount:     m.insertTransactionForm.GetString("amount"),
+							Currency:   m.user.PrimaryCurrency,
+							CategoryID: ptr(cid),
+						},
+					},
+				}
+
+				log.Debug("inserting transaction", "request", req, "category_id", cid)
+
+				resp, err := m.lmc.InsertTransactions(ctx, req)
+				if err != nil {
+					log.Error("error inserting transaction", "error", err)
+					return insertTransactionMsg{err: fmt.Errorf("error inserting transaction: %w", err)}
+				}
+
+				log.Debug("transaction inserted successfully", "ids", resp.IDs)
+
+				return insertTransactionMsg{}
+			}
+		}
+
+		return m, formCmd
+
 	case budgets:
 		return updateBudgets(msg, m)
 
@@ -84,3 +156,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	return m, nil
 }
+
+type insertTransactionMsg struct {
+	err error
+}
+
+func ptr[T any](v T) *T { return &v }

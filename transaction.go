@@ -2,13 +2,16 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/log"
 	lm "github.com/icco/lunchmoney"
@@ -81,6 +84,7 @@ type transactionListKeyMap struct {
 	filterUncategorized   key.Binding
 	refreshTransactions   key.Binding
 	showDetailed          key.Binding
+	insertTransaction     key.Binding
 }
 
 func newTransactionListKeyMap() *transactionListKeyMap {
@@ -105,10 +109,10 @@ func newTransactionListKeyMap() *transactionListKeyMap {
 			key.WithKeys("enter"),
 			key.WithHelp("enter", "show transaction details"),
 		),
-		// insertTransaction: key.NewBinding(
-		// 	key.WithKeys("i"),
-		// 	key.WithHelp("i", "insert new transaction"),
-		// ),
+		insertTransaction: key.NewBinding(
+			key.WithKeys("i"),
+			key.WithHelp("i", "insert new transaction"),
+		),
 	}
 }
 
@@ -166,21 +170,63 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 			return showDetailedTransaction(m)
 		}
 
-		// Insert transaction functionality is disabled
-		if msg.String() == "i" {
-			statusCmd := m.transactions.NewStatusMessage("Insert transaction functionality is currently disabled")
-			return m, statusCmd
+		if key.Matches(msg, m.transactionsListKeys.insertTransaction) {
+			log.Debug("switching to insert transaction form")
+			m.previousSessionState = m.sessionState
+			m.sessionState = insertTransaction
+			m.insertTransactionForm = m.newInsertTransactionForm()
+			return m, m.insertTransactionForm.Init()
 		}
-
-		// if key.Matches(msg, m.transactionsListKeys.insertTransaction) {
-		// 	return insertNewTransaction(&m)
-		// }
 	}
 
 	var cmd tea.Cmd
 	m.transactions, cmd = m.transactions.Update(msg)
 
 	return m, cmd
+}
+
+func (m model) newInsertTransactionForm() *huh.Form {
+	opts := make([]huh.Option[int64], len(m.categories))
+	for i, c := range m.categories {
+		opts[i] = huh.NewOption(c.Name, c.ID)
+	}
+
+	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewInput().Title("Payee").Key("payee").
+				Validate(func(s string) error {
+					if s == "" {
+						return errors.New("payee cannot be empty")
+					}
+					return nil
+				}),
+			huh.NewInput().Title("Amount").Key("amount").Placeholder("Enter amount (e.g., 100.00)").
+				Validate(func(s string) error {
+					if s == "" {
+						return errors.New("amount cannot be empty")
+					}
+					if _, err := strconv.ParseFloat(s, 64); err != nil {
+						return fmt.Errorf("invalid amount: %w", err)
+					}
+					return nil
+				}),
+			huh.NewInput().Title("Date").Key("date").Placeholder("Enter date (YYYY-MM-DD)").
+				Validate(func(s string) error {
+					if len(s) != 10 {
+						return errors.New("date must be in YYYY-MM-DD format")
+					}
+					if _, err := time.Parse("2006-01-02", s); err != nil {
+						return fmt.Errorf("invalid date format: %w", err)
+					}
+					return nil
+				}),
+			huh.NewSelect[int64]().Title("Category").Key("category").
+				Height(8).Options(opts...),
+			huh.NewConfirm().Title("Submit").Key("submit"),
+		),
+	).WithShowHelp(true).WithShowErrors(true)
+
+	return form
 }
 
 func categorizeTrans(m *model) (tea.Model, tea.Cmd) {

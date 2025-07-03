@@ -20,6 +20,8 @@ func (m model) View() string {
 		b.WriteString(detailedTransactionView(m))
 	case categorizeTransaction:
 		b.WriteString(categorizeTransactionView(m))
+	case insertTransaction:
+		b.WriteString(m.insertTransactionForm.View())
 	case recurringExpenses:
 		b.WriteString(m.recurringExpenses.View())
 	case budgets:

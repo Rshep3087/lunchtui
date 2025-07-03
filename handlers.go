@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"sort"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -103,6 +104,10 @@ func (m model) handleGetCategories(msg getCategoriesMsg) (tea.Model, tea.Cmd) {
 	}
 
 	m.categories = msg.categories
+	sort.Slice(m.categories, func(i, j int) bool {
+		return m.categories[i].Name < m.categories[j].Name
+	})
+
 	m.overview.SetCategories(m.idToCategory)
 	m.loadingState.set("categories")
 	m.sessionState = m.checkIfLoading()

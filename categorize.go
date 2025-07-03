@@ -1,18 +1,12 @@
 package main
 
 import (
-	"sort"
-
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/log"
 )
 
 func (m *model) newCategorizeTransactionForm(t transactionItem) *huh.Form {
-	sort.Slice(m.categories, func(i, j int) bool {
-		return m.categories[i].Name < m.categories[j].Name
-	})
-
 	opts := make([]huh.Option[int64], len(m.categories))
 	for i, c := range m.categories {
 		opts[i] = huh.NewOption(c.Name, c.ID)

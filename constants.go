@@ -14,6 +14,7 @@ const (
 	transactions
 	detailedTransaction
 	categorizeTransaction
+	insertTransaction
 	loading
 	recurringExpenses
 	budgets
@@ -31,6 +32,8 @@ func (ss sessionState) String() string {
 		return "transaction details"
 	case categorizeTransaction:
 		return "categorize transaction"
+	case insertTransaction:
+		return "insert transaction"
 	case loading:
 		return "loading"
 	case recurringExpenses:
