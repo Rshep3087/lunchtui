@@ -122,6 +122,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 							CategoryID: ptr(cid),
 							Notes:      m.insertTransactionForm.GetString("notes"),
 							Status:     m.insertTransactionForm.GetString("status"),
+							// TagsIDs: ,
 						},
 					},
 				}

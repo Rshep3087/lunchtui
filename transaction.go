@@ -186,9 +186,14 @@ func updateTransactions(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 }
 
 func (m model) newInsertTransactionForm() *huh.Form {
-	opts := make([]huh.Option[int64], len(m.categories))
+	categoryOpts := make([]huh.Option[int64], len(m.categories))
 	for i, c := range m.categories {
-		opts[i] = huh.NewOption(c.Name, c.ID)
+		categoryOpts[i] = huh.NewOption(c.Name, c.ID)
+	}
+
+	tagOpts := make([]huh.Option[int], 0, len(m.tags))
+	for _, tag := range m.tags {
+		tagOpts = append(tagOpts, huh.NewOption(tag.Name, tag.ID))
 	}
 
 	form := huh.NewForm(
@@ -221,12 +226,13 @@ func (m model) newInsertTransactionForm() *huh.Form {
 					return nil
 				}),
 			huh.NewSelect[int64]().Title("Category").Key("category").
-				Height(8).Options(opts...),
+				Height(8).Options(categoryOpts...),
 		),
 		huh.NewGroup(
 			huh.NewSelect[string]().Options(
 				huh.NewOption("Uncleared", unclearedStatus), huh.NewOption("Cleared", clearedStatus),
 			).Key("status").Title("Status"),
+			huh.NewMultiSelect[int]().Options(tagOpts...).Title("Tags").Key("tags"),
 			huh.NewText().Title("Notes").Key("notes").Placeholder("Enter notes (optional)"),
 			huh.NewConfirm().Title("Submit").Key("submit"),
 		),
