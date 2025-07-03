@@ -108,23 +108,37 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return insertTransactionMsg{err: errors.New("category ID not found in form")}
 				}
 
+				account, ok := m.insertTransactionForm.Get("account").(accountOpt)
+				if !ok {
+					log.Debug("account not found in form")
+					return insertTransactionMsg{err: errors.New("account not found in form")}
+				}
+
+				transaction := lunchmoney.InsertTransaction{
+					Date:       m.insertTransactionForm.GetString("date"),
+					Payee:      m.insertTransactionForm.GetString("payee"),
+					Amount:     m.insertTransactionForm.GetString("amount"),
+					Currency:   m.user.PrimaryCurrency,
+					CategoryID: ptr(cid),
+					Notes:      m.insertTransactionForm.GetString("notes"),
+					Status:     m.insertTransactionForm.GetString("status"),
+				}
+
+				if account.ID != 0 {
+					switch account.Type {
+					case "plaid":
+						transaction.PlaidAccountID = ptr(account.ID)
+					case "asset":
+						transaction.AssetID = ptr(account.ID)
+					}
+				}
+
 				req := lunchmoney.InsertTransactionsRequest{
 					ApplyRules:        true,
 					SkipDuplicates:    true,
 					CheckForRecurring: true,
 					DebitAsNegative:   false,
-					Transactions: []lunchmoney.InsertTransaction{
-						{
-							Date:       m.insertTransactionForm.GetString("date"),
-							Payee:      m.insertTransactionForm.GetString("payee"),
-							Amount:     m.insertTransactionForm.GetString("amount"),
-							Currency:   m.user.PrimaryCurrency,
-							CategoryID: ptr(cid),
-							Notes:      m.insertTransactionForm.GetString("notes"),
-							Status:     m.insertTransactionForm.GetString("status"),
-							// TagsIDs: ,
-						},
-					},
+					Transactions:      []lunchmoney.InsertTransaction{transaction},
 				}
 
 				log.Debug("inserting transaction", "request", req, "category_id", cid)
