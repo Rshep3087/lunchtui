@@ -18,30 +18,28 @@
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 
-- [✨ Features](#-features)
-- [🚀 Installation](#-installation)
-- [📖 Usage](#-usage)
-- [🔧 CLI Commands](#-cli-commands)
-- [🔧 Configuration](#-configuration)
-- [📸 Screenshots](#-screenshots)
-- [🤝 Contributing](#-contributing)
-- [📄 License](#-license)
-- [🙏 Acknowledgments](#-acknowledgments)
+- [Features](#-features)
+- [Installation](#-installation)
+- [Usage](#-usage)
+- [CLI Commands](#-cli-commands)
+- [Configuration](#-configuration)
+- [Screenshots](#-screenshots)
+- [Contributing](#-contributing)
+- [License](#-license)
+- [Acknowledgments](#-acknowledgments)
 
-## ✨ Features
+## Features
 
-- 💰 **Account Balances** - View all your account balances at a glance
-- 🔄 **Recurring Expenses** - Monitor your subscription and recurring payments
-- 📊 **Transaction Management** - Browse and search through your transactions
-- 📈 **Budget Tracking** - Monitor your spending against budgets with real-time progress
-- 🏷️ **Smart Categorization** - Easily categorize transactions with intuitive interface
-- ✅ **Transaction Status** - Mark transactions as cleared or uncleared
-- 🎨 **Beautiful UI** - Enjoy a clean, modern terminal interface built with Bubble Tea
-- ⚡ **Fast & Lightweight** - Built in Go for optimal performance
+- **Account Balances** - View all your account balances at a glance
+- **Transaction Management** - Browse and search through your transactions
+- **Recurring Expenses** - Monitor your subscription and recurring payments
+- **Budget Tracking** - Monitor your spending against budgets with real-time progress
+- **Categorization** - Easily categorize transactions with intuitive interface
+- **Transaction Status** - Mark transactions as cleared or uncleared
 
-## 🚀 Installation
+## Installation
 
 ### Option 1: Download Pre-built Binary
 
@@ -61,7 +59,7 @@ cd lunchtui
 go build -o lunchtui
 ```
 
-## 📖 Usage
+## Usage
 
 ### Quick Start
 
@@ -89,16 +87,6 @@ Once lunchtui is running, use these keyboard shortcuts to navigate:
 | `?` | - | Toggle help menu |
 | `q` | - | Quit the application |
 
-### Command Line Options
-
-| Flag | Description | Default |
-|------|-------------|----------|
-| `--token` | Lunch Money API token | Uses `LUNCHMONEY_API_TOKEN` env var or config file |
-| `--debits-as-negative` | Show debits as negative numbers | `false` |
-| `--config` | Path to custom configuration file | Standard locations |
-| `--debug` | Enable debug logging | `false` |
-| `--help` | Show help message | - |
-
 ### Examples
 
 ```bash
@@ -118,7 +106,7 @@ lunchtui --debug
 lunchtui --token="your-token" --debits-as-negative --debug
 ```
 
-## 🔧 CLI Commands
+## CLI Commands
 
 In addition to the interactive TUI interface, lunchtui provides powerful CLI commands for automation and scripting.
 
@@ -191,9 +179,7 @@ lunchtui transaction --help
 lunchtui categories list --help
 ```
 
-🚧 **More CLI commands are coming soon!**
-
-## 🔧 Configuration
+## Configuration
 
 ### Configuration File Support
 
@@ -215,7 +201,7 @@ debits_as_negative = false
 
 You can also specify a custom config file with `--config path/to/config.toml`.
 
-**📋 For complete configuration documentation, see [CONFIG.md](CONFIG.md)**
+**For complete configuration documentation, see [CONFIG.md](CONFIG.md)**
 
 ### API Token Setup
 
@@ -232,9 +218,9 @@ export LUNCHMONEY_API_TOKEN="your-api-token-here"
 echo 'token = "your-api-token-here"' > lunchtui.toml
 ```
 
-## 📸 Screenshots
+## Screenshots
 
-### 📈 Budget Tracking
+### Budget Tracking
 ![budgets](docs/SCR-20250624-ttgl.png)
 *Monitor your spending against budgets with detailed progress tracking*
 
@@ -251,53 +237,30 @@ echo 'token = "your-api-token-here"' > lunchtui.toml
 - Number of transactions in the category
 - Easy navigation between time periods
 
-### 🔄 Recurring Expenses View
+### Recurring Expenses View
 ![recurring expenses](docs/SCR-20250624-tthl.png)
 
 *Easily track and manage your recurring expenses and subscriptions*
 
-### 📊 Transaction Browser
+### Transaction Browser
 ![alt text](docs/SCR-20250624-ttft.png)
 
 *Browse through your transactions with powerful filtering and search capabilities*
 
-### 🏷️ Transaction Categorization
+### Transaction Categorization
 <img width="1312" alt="Transaction categorization" src="https://github.com/user-attachments/assets/0a36b35b-f913-4fe7-b29f-612c132842dc" />
 
 *Quickly categorize transactions with an intuitive interface*
 
-## 🤝 Contributing
+## Contributing
 
-Contributions are welcome! Here's how you can help:
+Contributions are welcome!
 
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
-3. **Commit** your changes (`git commit -m 'Add some amazing feature'`)
-4. **Push** to the branch (`git push origin feature/amazing-feature`)
-5. **Open** a Pull Request
-
-### Development Setup
-
-```bash
-# Clone the repository
-git clone https://github.com/Rshep3087/lunchtui.git
-cd lunchtui
-
-# Install dependencies
-go mod download
-
-# Run tests
-go test ./...
-
-# Build the project
-go build -o lunchtui
-```
-
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - [Lunch Money](https://lunchmoney.app/) - For providing an excellent personal finance platform
 - [Bubble Tea](https://github.com/charmbracelet/bubbletea) - For the amazing TUI framework
