@@ -122,6 +122,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 							Amount:     m.insertTransactionForm.GetString("amount"),
 							Currency:   m.user.PrimaryCurrency,
 							CategoryID: ptr(cid),
+							Notes:      m.insertTransactionForm.GetString("notes"),
 						},
 					},
 				}
