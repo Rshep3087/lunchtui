@@ -224,6 +224,9 @@ func (m model) newInsertTransactionForm() *huh.Form {
 				Height(8).Options(opts...),
 		),
 		huh.NewGroup(
+			huh.NewSelect[string]().Options(
+				huh.NewOption("Uncleared", unclearedStatus), huh.NewOption("Cleared", clearedStatus),
+			).Key("status").Title("Status"),
 			huh.NewText().Title("Notes").Key("notes").Placeholder("Enter notes (optional)"),
 			huh.NewConfirm().Title("Submit").Key("submit"),
 		),

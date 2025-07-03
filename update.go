@@ -62,8 +62,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			)
 		}
 
-		return m, tea.Batch(
-			m.getTransactions,
+		return m, tea.Batch(m.getTransactions,
 			m.transactions.NewStatusMessage("Transaction inserted successfully!"),
 		)
 	}
@@ -105,7 +104,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				cid, ok := m.insertTransactionForm.Get("category").(int64)
 				if !ok {
-					log.Error("category ID not found in form")
+					log.Debug("category ID not found in form")
 					return insertTransactionMsg{err: errors.New("category ID not found in form")}
 				}
 
@@ -122,6 +121,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 							Currency:   m.user.PrimaryCurrency,
 							CategoryID: ptr(cid),
 							Notes:      m.insertTransactionForm.GetString("notes"),
+							Status:     m.insertTransactionForm.GetString("status"),
 						},
 					},
 				}
@@ -130,7 +130,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				resp, err := m.lmc.InsertTransactions(ctx, req)
 				if err != nil {
-					log.Error("error inserting transaction", "error", err)
+					log.Debug("error inserting transaction", "error", err)
 					return insertTransactionMsg{err: fmt.Errorf("error inserting transaction: %w", err)}
 				}
 
