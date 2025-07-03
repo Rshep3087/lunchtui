@@ -197,17 +197,18 @@ func (m model) newInsertTransactionForm() *huh.Form {
 	accountOpts := m.generateAccountOptions()
 
 	form := huh.NewForm(
+		// first group contains the main transaction fields
 		huh.NewGroup(
 			huh.NewSelect[accountOpt]().Title("Account").Key("account").
-				Height(8).Options(accountOpts...),
-			huh.NewInput().Title("Payee").Key("payee").
+				Height(6).Options(accountOpts...),
+			huh.NewInput().Title("Payee").Key("payee").Description("The payee for the transaction").
 				Validate(func(s string) error {
 					if s == "" {
 						return errors.New("payee cannot be empty")
 					}
 					return nil
 				}),
-			huh.NewInput().Title("Amount").Key("amount").Placeholder("Enter amount (e.g., 100.00)").
+			huh.NewInput().Title("Amount").Key("amount").Description("Enter the amount (e.g., 10.00)").
 				Validate(func(s string) error {
 					if s == "" {
 						return errors.New("amount cannot be empty")
@@ -217,7 +218,7 @@ func (m model) newInsertTransactionForm() *huh.Form {
 					}
 					return nil
 				}),
-			huh.NewInput().Title("Date").Key("date").Placeholder("Enter date (YYYY-MM-DD)").
+			huh.NewInput().Title("Date").Key("date").Description("Enter the date in YYYY-MM-DD format").
 				Validate(func(s string) error {
 					if len(s) != 10 {
 						return errors.New("date must be in YYYY-MM-DD format")
@@ -230,13 +231,16 @@ func (m model) newInsertTransactionForm() *huh.Form {
 			huh.NewSelect[int64]().Title("Category").Key("category").
 				Height(8).Options(categoryOpts...),
 		),
+		// second group contains optional fields
 		huh.NewGroup(
 			huh.NewSelect[string]().Options(
-				huh.NewOption("Uncleared", unclearedStatus), huh.NewOption("Cleared", clearedStatus),
-			).Key("status").Title("Status"),
-			huh.NewMultiSelect[int]().Options(tagOpts...).Title("Tags").Key("tags"),
-			huh.NewText().Title("Notes").Key("notes").Placeholder("Enter notes (optional)"),
-			huh.NewConfirm().Title("Submit").Key("submit"),
+				huh.NewOption("Uncleared", unclearedStatus),
+				huh.NewOption("Cleared", clearedStatus),
+			).Key("status").Title("Status").Description("Select the transaction status"),
+			huh.NewMultiSelect[int]().Options(tagOpts...).
+				Title("Tags").Key("tags").Description("Select tag(s) for the transaction"),
+			huh.NewText().Title("Notes").Key("notes").Description("Optional notes for the transaction"),
+			huh.NewConfirm().Title("Create").Key("submit"),
 		),
 	).WithShowHelp(true).WithShowErrors(true)
 
@@ -254,7 +258,7 @@ func (m model) generateCategoryOptions() []huh.Option[int64] {
 func (m model) generateTagOptions() []huh.Option[int] {
 	tagOpts := make([]huh.Option[int], 0, len(m.tags))
 	for _, tag := range m.tags {
-		tagOpts = append(tagOpts, huh.NewOption(tag.Name, tag.ID))
+		tagOpts = append(tagOpts, huh.NewOption(html.UnescapeString(tag.Name), tag.ID))
 	}
 	return tagOpts
 }
