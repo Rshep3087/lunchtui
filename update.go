@@ -113,8 +113,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					ApplyRules:        true,
 					SkipDuplicates:    true,
 					CheckForRecurring: true,
-					DebitAsNegative:   m.debitsAsNegative,
-					SkipBalanceUpdate: false,
+					DebitAsNegative:   false,
 					Transactions: []lunchmoney.InsertTransaction{
 						{
 							Date:       m.insertTransactionForm.GetString("date"),
