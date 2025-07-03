@@ -124,6 +124,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					Status:     m.insertTransactionForm.GetString("status"),
 				}
 
+				tags, ok := m.insertTransactionForm.Get("tags").([]int)
+				if ok && len(tags) > 0 {
+					transaction.TagsIDs = tags
+				}
+
 				if account.ID != 0 {
 					switch account.Type {
 					case "plaid":
