@@ -236,9 +236,18 @@ func handleSessionStateKeys(msg tea.KeyMsg, m *model) (tea.Model, tea.Cmd) {
 // handleEscape resets the session state to the overview state.
 func handleEscape(msg tea.KeyMsg, m *model) (tea.Model, tea.Cmd) {
 	if m.sessionState == categorizeTransaction {
+		log.Debug("handling escape in categorize transaction state")
 		m.previousSessionState = overviewState
 		m.sessionState = transactions
 		m.categoryForm.State = huh.StateAborted
+		return m, m.getTransactions
+	}
+
+	if m.sessionState == insertTransaction {
+		log.Debug("handling escape in insert transaction state")
+		m.previousSessionState = overviewState
+		m.sessionState = transactions
+		m.insertTransactionForm.State = huh.StateAborted
 		return m, m.getTransactions
 	}
 
