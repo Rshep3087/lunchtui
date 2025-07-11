@@ -6,13 +6,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Rshep3087/lunchtui/overview"
 	"github.com/carlmjohnson/be"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	lm "github.com/icco/lunchmoney"
-	"github.com/rshep3087/lunchtui/overview"
 )
 
 func TestBudgetsNavigation(t *testing.T) {

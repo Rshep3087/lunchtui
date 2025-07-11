@@ -1,4 +1,4 @@
-module github.com/rshep3087/lunchtui
+module github.com/Rshep3087/lunchtui
 
 go 1.24.0
 

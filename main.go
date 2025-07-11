@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	configview "github.com/rshep3087/lunchtui/config"
-	"github.com/rshep3087/lunchtui/overview"
-	"github.com/rshep3087/lunchtui/recurring"
+	configview "github.com/Rshep3087/lunchtui/config"
+	"github.com/Rshep3087/lunchtui/overview"
+	"github.com/Rshep3087/lunchtui/recurring"
 	"github.com/spf13/viper"
 
 	"github.com/charmbracelet/bubbles/help"
