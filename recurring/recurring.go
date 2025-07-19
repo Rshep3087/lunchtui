@@ -7,11 +7,19 @@ import (
 	"github.com/icco/lunchmoney"
 )
 
+type Colors struct {
+	Primary string
+}
+
 type Model struct {
 	recurringExpenses table.Model
 }
 
-func New() Model {
+func New(colors Colors) Model {
+	return newWithColors(colors)
+}
+
+func newWithColors(colors Colors) Model {
 	recurringExpenses := table.New(
 		table.WithColumns([]table.Column{
 			{Title: "Merchant", Width: 20},
@@ -24,7 +32,7 @@ func New() Model {
 
 	tableStyle := table.DefaultStyles()
 	tableStyle.Selected = tableStyle.Selected.
-		Foreground(lipgloss.Color("#ffd644"))
+		Foreground(lipgloss.Color(colors.Primary))
 
 	recurringExpenses.SetStyles(tableStyle)
 

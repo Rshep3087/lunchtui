@@ -11,25 +11,27 @@ type styles struct {
 	errorStyle lipgloss.Style
 }
 
-func createStyles() styles {
+func createStyles(theme Theme) styles {
 	return styles{
-		docStyle:   lipgloss.NewStyle().Margin(1, 2),
-		titleStyle: lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#000000", Dark: "#ffd644"}).Bold(true),
-		errorStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#ff0000")).Bold(true),
+		docStyle: lipgloss.NewStyle().Margin(1, 2),
+		titleStyle: lipgloss.NewStyle().Foreground(
+			lipgloss.AdaptiveColor{Light: "#000000", Dark: string(theme.Primary)},
+		).Bold(true),
+		errorStyle: lipgloss.NewStyle().Foreground(theme.Error).Bold(true),
 	}
 }
 
-func createHelpModel() help.Model {
+func createHelpModel(theme Theme) help.Model {
 	helpModel := help.New()
 	helpModel.ShortSeparator = " + "
 	helpModel.Styles = help.Styles{
-		Ellipsis:       lipgloss.NewStyle().Foreground(lipgloss.Color("#888888")),
-		ShortKey:       lipgloss.NewStyle().Foreground(lipgloss.Color("#ffd644")).Bold(true),
-		ShortDesc:      lipgloss.NewStyle().Foreground(lipgloss.Color("#ffffff")),
-		ShortSeparator: lipgloss.NewStyle().Foreground(lipgloss.Color("#888888")),
-		FullKey:        lipgloss.NewStyle().Foreground(lipgloss.Color("#ffd644")).Bold(true),
-		FullDesc:       lipgloss.NewStyle().Foreground(lipgloss.Color("#ffffff")),
-		FullSeparator:  lipgloss.NewStyle().Foreground(lipgloss.Color("#888888")),
+		Ellipsis:       lipgloss.NewStyle().Foreground(theme.SecondaryText),
+		ShortKey:       lipgloss.NewStyle().Foreground(theme.Primary).Bold(true),
+		ShortDesc:      lipgloss.NewStyle().Foreground(theme.Text),
+		ShortSeparator: lipgloss.NewStyle().Foreground(theme.SecondaryText),
+		FullKey:        lipgloss.NewStyle().Foreground(theme.Primary).Bold(true),
+		FullDesc:       lipgloss.NewStyle().Foreground(theme.Text),
+		FullSeparator:  lipgloss.NewStyle().Foreground(theme.SecondaryText),
 	}
 	return helpModel
 }

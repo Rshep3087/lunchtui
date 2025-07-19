@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/Rshep3087/lunchtui/config"
 	"github.com/charmbracelet/fang"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/table"
@@ -139,6 +140,19 @@ var rootCmd = &cobra.Command{
 			DebitsAsNegative:        viper.GetBool("debits_as_negative"),
 			HidePendingTransactions: viper.GetBool("hide_pending_transactions"),
 			ShowUserInfo:            viper.GetBool("show_user_info"),
+			Colors: config.Colors{
+				Primary:       viper.GetString("colors.primary"),
+				Error:         viper.GetString("colors.error"),
+				Success:       viper.GetString("colors.success"),
+				Warning:       viper.GetString("colors.warning"),
+				Muted:         viper.GetString("colors.muted"),
+				Income:        viper.GetString("colors.income"),
+				Expense:       viper.GetString("colors.expense"),
+				Border:        viper.GetString("colors.border"),
+				Background:    viper.GetString("colors.background"),
+				Text:          viper.GetString("colors.text"),
+				SecondaryText: viper.GetString("colors.secondary_text"),
+			},
 		}
 
 		return rootAction(c.Context(), config, lmc)

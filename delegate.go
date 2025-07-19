@@ -15,12 +15,12 @@ func (m model) newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 	d := list.NewDefaultDelegate()
 	d.Styles.SelectedTitle = lipgloss.NewStyle().
 		Border(lipgloss.NormalBorder(), false, false, false, true).
-		BorderForeground(lipgloss.AdaptiveColor{Light: "#ffe644", Dark: "#ffb744"}).
-		Foreground(lipgloss.AdaptiveColor{Light: "#ffd644", Dark: "#ffd644"}).
+		BorderForeground(lipgloss.AdaptiveColor{Light: string(m.theme.Primary), Dark: string(m.theme.Primary)}).
+		Foreground(lipgloss.AdaptiveColor{Light: string(m.theme.Primary), Dark: string(m.theme.Primary)}).
 		Padding(0, 0, 0, 1)
 
 	d.Styles.SelectedDesc = lipgloss.NewStyle().
-		Foreground(lipgloss.AdaptiveColor{Light: "#ffe644", Dark: "#ffb744"})
+		Foreground(lipgloss.AdaptiveColor{Light: string(m.theme.Primary), Dark: string(m.theme.Primary)})
 
 	d.UpdateFunc = func(msg tea.Msg, listModel *list.Model) tea.Cmd {
 		if msg, ok := msg.(tea.KeyMsg); ok {

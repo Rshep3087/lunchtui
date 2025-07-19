@@ -39,7 +39,7 @@ func TestMaskSensitiveValue(t *testing.T) {
 
 func TestSetConfig(t *testing.T) {
 	// Test that SetConfig properly sets up the table rows
-	m := New()
+	m := New(Colors{})
 	testConfig := Config{
 		Debug:                   true,
 		Token:                   "test-token-123456",

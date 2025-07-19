@@ -400,7 +400,7 @@ func showDetailedTransaction(m model) (tea.Model, tea.Cmd) {
 func transactionsView(m model) string {
 	return lipgloss.JoinVertical(lipgloss.Left,
 		m.transactions.View(),
-		m.transactionsStats.View(),
+		m.transactionsStats.View(m.theme),
 	)
 }
 
@@ -437,19 +437,19 @@ type transactionsStats struct {
 }
 
 // View renders the transactions stats in a single line.
-func (t transactionsStats) View() string {
+func (t transactionsStats) View(theme Theme) string {
 	pending := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#7f7d78")).
+		Foreground(theme.Muted).
 		MarginRight(2).
 		Render(fmt.Sprintf("%d pending", t.pending))
 
 	uncleared := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#e05951")).
+		Foreground(theme.Warning).
 		MarginRight(2).
 		Render(fmt.Sprintf("%d uncleared", t.uncleared))
 
 	cleared := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#22ba46")).
+		Foreground(theme.Success).
 		MarginRight(2).
 		Render(fmt.Sprintf("%d cleared", t.cleared))
 
@@ -567,8 +567,8 @@ func detailedTransactionView(m model) string {
 		return "No transaction selected"
 	}
 
-	styles := createDetailedTransactionStyles()
-	data := extractTransactionData(m.currentTransaction)
+	styles := createDetailedTransactionStyles(m.theme)
+	data := extractTransactionData(m.currentTransaction, m)
 
 	header := styles.headerStyle.Render("Transaction Details")
 	details := buildTransactionDetailsWithNotes(data, styles, m)
@@ -601,38 +601,38 @@ type transactionDisplayData struct {
 	statusStyle lipgloss.Style
 }
 
-func createDetailedTransactionStyles() detailedTransactionStyles {
+func createDetailedTransactionStyles(theme Theme) detailedTransactionStyles {
 	return detailedTransactionStyles{
 		headerStyle: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FAFAFA")).
-			Background(lipgloss.Color("#7D56F4")).
+			Foreground(theme.Text).
+			Background(theme.Background).
 			Padding(0, 1).
 			MarginBottom(1).
 			Bold(true),
 		labelStyle: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#7D56F4")).
+			Foreground(theme.Border).
 			Bold(true).
 			Width(20).
 			Align(lipgloss.Right),
 		valueStyle: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FAFAFA")).
+			Foreground(theme.Text).
 			MarginLeft(2),
 		containerStyle: lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("#7D56F4")).
+			BorderForeground(theme.Border).
 			Padding(1, 2).
 			Margin(1),
 		statusStyle: lipgloss.NewStyle().
 			Padding(0, 1).
 			Bold(true),
 		instructionStyle: lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#666666")).
+			Foreground(theme.SecondaryText).
 			Italic(true).
 			MarginTop(2),
 	}
 }
 
-func extractTransactionData(t *transactionItem) transactionDisplayData {
+func extractTransactionData(t *transactionItem, m model) transactionDisplayData {
 	data := transactionDisplayData{transaction: t}
 
 	// Parse amount
@@ -666,7 +666,7 @@ func extractTransactionData(t *transactionItem) transactionDisplayData {
 	}
 
 	// Create status-specific styling
-	data.statusStyle = createStatusStyle(t.t.Status)
+	data.statusStyle = createStatusStyle(t.t.Status, m.theme)
 
 	return data
 }
@@ -683,18 +683,18 @@ func formatTags(tags []*lm.Tag) string {
 	return strings.Join(tagNames, ", ")
 }
 
-func createStatusStyle(status string) lipgloss.Style {
+func createStatusStyle(status string, theme Theme) lipgloss.Style {
 	baseStyle := lipgloss.NewStyle().Padding(0, 1).Bold(true)
 
 	switch status {
 	case "cleared":
-		return baseStyle.Foreground(lipgloss.Color("#FAFAFA")).Background(lipgloss.Color("#22ba46"))
+		return baseStyle.Foreground(theme.Text).Background(theme.Success)
 	case unclearedStatus:
-		return baseStyle.Foreground(lipgloss.Color("#FAFAFA")).Background(lipgloss.Color("#e05951"))
+		return baseStyle.Foreground(theme.Text).Background(theme.Warning)
 	case pendingStatus:
-		return baseStyle.Foreground(lipgloss.Color("#000000")).Background(lipgloss.Color("#7f7d78"))
+		return baseStyle.Foreground(theme.Text).Background(theme.Muted)
 	default:
-		return baseStyle.Foreground(lipgloss.Color("#FAFAFA")).Background(lipgloss.Color("#666666"))
+		return baseStyle.Foreground(theme.Text).Background(theme.SecondaryText)
 	}
 }
 

@@ -275,3 +275,50 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 [Report Bug](https://github.com/Rshep3087/lunchtui/issues) • [Request Feature](https://github.com/Rshep3087/lunchtui/issues) • [Discussions](https://github.com/Rshep3087/lunchtui/discussions)
 
 </div>
+
+## Color Customization
+
+You can customize the colors used throughout the TUI application by adding a `[colors]` section to your configuration file. Colors can be specified using either hex values (e.g., `"#ff0000"`) or ANSI color codes (e.g., `"21"`).
+
+### Available Color Options
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `primary` | `"#ffd644"` | Primary accent color (highlights, selected items, key bindings) |
+| `error` | `"#ff0000"` | Error messages and failed transactions |
+| `success` | `"#22ba46"` | Successful/cleared transactions and positive values |
+| `warning` | `"#e05951"` | Uncleared transactions and warnings |
+| `muted` | `"#7f7d78"` | Pending transactions and secondary text |
+| `income` | `"#00ff00"` | Positive income values |
+| `expense` | `"#ff0000"` | Negative expense values |
+| `border` | `"#7D56F4"` | Borders and separators |
+| `background` | `"#7D56F4"` | Highlighted backgrounds |
+| `text` | `"#FAFAFA"` | Primary text |
+| `secondary_text` | `"#888888"` | Less important text and separators |
+
+### Example Configuration
+
+```toml
+[colors]
+primary = "21"              # ANSI blue instead of default yellow
+error = "#ff5555"          # Slightly lighter red  
+success = "28"             # ANSI green
+warning = "#ff8800"        # Orange instead of red
+muted = "240"              # ANSI dark gray
+income = "#00cc00"         # Darker green
+expense = "#cc0000"        # Darker red
+border = "27"              # ANSI bright blue
+background = "54"          # ANSI purple
+text = "#ffffff"           # Pure white
+secondary_text = "245"     # ANSI light gray
+```
+
+### Color Formats
+
+- **Hex colors**: Use standard hex notation like `"#ff0000"` for red
+- **ANSI colors**: Use ANSI color codes like `"21"` for bright blue
+  - Standard colors: 0-7 (black, red, green, yellow, blue, magenta, cyan, white)
+  - Bright colors: 8-15
+  - Extended colors: 16-255
+
+The application will fall back to default colors if any color value is invalid or missing.
