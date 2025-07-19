@@ -6,12 +6,10 @@ on:
       - main
       - master
   pull_request:
-    branches:
-      - main
-      - master
-
-env:
-  GO_VERSION: '1.23'
+    types:
+      - opened
+      - synchronize
+      - reopened
 
 jobs:
   test:
@@ -24,17 +22,9 @@ jobs:
     
     - name: Set up Go
       uses: actions/setup-go@v5
-    
-    - name: Cache Go modules
-      uses: actions/cache@v4
       with:
-        path: |
-          ~/.cache/go-build
-          ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-${{ matrix.go-version }}-
-    
+        go-version: '1.24' 
+
     - name: Download dependencies
       run: go mod download
     

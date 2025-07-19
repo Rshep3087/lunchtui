@@ -23,6 +23,18 @@ import (
 // Config holds the configuration for the overview model.
 type Config struct {
 	ShowUserInfo bool
+	// Colors can be provided to customize the theme
+	Colors *Colors
+}
+
+// Colors represents theme colors for the overview.
+type Colors struct {
+	Income        lipgloss.Color
+	Expense       lipgloss.Color
+	TreeRoot      lipgloss.Color
+	AssetType     lipgloss.Color
+	Account       lipgloss.Color
+	SectionHeader lipgloss.Color
 }
 
 // Model deines the state for the overview widget for LunchTUI.
@@ -284,6 +296,18 @@ func defaultStyles() Styles {
 	}
 }
 
+func stylesFromColors(colors Colors) Styles {
+	return Styles{
+		IncomeStyle:        lipgloss.NewStyle().Foreground(colors.Income),
+		SpentStyle:         lipgloss.NewStyle().Foreground(colors.Expense),
+		TreeRootStyle:      lipgloss.NewStyle().Foreground(colors.TreeRoot),
+		AssetTypeStyle:     lipgloss.NewStyle().Foreground(colors.AssetType),
+		AccountStyle:       lipgloss.NewStyle().Foreground(colors.Account),
+		SummaryStyle:       lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(0, 1),
+		SectionHeaderStyle: lipgloss.NewStyle().Bold(true).Foreground(colors.SectionHeader),
+	}
+}
+
 func (m *Model) SetTransactions(transactions []*lm.Transaction) {
 	m.transactions = transactions
 	m.updateSummary()
@@ -316,8 +340,15 @@ func (m *Model) SetUser(user *lm.User) {
 }
 
 func New(cfg Config) Model {
+	var styles Styles
+	if cfg.Colors != nil {
+		styles = stylesFromColors(*cfg.Colors)
+	} else {
+		styles = defaultStyles()
+	}
+
 	m := Model{
-		Styles:      defaultStyles(),
+		Styles:      styles,
 		Viewport:    viewport.New(0, 20),
 		summary:     Summary{},
 		accountTree: tree.New(),

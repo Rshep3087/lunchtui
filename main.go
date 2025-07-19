@@ -32,11 +32,15 @@ type Config struct {
 	HidePendingTransactions bool `toml:"hide_pending_transactions"`
 	// Show UserInfo shows user information in the overview
 	ShowUserInfo bool `toml:"show_user_info"`
+	// Colors contains customizable color settings
+	Colors configview.Colors `toml:"colors"`
 }
 
 type model struct {
 	// config holds the application configuration
 	config Config
+	// theme contains the color theme
+	theme Theme
 	// loadingSpinner is a spinner model for the initial loading state
 	loadingSpinner spinner.Model
 
@@ -141,11 +145,14 @@ func rootAction(_ context.Context, config Config, lmc *lm.Client) error {
 	hidePendingTransactions := config.HidePendingTransactions
 
 	tlKeyMap := newTransactionListKeyMap()
+	theme := newTheme(config.Colors)
+
 	m := model{
 		config:                  config,
+		theme:                   theme,
 		keys:                    initializeKeyMap(),
-		styles:                  createStyles(),
-		help:                    createHelpModel(),
+		styles:                  createStyles(theme),
+		help:                    createHelpModel(theme),
 		sessionState:            loading,
 		previousSessionState:    overviewState,
 		lmc:                     lmc,
@@ -159,10 +166,22 @@ func rootAction(_ context.Context, config Config, lmc *lm.Client) error {
 		overview: overview.New(
 			overview.Config{
 				ShowUserInfo: config.ShowUserInfo,
+				Colors: &overview.Colors{
+					Income:        theme.Income,
+					Expense:       theme.Expense,
+					TreeRoot:      theme.SecondaryText,
+					AssetType:     theme.Muted,
+					Account:       theme.Primary,
+					SectionHeader: theme.Text,
+				},
 			},
 		),
-		recurringExpenses: recurring.New(),
-		configView:        configview.New(),
+		recurringExpenses: recurring.New(recurring.Colors{
+			Primary: string(theme.Primary),
+		}),
+		configView: configview.New(configview.Colors{
+			Primary: string(theme.Primary),
+		}),
 		loadingState: newLoadingState(
 			"categories",
 			"transactions",
@@ -187,6 +206,7 @@ func rootAction(_ context.Context, config Config, lmc *lm.Client) error {
 		Token:                   config.Token,
 		DebitsAsNegative:        config.DebitsAsNegative,
 		HidePendingTransactions: config.HidePendingTransactions,
+		Colors:                  config.Colors,
 	}
 	m.configView.SetConfig(configData)
 
