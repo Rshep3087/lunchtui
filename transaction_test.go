@@ -90,7 +90,8 @@ func TestTransactionItemDescription(t *testing.T) {
 			category:     &lm.Category{Name: "Entertainment"},
 			plaidAccount: &lm.PlaidAccount{Name: "Credit Card"},
 			tags:         []*lm.Tag{},
-			expected:     "2023-12-03 | Entertainment | 5.99 | Credit Card | no tags | cleared | This is a very long note that should be ...",
+			expected: "2023-12-03 | Entertainment | 5.99 | Credit Card | no tags | cleared | " +
+				"This is a very long note that should be ...",
 		},
 	}
 
