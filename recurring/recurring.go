@@ -16,10 +16,6 @@ type Model struct {
 }
 
 func New(colors Colors) Model {
-	return newWithColors(colors)
-}
-
-func newWithColors(colors Colors) Model {
 	recurringExpenses := table.New(
 		table.WithColumns([]table.Column{
 			{Title: "Merchant", Width: 20},

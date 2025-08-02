@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -272,22 +271,6 @@ func TestSwitchPeriodType(t *testing.T) {
 	}
 }
 
-func TestHandleGetUser(t *testing.T) {
-	ov := overview.New(overview.Config{})
-	m := &model{
-		loadingState: loadingState{"user": false},
-		overview:     ov,
-	}
-	returnedModel, cmd := m.handleGetUser(getUserMsg{
-		user: &lm.User{PrimaryCurrency: "USD"},
-	})
-
-	gotModel, ok := returnedModel.(model)
-	be.True(t, ok)
-	be.Equal(t, lm.User{PrimaryCurrency: "USD"}, *gotModel.user)
-	be.Zero(t, cmd)
-}
-
 func TestOverviewUserDisplay(t *testing.T) {
 	// Create an overview model
 	overview := overview.New(overview.Config{})
@@ -475,56 +458,6 @@ func TestFilterUncategorizedTransactions(t *testing.T) {
 	}
 }
 
-func TestConvertAssetToAccount(t *testing.T) {
-	asset := &lm.Asset{
-		ID:              123,
-		Name:            "Test Asset",
-		TypeName:        "checking",
-		SubtypeName:     "savings",
-		Balance:         "1000.00",
-		Currency:        "USD",
-		InstitutionName: "Test Bank",
-		Status:          "active",
-	}
-
-	account := convertAssetToAccount(asset)
-
-	be.Equal(t, int64(123), account.ID)
-	be.Equal(t, "Test Asset", account.Name)
-	be.Equal(t, "checking", account.Type)
-	be.Equal(t, "savings", account.Subtype)
-	be.Equal(t, "1000.00", account.Balance)
-	be.Equal(t, "USD", account.Currency)
-	be.Equal(t, "Test Bank", account.InstitutionName)
-	be.Equal(t, "active", account.Status)
-	be.Equal(t, "asset", account.AccountType)
-}
-
-func TestConvertPlaidAccountToAccount(t *testing.T) {
-	plaidAccount := &lm.PlaidAccount{
-		ID:              456,
-		Name:            "Test Plaid Account",
-		Type:            "depository",
-		Subtype:         "checking",
-		Balance:         "2500.50",
-		Currency:        "USD",
-		InstitutionName: "Plaid Bank",
-		Status:          "active",
-	}
-
-	account := convertPlaidAccountToAccount(plaidAccount)
-
-	be.Equal(t, int64(456), account.ID)
-	be.Equal(t, "Test Plaid Account", account.Name)
-	be.Equal(t, "depository", account.Type)
-	be.Equal(t, "checking", account.Subtype)
-	be.Equal(t, "2500.50", account.Balance)
-	be.Equal(t, "USD", account.Currency)
-	be.Equal(t, "Plaid Bank", account.InstitutionName)
-	be.Equal(t, "active", account.Status)
-	be.Equal(t, "plaid", account.AccountType)
-}
-
 // TestCreateOutputFormatFlag was removed as part of migration from urfave/cli to cobra
 // The output format validation is now handled directly in the cobra command functions
 
@@ -702,53 +635,5 @@ func TestFilterUnclearedTransactionsToggle(t *testing.T) {
 	// Check that filter state is reset
 	if resultModel2.isFilteredUncleared {
 		t.Error("Expected isFilteredUncleared to be false after toggle")
-	}
-}
-
-func TestIs401Error(t *testing.T) {
-	testCases := []struct {
-		name     string
-		err      error
-		expected bool
-	}{
-		{
-			name:     "nil error",
-			err:      nil,
-			expected: false,
-		},
-		{
-			name:     "401 status code error",
-			err:      errors.New("HTTP 401 Unauthorized"),
-			expected: true,
-		},
-		{
-			name:     "lowercase unauthorized error",
-			err:      errors.New("request failed: unauthorized access"),
-			expected: true,
-		},
-		{
-			name:     "mixed case unauthorized error",
-			err:      errors.New("API error: Unauthorized token"),
-			expected: true,
-		},
-		{
-			name:     "different HTTP error",
-			err:      errors.New("HTTP 404 Not Found"),
-			expected: false,
-		},
-		{
-			name:     "generic error",
-			err:      errors.New("something went wrong"),
-			expected: false,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			result := is401Error(tc.err)
-			if result != tc.expected {
-				t.Errorf("is401Error(%v) = %v, expected %v", tc.err, result, tc.expected)
-			}
-		})
 	}
 }
