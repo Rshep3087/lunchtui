@@ -1,6 +1,6 @@
 module github.com/Rshep3087/lunchtui
 
-go 1.24.0
+go 1.24.4
 
 require (
 	github.com/Rhymond/go-money v1.0.15
