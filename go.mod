@@ -16,7 +16,7 @@ require (
 	github.com/spf13/viper v1.20.1
 	golang.org/x/net v0.42.0
 	golang.org/x/sync v0.16.0
-	golang.org/x/text v0.27.0
+	golang.org/x/text v0.28.0
 )
 
 require (
