@@ -41,17 +41,24 @@
 
 ## Installation
 
-### Option 1: Download Pre-built Binary
+### Option 1: Homebrew (macOS)
+
+```bash
+brew tap rshep3087/lunchtui
+brew install --cask lunchtui
+```
+
+### Option 2: Download Pre-built Binary
 
 Download the latest release from the [releases page](https://github.com/Rshep3087/lunchtui/releases) and extract the binary to a location in your PATH.
 
-### Option 2: Install with Go
+### Option 3: Install with Go
 
 ```bash
 go install github.com/Rshep3087/lunchtui@latest
 ```
 
-### Option 3: Build from Source
+### Option 4: Build from Source
 
 ```bash
 git clone https://github.com/Rshep3087/lunchtui.git
