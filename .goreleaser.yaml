@@ -83,3 +83,9 @@ homebrew_casks:
     
     # Binary name (matches your project name)
     binary: lunchtui
+    
+    # Handle macOS quarantine (recommended for CLI tools)
+    hooks:
+      post:
+        install: |
+          system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/lunchtui"]
