@@ -24,6 +24,7 @@ All global command-line flags can be configured in the configuration file:
 | `token` | string | Lunch Money API token | "" |
 | `debits_as_negative` | boolean | Show debits as negative numbers | `false` |
 | `hide_pending_transactions` | boolean | Hide pending transactions from all transaction lists | `false` |
+| `ai.anthropic_api_key` | string | Anthropic API key for AI-powered category recommendations | "" |
 
 ## Example Configuration File
 
@@ -40,6 +41,12 @@ token = "your-api-token-here"
 
 # Show debits as negative numbers
 debits_as_negative = false
+
+# AI configuration for category recommendations
+[ai]
+# Anthropic API key for AI-powered category recommendations
+# You can also use the ANTHROPIC_API_KEY environment variable
+anthropic_api_key = "your-anthropic-api-key-here"
 ```
 
 ## Precedence Order
@@ -60,6 +67,8 @@ This means that command-line flags will always override configuration file setti
 # Create a config file
 echo 'debug = true' > lunchtui.toml
 echo 'token = "your-token"' >> lunchtui.toml
+echo '[ai]' >> lunchtui.toml
+echo 'anthropic_api_key = "your-anthropic-key"' >> lunchtui.toml
 
 # Run lunchtui - it will automatically find and use the config
 lunchtui categories list

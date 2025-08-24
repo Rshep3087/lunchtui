@@ -30,3 +30,7 @@ run = ["go mod tidy",]
 description = 'run tests'
 depends = "tidy"
 run = ["go test -v ./... -coverprofile=coverage.out", "go tool cover -func=coverage.out"]
+
+[tasks.lint]
+description = 'Run golangci-lint with fixes and AI-friendly output'
+run = "golangci-lint run --fix --output.json.path=stdout"

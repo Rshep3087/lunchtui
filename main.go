@@ -34,6 +34,14 @@ type Config struct {
 	ShowUserInfo bool `toml:"show_user_info"`
 	// Colors contains customizable color settings
 	Colors configview.Colors `toml:"colors"`
+	// AI contains AI provider configuration
+	AI AIConfig `toml:"ai"`
+}
+
+// AIConfig holds configuration for AI providers.
+type AIConfig struct {
+	// AnthropicAPIKey is the API key for Anthropic Claude
+	AnthropicAPIKey string `toml:"anthropic_api_key"`
 }
 
 type model struct {
@@ -50,6 +58,8 @@ type model struct {
 	overview overview.Model
 	// sessionState is the current state of the session
 	sessionState sessionState
+	// aiRecommender provides AI-powered category recommendations
+	aiRecommender *AIRecommender
 	// errorMsg is the error message to display in the error state
 	errorMsg string
 	// previousSessionState is the state before the current session state
@@ -85,6 +95,10 @@ type model struct {
 	isEditingNotes bool
 
 	categoryForm *huh.Form
+	// aiRecommendation holds the current AI category recommendation
+	aiRecommendation *CategoryRecommendation
+	// isLoadingRecommendation indicates if an AI recommendation is being fetched
+	isLoadingRecommendation bool
 	// idToCategory is a map of category ID to category
 	idToCategory map[int64]*lm.Category
 	// categories is a list of categories
@@ -125,25 +139,31 @@ func (m model) Init() tea.Cmd {
 	)
 }
 
-func rootAction(_ context.Context, config Config, lmc *lm.Client) error {
-	debugEnabled := config.Debug
-	if debugEnabled {
-		f, err := tea.LogToFileWith("lunchtui.log", "lunchtui", log.Default())
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-
-		log.SetLevel(log.DebugLevel)
+func setupDebugLogging(config Config) (func(), error) {
+	if !config.Debug {
+		return func() {}, nil
 	}
+	f, err := tea.LogToFileWith("lunchtui.log", "lunchtui", log.Default())
+	if err != nil {
+		return nil, err
+	}
+	log.SetLevel(log.DebugLevel)
+	return func() { f.Close() }, nil
+}
 
-	log.Debug("config file used", "config", viper.ConfigFileUsed())
+func initializeAIRecommender(config Config) *AIRecommender {
+	if config.AI.AnthropicAPIKey == "" {
+		log.Debug("no Anthropic API key provided, AI recommender disabled")
+		return nil
+	}
+	log.Debug("initializing AI recommender with Anthropic provider", "api_key_length", len(config.AI.AnthropicAPIKey))
+	provider := NewAnthropicProvider(config.AI.AnthropicAPIKey)
+	aiRecommender := NewAIRecommender(provider)
+	log.Debug("AI recommender initialized successfully", "enabled", aiRecommender.IsEnabled())
+	return aiRecommender
+}
 
-	// Get debits-as-negative setting from config
-	debitsAsNegative := config.DebitsAsNegative
-	// Get hide-pending-transactions setting from config
-	hidePendingTransactions := config.HidePendingTransactions
-
+func createModel(config Config, lmc *lm.Client, aiRecommender *AIRecommender) model {
 	tlKeyMap := newTransactionListKeyMap()
 	theme := newTheme(config.Colors)
 
@@ -156,9 +176,10 @@ func rootAction(_ context.Context, config Config, lmc *lm.Client) error {
 		sessionState:            loading,
 		previousSessionState:    overviewState,
 		lmc:                     lmc,
+		aiRecommender:           aiRecommender,
 		transactionsListKeys:    tlKeyMap,
-		debitsAsNegative:        debitsAsNegative,
-		hidePendingTransactions: hidePendingTransactions,
+		debitsAsNegative:        config.DebitsAsNegative,
+		hidePendingTransactions: config.HidePendingTransactions,
 		currentPeriod:           time.Now(),
 		period:                  Period{},
 		periodType:              "month",
@@ -194,13 +215,10 @@ func rootAction(_ context.Context, config Config, lmc *lm.Client) error {
 	delegate := m.newItemDelegate(newDeleteKeyMap())
 	m.transactions = createTransactionList(delegate, tlKeyMap)
 	m.budgets = createBudgetList(delegate)
-
-	// Initialize text input for notes editing
 	m.notesInput = textinput.New()
 	m.notesInput.Placeholder = "Enter notes..."
 	m.notesInput.CharLimit = 500
 
-	// Initialize config view with current configuration
 	configData := configview.Config{
 		Debug:                   config.Debug,
 		Token:                   config.Token,
@@ -210,11 +228,32 @@ func rootAction(_ context.Context, config Config, lmc *lm.Client) error {
 	}
 	m.configView.SetConfig(configData)
 
-	p := tea.NewProgram(m, tea.WithAltScreen())
-	if _, err := p.Run(); err != nil {
+	return m
+}
+
+func rootAction(_ context.Context, config Config, lmc *lm.Client) error {
+	cleanup, err := setupDebugLogging(config)
+	if err != nil {
 		return err
 	}
+	defer cleanup()
 
+	log.Debug("config file used", "config", viper.ConfigFileUsed())
+	log.Debug("config loaded",
+		"debug", config.Debug,
+		"token_length", len(config.Token),
+		"anthropic_key_length", len(config.AI.AnthropicAPIKey),
+		"config_file", viper.ConfigFileUsed(),
+	)
+
+	aiRecommender := initializeAIRecommender(config)
+	m := createModel(config, lmc, aiRecommender)
+
+	p := tea.NewProgram(m, tea.WithAltScreen())
+	_, runErr := p.Run()
+	if runErr != nil {
+		return runErr
+	}
 	return nil
 }
 

@@ -42,6 +42,7 @@ func init() {
 	rootCmd.PersistentFlags().Bool("debits-as-negative", false, "show debits as negative numbers")
 	rootCmd.PersistentFlags().Bool("hide-pending-transactions", false,
 		"hide pending transactions from all transaction lists")
+	rootCmd.PersistentFlags().String("anthropic-api-key", "", "Anthropic API key for AI-powered category recommendations")
 
 	// root comand flags
 	rootCmd.Flags().BoolVar(&showUserInfo, "show-user-info", true, "show user information in the overview")
@@ -52,9 +53,11 @@ func init() {
 	_ = viper.BindPFlag("token", rootCmd.PersistentFlags().Lookup("token"))
 	_ = viper.BindPFlag("debits_as_negative", rootCmd.PersistentFlags().Lookup("debits-as-negative"))
 	_ = viper.BindPFlag("hide_pending_transactions", rootCmd.PersistentFlags().Lookup("hide-pending-transactions"))
+	_ = viper.BindPFlag("ai.anthropic_api_key", rootCmd.PersistentFlags().Lookup("anthropic-api-key"))
 
 	// Bind environment variables
 	_ = viper.BindEnv("token", "LUNCHMONEY_API_TOKEN")
+	_ = viper.BindEnv("ai.anthropic_api_key", "ANTHROPIC_API_KEY")
 
 	// Add subcommands
 	rootCmd.AddCommand(transactionCmd)
@@ -152,6 +155,9 @@ var rootCmd = &cobra.Command{
 				Background:    viper.GetString("colors.background"),
 				Text:          viper.GetString("colors.text"),
 				SecondaryText: viper.GetString("colors.secondary_text"),
+			},
+			AI: AIConfig{
+				AnthropicAPIKey: viper.GetString("ai.anthropic_api_key"),
 			},
 		}
 

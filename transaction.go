@@ -290,10 +290,20 @@ func categorizeTrans(m *model) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
+	log.Debug("categorizeTrans called", "transaction_id", t.t.ID, "payee", t.t.Payee)
+
+	// Clear previous AI recommendation state
+	m.aiRecommendation = nil
+	m.isLoadingRecommendation = false
+	m.currentTransaction = &t
+
 	m.categoryForm = m.newCategorizeTransactionForm(t)
 
 	m.previousSessionState = m.sessionState
 	m.sessionState = categorizeTransaction
+
+	log.Debug("session state changed to categorizeTransaction", "previous_state", m.previousSessionState)
+
 	return m, tea.Batch(m.categoryForm.Init(), tea.WindowSize())
 }
 
@@ -500,10 +510,19 @@ func updateDetailedTransaction(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		case "c":
+			log.Debug("detailed transaction 'c' key pressed for categorization", "transaction_id", m.currentTransaction.t.ID)
+
+			// Clear previous AI recommendation state
+			m.aiRecommendation = nil
+			m.isLoadingRecommendation = false
+
 			m.previousSessionState = m.sessionState
 			m.sessionState = categorizeTransaction
 
 			m.categoryForm = m.newCategorizeTransactionForm(*m.currentTransaction)
+
+			log.Debug("detailed transaction session state changed to categorizeTransaction")
+
 			return m, tea.Batch(m.categoryForm.Init(), tea.WindowSize())
 		}
 	}

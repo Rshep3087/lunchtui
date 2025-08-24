@@ -6,3 +6,5 @@ lunchtui.toml
 dist/
 .aider*
 .DS_Store
+coverage.out
+CLAUDE.md

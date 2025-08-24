@@ -240,6 +240,9 @@ func handleEscape(msg tea.KeyMsg, m *model) (tea.Model, tea.Cmd) {
 		m.previousSessionState = overviewState
 		m.sessionState = transactions
 		m.categoryForm.State = huh.StateAborted
+		// Clear AI recommendation state
+		m.aiRecommendation = nil
+		m.isLoadingRecommendation = false
 		return m, m.getTransactions
 	}
 
