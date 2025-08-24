@@ -25,3 +25,8 @@ run = "git tag $(svu n)"
 [tasks.tidy]
 description = 'Runs cmds to tidy up the project'
 run = ["go mod tidy",]
+
+[tasks.test]
+description = 'run tests'
+depends = "tidy"
+run = ["go test -v ./... -coverprofile=coverage.out", "go tool cover -func=coverage.out"]
