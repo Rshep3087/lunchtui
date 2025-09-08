@@ -7,7 +7,7 @@ require (
 	github.com/anthropics/anthropic-sdk-go v1.9.1
 	github.com/carlmjohnson/be v0.25.1
 	github.com/charmbracelet/bubbles v0.21.0
-	github.com/charmbracelet/bubbletea v1.3.6
+	github.com/charmbracelet/bubbletea v1.3.7
 	github.com/charmbracelet/fang v0.3.0
 	github.com/charmbracelet/huh v0.7.0
 	github.com/charmbracelet/lipgloss v1.1.0
@@ -26,7 +26,7 @@ require (
 	github.com/catppuccin/go v0.3.0 // indirect
 	github.com/charmbracelet/colorprofile v0.3.1 // indirect
 	github.com/charmbracelet/lipgloss/v2 v2.0.0-beta1 // indirect
-	github.com/charmbracelet/x/ansi v0.9.3 // indirect
+	github.com/charmbracelet/x/ansi v0.10.1 // indirect
 	github.com/charmbracelet/x/cellbuf v0.0.13 // indirect
 	github.com/charmbracelet/x/exp/charmtone v0.0.0-20250702191427-5bdfc8f2e4ff // indirect
 	github.com/charmbracelet/x/exp/strings v0.0.0-20250630141444-821143405392 // indirect
