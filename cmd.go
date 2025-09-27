@@ -64,6 +64,7 @@ func init() {
 	rootCmd.AddCommand(categoriesCmd)
 	rootCmd.AddCommand(accountsCmd)
 	rootCmd.AddCommand(userCmd)
+	rootCmd.AddCommand(networthCmd)
 }
 
 // initConfig reads in config file and ENV variables if set.
