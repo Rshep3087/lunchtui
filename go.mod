@@ -4,7 +4,7 @@ go 1.24.4
 
 require (
 	github.com/Rhymond/go-money v1.0.15
-	github.com/anthropics/anthropic-sdk-go v1.13.0
+	github.com/anthropics/anthropic-sdk-go v1.14.0
 	github.com/carlmjohnson/be v0.25.2
 	github.com/charmbracelet/bubbles v0.21.1-0.20250623103423-23b8fd6302d7
 	github.com/charmbracelet/bubbletea v1.3.6
