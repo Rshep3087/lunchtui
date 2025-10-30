@@ -6,10 +6,10 @@ require (
 	github.com/Rhymond/go-money v1.0.15
 	github.com/anthropics/anthropic-sdk-go v1.13.0
 	github.com/carlmjohnson/be v0.25.2
-	github.com/charmbracelet/bubbles v0.21.0
+	github.com/charmbracelet/bubbles v0.21.1-0.20250623103423-23b8fd6302d7
 	github.com/charmbracelet/bubbletea v1.3.6
 	github.com/charmbracelet/fang v0.4.3
-	github.com/charmbracelet/huh v0.7.0
+	github.com/charmbracelet/huh v0.8.0
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/charmbracelet/log v0.4.2
 	github.com/icco/lunchmoney v0.6.1
