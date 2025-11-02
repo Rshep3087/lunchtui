@@ -59,9 +59,7 @@ func init() {
 	_ = viper.BindEnv("token", "LUNCHMONEY_API_TOKEN")
 	_ = viper.BindEnv("ai.anthropic_api_key", "ANTHROPIC_API_KEY")
 
-	// Add subcommands
 	rootCmd.AddCommand(transactionCmd)
-	rootCmd.AddCommand(categoriesCmd)
 	rootCmd.AddCommand(accountsCmd)
 	rootCmd.AddCommand(userCmd)
 	rootCmd.AddCommand(networthCmd)
@@ -113,7 +111,7 @@ var rootCmd = &cobra.Command{
 	Use:   "lunchtui",
 	Short: "A terminal UI and CLI for Lunch Money",
 	Long:  `A comprehensive terminal-based interface and CLI for managing your Lunch Money financial data.`,
-	PersistentPreRunE: func(_ *cobra.Command, _ []string) error {
+	PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 		// Validate token
 		if viper.GetString("token") == "" {
 			return errors.New("API token is required (set via --token flag, " +
@@ -133,6 +131,8 @@ var rootCmd = &cobra.Command{
 		if viper.GetBool("debug") {
 			log.SetLevel(log.DebugLevel)
 		}
+
+		cmd.Root().AddCommand(newCategoriesCmd(lmc))
 
 		return nil
 	},
