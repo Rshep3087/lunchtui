@@ -12,31 +12,40 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// categoriesCmd represents the categories command.
-var categoriesCmd = &cobra.Command{
-	Use:   "categories",
-	Short: "Category management commands",
-	Long:  `Commands for managing categories in Lunch Money.`,
+// categoriesGetter defines the interface for fetching categories.
+type categoriesGetter interface {
+	GetCategories(ctx context.Context) ([]*lm.Category, error)
 }
 
-// categoriesListCmd represents the categories list command.
-var categoriesListCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List all categories",
-	Long:  `List all categories with their IDs and details.`,
-	RunE:  categoriesListRun,
+// categoriesListCommand encapsulates the dependencies for the categories list command.
+type categoriesListCommand struct {
+	client categoriesGetter
 }
 
-func init() {
-	// Add categories list subcommand
-	categoriesCmd.AddCommand(categoriesListCmd)
+// newCategoriesCmd creates a new categories command with the provided client.
+func newCategoriesCmd(client categoriesGetter) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "categories",
+		Short: "Category management commands",
+		Long:  `Commands for managing categories in Lunch Money.`,
+	}
 
-	// Categories list flags
+	listCmd := categoriesListCommand{client: client}
+	categoriesListCmd := &cobra.Command{
+		Use:   "list",
+		Short: "List all categories",
+		Long:  `List all categories with their IDs and details.`,
+		RunE:  listCmd.run,
+	}
 	categoriesListCmd.Flags().StringP("output", "o", tableOutputFormat, "Output format: table or json")
+
+	cmd.AddCommand(categoriesListCmd)
+	return cmd
 }
 
-func categoriesListRun(cmd *cobra.Command, _ []string) error {
-	ctx := context.Background()
+// run executes the categories list command.
+func (c *categoriesListCommand) run(cmd *cobra.Command, _ []string) error {
+	ctx := cmd.Context()
 
 	// Get output format
 	outputFormat, _ := cmd.Flags().GetString("output")
@@ -48,7 +57,7 @@ func categoriesListRun(cmd *cobra.Command, _ []string) error {
 	}
 
 	// Fetch categories
-	categories, err := lmc.GetCategories(ctx)
+	categories, err := c.client.GetCategories(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to fetch categories: %w", err)
 	}
