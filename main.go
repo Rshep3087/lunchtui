@@ -131,7 +131,7 @@ type model struct {
 
 func (m model) Init() tea.Cmd {
 	return tea.Batch(
-		m.categoryService.GetCategories,
+		m.categoryService.GetCategoriesCmd,
 		m.getUser,
 		m.getAccounts,
 		m.loadingSpinner.Tick,

@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	lm "github.com/icco/lunchmoney"
+
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -17,11 +19,17 @@ func NewCategoryService(categoryGetter categoriesGetter) *CategoryService {
 	}
 }
 
-func (cs *CategoryService) GetCategories() tea.Msg {
+// GetCategories fetches categories with the provided context.
+func (cs *CategoryService) GetCategories(ctx context.Context) ([]*lm.Category, error) {
+	return cs.categoryGetter.GetCategories(ctx)
+}
+
+// GetCategoriesCmd fetches categories asynchronously for TUI use.
+func (cs *CategoryService) GetCategoriesCmd() tea.Msg {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	ca, err := cs.categoryGetter.GetCategories(ctx)
+	ca, err := cs.GetCategories(ctx)
 	if err != nil {
 		if is401Error(err) {
 			return handleAuthError(err)

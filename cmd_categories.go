@@ -19,18 +19,18 @@ type categoriesGetter interface {
 
 // categoriesListCommand encapsulates the dependencies for the categories list command.
 type categoriesListCommand struct {
-	client categoriesGetter
+	getter categoriesGetter
 }
 
-// newCategoriesCmd creates a new categories command with the provided client.
-func newCategoriesCmd(client categoriesGetter) *cobra.Command {
+// newCategoriesCmd creates a new categories command with the provided categoriesGetter.
+func newCategoriesCmd(getter categoriesGetter) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "categories",
 		Short: "Category management commands",
 		Long:  `Commands for managing categories in Lunch Money.`,
 	}
 
-	listCmd := categoriesListCommand{client: client}
+	listCmd := categoriesListCommand{getter: getter}
 	categoriesListCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all categories",
@@ -57,7 +57,7 @@ func (c *categoriesListCommand) run(cmd *cobra.Command, _ []string) error {
 	}
 
 	// Fetch categories
-	categories, err := c.client.GetCategories(ctx)
+	categories, err := c.getter.GetCategories(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to fetch categories: %w", err)
 	}

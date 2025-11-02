@@ -132,7 +132,8 @@ var rootCmd = &cobra.Command{
 			log.SetLevel(log.DebugLevel)
 		}
 
-		cmd.Root().AddCommand(newCategoriesCmd(lmc))
+		categoryService := NewCategoryService(lmc)
+		cmd.Root().AddCommand(newCategoriesCmd(categoryService))
 
 		return nil
 	},
