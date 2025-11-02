@@ -122,6 +122,8 @@ type model struct {
 	configView configview.Model
 	// lmc is the Lunch Money client
 	lmc *lm.Client
+	// categoryService handles category data operations
+	categoryService *CategoryService
 
 	loadingState loadingState
 	styles       styles
@@ -129,7 +131,7 @@ type model struct {
 
 func (m model) Init() tea.Cmd {
 	return tea.Batch(
-		m.getCategories,
+		m.categoryService.GetCategories,
 		m.getUser,
 		m.getAccounts,
 		m.loadingSpinner.Tick,
@@ -163,7 +165,12 @@ func initializeAIRecommender(config Config) *AIRecommender {
 	return aiRecommender
 }
 
-func createModel(config Config, lmc *lm.Client, aiRecommender *AIRecommender) model {
+func createModel(
+	config Config,
+	lmc *lm.Client,
+	aiRecommender *AIRecommender,
+	categoryService *CategoryService,
+) model {
 	tlKeyMap := newTransactionListKeyMap()
 	theme := newTheme(config.Colors)
 
@@ -176,6 +183,7 @@ func createModel(config Config, lmc *lm.Client, aiRecommender *AIRecommender) mo
 		sessionState:            loading,
 		previousSessionState:    overviewState,
 		lmc:                     lmc,
+		categoryService:         categoryService,
 		aiRecommender:           aiRecommender,
 		transactionsListKeys:    tlKeyMap,
 		debitsAsNegative:        config.DebitsAsNegative,
@@ -247,7 +255,8 @@ func rootAction(_ context.Context, config Config, lmc *lm.Client) error {
 	)
 
 	aiRecommender := initializeAIRecommender(config)
-	m := createModel(config, lmc, aiRecommender)
+	dataService := NewCategoryService(lmc)
+	m := createModel(config, lmc, aiRecommender, dataService)
 
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	_, runErr := p.Run()

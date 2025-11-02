@@ -285,19 +285,6 @@ func (m model) getAccounts() tea.Msg {
 	return getAccountsMsg{plaidAccounts: plaidAccounts, assets: assets}
 }
 
-func (m model) getCategories() tea.Msg {
-	ctx := context.Background()
-
-	cs, err := m.lmc.GetCategories(ctx)
-	if err != nil {
-		if is401Error(err) {
-			return handleAuthError(err)
-		}
-		return nil
-	}
-
-	return getCategoriesMsg{categories: cs}
-}
 
 func (m model) getTransactions() tea.Msg {
 	ctx := context.Background()
