@@ -285,7 +285,6 @@ func (m model) getAccounts() tea.Msg {
 	return getAccountsMsg{plaidAccounts: plaidAccounts, assets: assets}
 }
 
-
 func (m model) getTransactions() tea.Msg {
 	ctx := context.Background()
 
