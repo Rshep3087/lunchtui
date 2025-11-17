@@ -16,8 +16,8 @@ require (
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/viper v1.21.0
 	golang.org/x/net v0.46.0
-	golang.org/x/sync v0.17.0
-	golang.org/x/text v0.30.0
+	golang.org/x/sync v0.18.0
+	golang.org/x/text v0.31.0
 )
 
 require (
