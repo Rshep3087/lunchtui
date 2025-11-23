@@ -6,6 +6,10 @@ goreleaser = 'latest'
 [env]
 '_'.file = '.env'
 
+[tasks.build]
+run = "go build -o lunchtui"
+description = "Build the application binary"
+
 [tasks.run_dev]
 run = ["go install", "lunchtui"]
 description = "Run the application"
