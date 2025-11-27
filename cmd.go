@@ -79,8 +79,11 @@ func initConfig() {
 		}
 
 		// Search config in multiple locations (in order of precedence)
-		// Current directory (highest precedence)
-		viper.AddConfigPath(".")
+		// Current directory (highest precedence) - only add if lunchtui.toml exists
+		// to avoid viper trying to read the binary file ./lunchtui
+		if _, err := os.Stat("lunchtui.toml"); err == nil {
+			viper.AddConfigPath(".")
+		}
 		viper.SetConfigName("lunchtui")
 		viper.SetConfigType("toml")
 
