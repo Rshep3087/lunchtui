@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -142,8 +143,10 @@ func formatTransactionForAI(transaction *lm.Transaction) string {
 func formatCategoriesForAI(categories []*lm.Category) string {
 	var result string
 	result += "Available Categories:\n"
+	var resultSb145 strings.Builder
 	for _, cat := range categories {
-		result += fmt.Sprintf("- ID: %d, Name: %s\n", cat.ID, cat.Name)
+		fmt.Fprintf(&resultSb145, "- ID: %d, Name: %s\n", cat.ID, cat.Name)
 	}
+	result += resultSb145.String()
 	return result
 }
