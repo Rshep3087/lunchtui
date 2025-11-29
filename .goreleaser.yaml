@@ -24,7 +24,7 @@ builds:
       - darwin
 
 archives:
-  - formats: [ 'tar.gz' ]
+  - formats: ["tar.gz"]
     # this name template makes the OS and Arch compatible with the results of `uname`.
     name_template: >-
       {{ .ProjectName }}_
@@ -36,7 +36,7 @@ archives:
     # use zip for windows archives
     format_overrides:
       - goos: windows
-        formats: [ 'zip' ]
+        formats: ["zip"]
 
 changelog:
   sort: asc
@@ -54,36 +54,36 @@ release:
 
 homebrew_casks:
   - name: lunchtui
-    
+
     # Your app's homepage
     homepage: "https://github.com/Rshep3087/lunchtui"
-    
+
     # Your app's description
     description: "A beautiful command-line interface for your Lunch Money account"
-    
+
     # Repository to push the generated files to
     repository:
       owner: Rshep3087
       name: homebrew-lunchtui
       branch: main
-      
+
     # Git author used to commit to the repository
     commit_author:
       name: Ryan Sheppard
       email: rshep3087@gmail.com
-      
+
     # Commit message template
     commit_msg_template: "Brew cask update for {{ .ProjectName }} version {{ .Tag }}"
-    
+
     # Directory inside the repository to put the cask
     directory: Casks
-    
+
     # Skip upload in case of prerelease
     skip_upload: auto
-    
+
     # Binary name (matches your project name)
-    binary: lunchtui
-    
+    binaries: [lunchtui]
+
     # Handle macOS quarantine (recommended for CLI tools)
     hooks:
       post:
