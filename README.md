@@ -218,11 +218,30 @@ You can also specify a custom config file with `--config path/to/config.toml`.
 4. Set the token via configuration file or environment variable:
 
 ```bash
-# Option 1: Environment variable
+# Option 1: Configuration file
+echo 'token = "your-api-token-here"' > lunchtui.toml
+
+# Option 2: Environment variable - will override setting in lunchtui.toml
 export LUNCHMONEY_API_TOKEN="your-api-token-here"
 
-# Option 2: Configuration file
-echo 'token = "your-api-token-here"' > lunchtui.toml
+# Option 3: Command-line flag - will override config file and env var settings
+lunchtui --token="your-api-token-here" user
+```
+
+
+### API Base URL Configuration (Optional)
+
+By default, lunchtui uses the Lunch Money API endpoint configured in the library. If you need to use a different API endpoint (e.g., for testing or custom deployments), you can configure it:
+
+```bash
+# Option 1: Configuration file
+echo 'api_base_url = "https://api.lunchmoney.dev"' >> lunchtui.toml
+
+# Option 2: Environment variable - will override the setting in lunchtui.toml
+export LUNCHMONEY_API_BASE_URL="https://api.lunchmoney.dev"
+
+# Option 3: Command-line flag - will override config file and env var settings
+lunchtui --api-base-url="https://api.lunchmoney.dev" user
 ```
 
 ## Screenshots

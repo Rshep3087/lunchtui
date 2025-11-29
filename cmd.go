@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 
@@ -43,6 +44,7 @@ func init() {
 	rootCmd.PersistentFlags().Bool("hide-pending-transactions", false,
 		"hide pending transactions from all transaction lists")
 	rootCmd.PersistentFlags().String("anthropic-api-key", "", "Anthropic API key for AI-powered category recommendations")
+	rootCmd.PersistentFlags().String("api-base-url", "", "the base URL for the Lunch Money API (defaults to library default)")
 
 	// root comand flags
 	rootCmd.Flags().BoolVar(&showUserInfo, "show-user-info", true, "show user information in the overview")
@@ -54,10 +56,12 @@ func init() {
 	_ = viper.BindPFlag("debits_as_negative", rootCmd.PersistentFlags().Lookup("debits-as-negative"))
 	_ = viper.BindPFlag("hide_pending_transactions", rootCmd.PersistentFlags().Lookup("hide-pending-transactions"))
 	_ = viper.BindPFlag("ai.anthropic_api_key", rootCmd.PersistentFlags().Lookup("anthropic-api-key"))
+	_ = viper.BindPFlag("api_base_url", rootCmd.PersistentFlags().Lookup("api-base-url"))
 
 	// Bind environment variables
 	_ = viper.BindEnv("token", "LUNCHMONEY_API_TOKEN")
 	_ = viper.BindEnv("ai.anthropic_api_key", "ANTHROPIC_API_KEY")
+	_ = viper.BindEnv("api_base_url", "LUNCHMONEY_API_BASE_URL")
 
 	rootCmd.AddCommand(transactionCmd)
 	rootCmd.AddCommand(accountsCmd)
@@ -79,8 +83,11 @@ func initConfig() {
 		}
 
 		// Search config in multiple locations (in order of precedence)
-		// Current directory (highest precedence)
-		viper.AddConfigPath(".")
+		// Current directory (highest precedence) - only add if lunchtui.toml exists
+		// to avoid viper trying to read the binary file ./lunchtui
+		if _, err := os.Stat("lunchtui.toml"); err == nil {
+			viper.AddConfigPath(".")
+		}
 		viper.SetConfigName("lunchtui")
 		viper.SetConfigType("toml")
 
@@ -123,6 +130,19 @@ var rootCmd = &cobra.Command{
 		lmc, err = lm.NewClient(viper.GetString("token"))
 		if err != nil {
 			return fmt.Errorf("failed to create Lunch Money client: %w", err)
+		}
+
+		// Set base URL if configured
+		baseURL := viper.GetString("api_base_url")
+		if baseURL != "" {
+			parsedURL, err := url.Parse(baseURL)
+			if err != nil {
+				return fmt.Errorf("invalid api_base_url: %w", err)
+			}
+			lmc.Base = parsedURL
+			if viper.GetBool("debug") {
+				log.Debug("Set API base URL", "url", baseURL)
+			}
 		}
 
 		loggingTransport := newLoggingTransport(lmc.HTTP.Transport, log.Default())

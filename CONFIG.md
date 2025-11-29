@@ -22,6 +22,7 @@ All global command-line flags can be configured in the configuration file:
 |------------------|------|-------------|--------|
 | `debug` | boolean | Enable debug logging | `false` |
 | `token` | string | Lunch Money API token | "" |
+| `api_base_url` | string | Base URL for the Lunch Money API | "" (uses library default) |
 | `debits_as_negative` | boolean | Show debits as negative numbers | `false` |
 | `hide_pending_transactions` | boolean | Hide pending transactions from all transaction lists | `false` |
 | `ai.anthropic_api_key` | string | Anthropic API key for AI-powered category recommendations | "" |
@@ -38,6 +39,11 @@ debug = true
 # Lunch Money API token
 # You can also use the LUNCHMONEY_API_TOKEN environment variable
 token = "your-api-token-here"
+
+# Lunch Money API base URL (optional)
+# You can also use the LUNCHMONEY_API_BASE_URL environment variable
+# If not set, uses the library's default (typically https://dev.lunchmoney.app)
+# api_base_url = "https://api.lunchmoney.dev"
 
 # Show debits as negative numbers
 debits_as_negative = false
@@ -67,6 +73,7 @@ This means that command-line flags will always override configuration file setti
 # Create a config file
 echo 'debug = true' > lunchtui.toml
 echo 'token = "your-token"' >> lunchtui.toml
+echo 'api_base_url = "https://api.lunchmoney.dev"' >> lunchtui.toml
 echo '[ai]' >> lunchtui.toml
 echo 'anthropic_api_key = "your-anthropic-key"' >> lunchtui.toml
 
