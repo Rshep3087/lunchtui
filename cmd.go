@@ -44,7 +44,8 @@ func init() {
 	rootCmd.PersistentFlags().Bool("hide-pending-transactions", false,
 		"hide pending transactions from all transaction lists")
 	rootCmd.PersistentFlags().String("anthropic-api-key", "", "Anthropic API key for AI-powered category recommendations")
-	rootCmd.PersistentFlags().String("api-base-url", "", "the base URL for the Lunch Money API (defaults to library default)")
+	rootCmd.PersistentFlags().String("api-base-url", "",
+		"the base URL for the Lunch Money API (defaults to library default)")
 
 	// root comand flags
 	rootCmd.Flags().BoolVar(&showUserInfo, "show-user-info", true, "show user information in the overview")
@@ -85,7 +86,7 @@ func initConfig() {
 		// Search config in multiple locations (in order of precedence)
 		// Current directory (highest precedence) - only add if lunchtui.toml exists
 		// to avoid viper trying to read the binary file ./lunchtui
-		if _, err := os.Stat("lunchtui.toml"); err == nil {
+		if _, err = os.Stat("lunchtui.toml"); err == nil {
 			viper.AddConfigPath(".")
 		}
 		viper.SetConfigName("lunchtui")
@@ -135,7 +136,8 @@ var rootCmd = &cobra.Command{
 		// Set base URL if configured
 		baseURL := viper.GetString("api_base_url")
 		if baseURL != "" {
-			parsedURL, err := url.Parse(baseURL)
+			var parsedURL *url.URL
+			parsedURL, err = url.Parse(baseURL)
 			if err != nil {
 				return fmt.Errorf("invalid api_base_url: %w", err)
 			}
