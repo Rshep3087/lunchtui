@@ -12,6 +12,13 @@ on:
   schedule:
     - cron: '30 1 * * 0'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  MISE_EXPERIMENTAL: true
+
 jobs:
   analyze:
     name: Analyze
@@ -36,10 +43,8 @@ jobs:
         languages: ${{ matrix.language }}
         queries: +security-and-quality
 
-    - name: Set up Go
-      uses: actions/setup-go@v6
-      with:
-        go-version: '1.25'
+    - name: Set up mise
+      uses: jdx/mise-action@v2
 
     - name: Autobuild
       uses: github/codeql-action/autobuild@v4
