@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -55,7 +54,7 @@ func init() {
 }
 
 func transactionInsertRun(cmd *cobra.Command, _ []string) error {
-	ctx := context.Background()
+	ctx := cmd.Context()
 
 	// Get flag values
 	payee, _ := cmd.Flags().GetString("payee")
