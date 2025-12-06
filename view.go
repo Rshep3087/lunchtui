@@ -44,11 +44,6 @@ func (m model) View() string {
 func (m model) renderTitle() string {
 	var b strings.Builder
 
-	if m.period.String() == "" {
-		b.WriteString(m.styles.titleStyle.Render(fmt.Sprintf("lunchtui | %s", m.sessionState.String())))
-		return b.String()
-	}
-
 	title := []string{
 		m.sessionState.String(),
 		m.period.String(),

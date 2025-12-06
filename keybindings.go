@@ -155,10 +155,6 @@ func isInputBlocked(m *model) bool {
 		return true
 	}
 
-	if m.insertTransactionForm != nil && m.insertTransactionForm.State == huh.StateNormal {
-		return true
-	}
-
 	if m.sessionState == loading {
 		return true
 	}

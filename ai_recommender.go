@@ -141,12 +141,10 @@ func formatTransactionForAI(transaction *lm.Transaction) string {
 
 // formatCategoriesForAI formats available categories for AI analysis.
 func formatCategoriesForAI(categories []*lm.Category) string {
-	var result string
-	result += "Available Categories:\n"
-	var resultSb145 strings.Builder
+	var sb strings.Builder
+	sb.WriteString("Available Categories:\n")
 	for _, cat := range categories {
-		fmt.Fprintf(&resultSb145, "- ID: %d, Name: %s\n", cat.ID, cat.Name)
+		fmt.Fprintf(&sb, "- ID: %d, Name: %s\n", cat.ID, cat.Name)
 	}
-	result += resultSb145.String()
-	return result
+	return sb.String()
 }
