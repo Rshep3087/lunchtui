@@ -35,7 +35,7 @@ var (
 	// local variables for root command.
 	showUserInfo bool
 
-	// titleCaser is shared across CLI commands for consistent title casing
+	// titleCaser is shared across CLI commands for consistent title casing.
 	titleCaser = cases.Title(language.English)
 )
 
