@@ -1,8 +1,6 @@
 package main
 
 import (
-	"html"
-
 	"github.com/Rhymond/go-money"
 )
 
@@ -112,13 +110,10 @@ func (nw *NetWorthData) ToJSON() *NetWorthJSONSummary {
 
 // GetDisplayName returns the display name if available, otherwise the regular name.
 func (a *AccountSummary) GetDisplayName() string {
-	if a.DisplayName != "" {
-		return html.UnescapeString(a.DisplayName)
-	}
-	return html.UnescapeString(a.Name)
+	return unescapeDisplayName(a.Name, a.DisplayName)
 }
 
 // IsLiability determines if this account is a liability based on type and subtype.
 func (a *AccountSummary) IsLiability() bool {
-	return a.Type == "credit" && a.Subtype == "credit card"
+	return a.Type == creditType && a.Subtype == creditCardSubtype
 }

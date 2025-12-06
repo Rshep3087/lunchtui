@@ -6,6 +6,19 @@ const (
 	annualPeriodType  = "year"
 )
 
+// Transaction status constants.
+const (
+	unclearedStatus = "uncleared"
+	clearedStatus   = "cleared"
+	pendingStatus   = "pending"
+)
+
+// Credit account type constants.
+const (
+	creditType        = "credit"
+	creditCardSubtype = "credit card"
+)
+
 // Session states.
 type sessionState int
 

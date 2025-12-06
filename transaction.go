@@ -258,7 +258,7 @@ func (m model) generateCategoryOptions() []huh.Option[int64] {
 func (m model) generateTagOptions() []huh.Option[int] {
 	tagOpts := make([]huh.Option[int], 0, len(m.tags))
 	for _, tag := range m.tags {
-		tagOpts = append(tagOpts, huh.NewOption(html.UnescapeString(tag.Name), tag.ID))
+		tagOpts = append(tagOpts, huh.NewOption(unescapeDisplayName(tag.Name, ""), tag.ID))
 	}
 	return tagOpts
 }
@@ -267,19 +267,27 @@ func (m model) generateAccountOptions() []huh.Option[accountOpt] {
 	accountOpts := make([]huh.Option[accountOpt], 0, len(m.plaidAccounts)+len(m.assets)+1)
 	accountOpts = append(accountOpts, huh.NewOption("Cash", accountOpt{}))
 	for _, account := range m.plaidAccounts {
-		accountOpts = append(accountOpts, huh.NewOption(html.UnescapeString(account.DisplayName), accountOpt{
+		accountOpts = append(accountOpts, huh.NewOption(unescapeDisplayName(account.Name, account.DisplayName), accountOpt{
 			ID:   account.ID,
 			Type: "plaid",
 		}))
 	}
 
 	for _, asset := range m.assets {
-		accountOpts = append(accountOpts, huh.NewOption(html.UnescapeString(asset.Name), accountOpt{
+		accountOpts = append(accountOpts, huh.NewOption(unescapeDisplayName(asset.Name, ""), accountOpt{
 			ID:   asset.ID,
 			Type: "asset",
 		}))
 	}
 	return accountOpts
+}
+
+// unescapeDisplayName returns the unescaped display name, falling back to name if display name is empty.
+func unescapeDisplayName(name, displayName string) string {
+	if displayName != "" {
+		return html.UnescapeString(displayName)
+	}
+	return html.UnescapeString(name)
 }
 
 func categorizeTrans(m *model) (tea.Model, tea.Cmd) {

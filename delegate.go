@@ -7,10 +7,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-const unclearedStatus = "uncleared"
-const clearedStatus string = "cleared"
-const pendingStatus = "pending"
-
 func (m model) newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 	d := list.NewDefaultDelegate()
 	d.Styles.SelectedTitle = lipgloss.NewStyle().

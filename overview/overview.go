@@ -627,9 +627,11 @@ func (m *Model) updateAccountTree() {
 		}
 
 		// Use the display name if available, otherwise use the account name
-		name := a.Name
+		var name string
 		if a.DisplayName != "" {
 			name = html.UnescapeString(a.DisplayName)
+		} else {
+			name = html.UnescapeString(a.Name)
 		}
 
 		item := accountItem{
@@ -648,10 +650,11 @@ func (m *Model) updateAccountTree() {
 			continue
 		}
 
-		name := a.Name
+		var name string
 		if a.DisplayName != "" {
-			// url decodes the display name
 			name = html.UnescapeString(a.DisplayName)
+		} else {
+			name = html.UnescapeString(a.Name)
 		}
 		item := accountItem{
 			name:    name,

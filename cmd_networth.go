@@ -3,19 +3,11 @@ package main
 import (
 	"errors"
 	"fmt"
-	"slices"
 	"sort"
 
 	"github.com/Rhymond/go-money"
 	lm "github.com/icco/lunchmoney"
 	"github.com/spf13/cobra"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
-)
-
-const (
-	creditType        = "credit"
-	creditCardSubtype = "credit card"
 )
 
 // networthCmd represents the networth command.
@@ -30,17 +22,7 @@ var networthGetCmd = &cobra.Command{
 	Use:   "get",
 	Short: "Calculate and display current net worth",
 	Long:  `Calculate current net worth by fetching all assets and liabilities from Lunch Money.`,
-	PreRunE: func(cmd *cobra.Command, _ []string) error {
-		// Validate output format
-		outputFormat, _ := cmd.Flags().GetString("output")
-		validFormats := []string{tableOutputFormat, jsonOutputFormat}
-		if !slices.Contains(validFormats, outputFormat) {
-			return fmt.Errorf("invalid output format: %s (must be one of %v)", outputFormat, validFormats)
-		}
-
-		return nil
-	},
-	RunE: networthGetRun,
+	RunE:  networthGetRun,
 }
 
 func init() {
@@ -55,7 +37,11 @@ func init() {
 func networthGetRun(cmd *cobra.Command, _ []string) error {
 	ctx := cmd.Context()
 
-	outputFormat, _ := cmd.Flags().GetString("output")
+	// Get and validate output format
+	outputFormat, err := validateOutputFormat(cmd)
+	if err != nil {
+		return err
+	}
 	showBreakdown, _ := cmd.Flags().GetBool("breakdown")
 
 	// Fetch user info to get primary currency
@@ -69,41 +55,10 @@ func networthGetRun(cmd *cobra.Command, _ []string) error {
 		currency = "USD"
 	}
 
-	// Parallel fetch of assets and plaid accounts
-	assetsChan := make(chan []*lm.Asset, 1)
-	plaidAccountsChan := make(chan []*lm.PlaidAccount, 1)
-	errorChan := make(chan error, 2)
-
-	// Fetch assets
-	go func() {
-		assets, assetsError := lmc.GetAssets(ctx)
-		if assetsError != nil {
-			errorChan <- fmt.Errorf("failed to fetch assets: %w", assetsError)
-			return
-		}
-		assetsChan <- assets
-	}()
-
-	// Fetch plaid accounts
-	go func() {
-		plaidAccounts, plaidAccountsErr := lmc.GetPlaidAccounts(ctx)
-		if plaidAccountsErr != nil {
-			errorChan <- fmt.Errorf("failed to fetch plaid accounts: %w", plaidAccountsErr)
-			return
-		}
-		plaidAccountsChan <- plaidAccounts
-	}()
-
-	// Collect results
-	var assets []*lm.Asset
-	var plaidAccounts []*lm.PlaidAccount
-	for range 2 {
-		select {
-		case assets = <-assetsChan:
-		case plaidAccounts = <-plaidAccountsChan:
-		case fetchError := <-errorChan:
-			return fetchError
-		}
+	// Fetch assets and plaid accounts in parallel
+	assets, plaidAccounts, err := fetchAssetsAndPlaidAccountsParallel(ctx)
+	if err != nil {
+		return err
 	}
 
 	// Calculate net worth using shared logic and types
@@ -260,11 +215,10 @@ func addPlaidAccountToBreakdown(
 }
 
 func formatAccountCategory(accountType, subtype string) string {
-	caser := cases.Title(language.English)
 	if subtype != "" && subtype != accountType {
-		return caser.String(subtype)
+		return titleCaser.String(subtype)
 	}
-	return caser.String(accountType)
+	return titleCaser.String(accountType)
 }
 
 func sortNetWorthBreakdown(breakdown *NetWorthBreakdown) {
