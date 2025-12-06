@@ -458,9 +458,6 @@ func TestFilterUncategorizedTransactions(t *testing.T) {
 	}
 }
 
-// TestCreateOutputFormatFlag was removed as part of migration from urfave/cli to cobra
-// The output format validation is now handled directly in the cobra command functions
-
 // TestNotesEditing tests the notes editing functionality.
 func TestNotesEditing(t *testing.T) {
 	// Create a test model with a current transaction

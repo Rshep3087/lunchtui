@@ -1,10 +1,8 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"sort"
 	"strconv"
 
@@ -79,51 +77,18 @@ func init() {
 }
 
 func accountsListRun(cmd *cobra.Command, _ []string) error {
-	ctx := context.Background()
+	ctx := cmd.Context()
 
-	// Get output format
-	outputFormat, _ := cmd.Flags().GetString("output")
-
-	// Validate output format
-	validFormats := []string{tableOutputFormat, jsonOutputFormat}
-	if !slices.Contains(validFormats, outputFormat) {
-		return fmt.Errorf("invalid output format: %s (must be one of %v)", outputFormat, validFormats)
+	// Get and validate output format
+	outputFormat, err := validateOutputFormat(cmd)
+	if err != nil {
+		return err
 	}
 
-	assetsChan := make(chan []*lm.Asset, 1)
-	plaidAccountsChan := make(chan []*lm.PlaidAccount, 1)
-	errorChan := make(chan error, 2)
-
-	// Fetch assets
-	go func() {
-		assets, assetsError := lmc.GetAssets(ctx)
-		if assetsError != nil {
-			errorChan <- fmt.Errorf("failed to fetch assets: %w", assetsError)
-			return
-		}
-		assetsChan <- assets
-	}()
-
-	// Fetch plaid accounts
-	go func() {
-		plaidAccounts, plaidAccountsErr := lmc.GetPlaidAccounts(ctx)
-		if plaidAccountsErr != nil {
-			errorChan <- fmt.Errorf("failed to fetch plaid accounts: %w", plaidAccountsErr)
-			return
-		}
-		plaidAccountsChan <- plaidAccounts
-	}()
-
-	// Collect results
-	var assets []*lm.Asset
-	var plaidAccounts []*lm.PlaidAccount
-	for range 2 {
-		select {
-		case assets = <-assetsChan:
-		case plaidAccounts = <-plaidAccountsChan:
-		case fetchError := <-errorChan:
-			return fetchError
-		}
+	// Fetch assets and plaid accounts in parallel
+	assets, plaidAccounts, err := fetchAssetsAndPlaidAccountsParallel(ctx)
+	if err != nil {
+		return err
 	}
 
 	// Convert to unified Account structure

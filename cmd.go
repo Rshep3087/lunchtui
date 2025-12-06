@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/Rshep3087/lunchtui/config"
 	"github.com/charmbracelet/fang"
@@ -17,6 +18,8 @@ import (
 	lm "github.com/icco/lunchmoney"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 const (
@@ -31,6 +34,9 @@ var (
 
 	// local variables for root command.
 	showUserInfo bool
+
+	// titleCaser is shared across CLI commands for consistent title casing.
+	titleCaser = cases.Title(language.English)
 )
 
 func init() {
@@ -233,4 +239,56 @@ func createStyledTable(headers ...string) *table.Table {
 			}
 		}).
 		Headers(headers...)
+}
+
+// validateOutputFormat validates the output format flag value.
+func validateOutputFormat(cmd *cobra.Command) (string, error) {
+	outputFormat, _ := cmd.Flags().GetString("output")
+	validFormats := []string{tableOutputFormat, jsonOutputFormat}
+	if !slices.Contains(validFormats, outputFormat) {
+		return "", fmt.Errorf("invalid output format: %s (must be one of %v)", outputFormat, validFormats)
+	}
+	return outputFormat, nil
+}
+
+// fetchAssetsAndPlaidAccountsParallel fetches assets and plaid accounts in parallel.
+// Returns assets, plaid accounts, and any error encountered.
+func fetchAssetsAndPlaidAccountsParallel(ctx context.Context) ([]*lm.Asset, []*lm.PlaidAccount, error) {
+	assetsChan := make(chan []*lm.Asset, 1)
+	plaidAccountsChan := make(chan []*lm.PlaidAccount, 1)
+	errorChan := make(chan error, 2)
+
+	// Fetch assets
+	go func() {
+		assets, assetsError := lmc.GetAssets(ctx)
+		if assetsError != nil {
+			errorChan <- fmt.Errorf("failed to fetch assets: %w", assetsError)
+			return
+		}
+		assetsChan <- assets
+	}()
+
+	// Fetch plaid accounts
+	go func() {
+		plaidAccounts, plaidAccountsErr := lmc.GetPlaidAccounts(ctx)
+		if plaidAccountsErr != nil {
+			errorChan <- fmt.Errorf("failed to fetch plaid accounts: %w", plaidAccountsErr)
+			return
+		}
+		plaidAccountsChan <- plaidAccounts
+	}()
+
+	// Collect results
+	var assets []*lm.Asset
+	var plaidAccounts []*lm.PlaidAccount
+	for range 2 {
+		select {
+		case assets = <-assetsChan:
+		case plaidAccounts = <-plaidAccountsChan:
+		case fetchError := <-errorChan:
+			return nil, nil, fetchError
+		}
+	}
+
+	return assets, plaidAccounts, nil
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"sort"
 	"strconv"
 
@@ -47,13 +46,10 @@ func newCategoriesCmd(getter categoriesGetter) *cobra.Command {
 func (c *categoriesListCommand) run(cmd *cobra.Command, _ []string) error {
 	ctx := cmd.Context()
 
-	// Get output format
-	outputFormat, _ := cmd.Flags().GetString("output")
-
-	// Validate output format
-	validFormats := []string{tableOutputFormat, jsonOutputFormat}
-	if !slices.Contains(validFormats, outputFormat) {
-		return fmt.Errorf("invalid output format: %s (must be one of %v)", outputFormat, validFormats)
+	// Get and validate output format
+	outputFormat, err := validateOutputFormat(cmd)
+	if err != nil {
+		return err
 	}
 
 	// Fetch categories
