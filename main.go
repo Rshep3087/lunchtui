@@ -151,8 +151,8 @@ func setupDebugLogging(config Config) (func(), error) {
 	}
 	log.SetLevel(log.DebugLevel)
 	return func() {
-		if err := f.Close(); err != nil {
-			log.Error("failed to close log file", "error", err)
+		if closeErr := f.Close(); closeErr != nil {
+			log.Error("failed to close log file", "error", closeErr)
 		}
 	}, nil
 }
@@ -278,7 +278,7 @@ func createTransactionList(delegate list.DefaultDelegate, tlKeyMap *transactionL
 	transactionList := list.New([]list.Item{}, delegate, 0, 0)
 	transactionList.SetShowTitle(false)
 	transactionList.DisableQuitKeybindings()
-	transactionList.StatusMessageLifetime = 3 * time.Second
+	transactionList.StatusMessageLifetime = transactionStatusMsgLifetime
 	transactionList.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{
 			tlKeyMap.categorizeTransaction,

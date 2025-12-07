@@ -200,7 +200,7 @@ func (m model) newInsertTransactionForm() *huh.Form {
 		// first group contains the main transaction fields
 		huh.NewGroup(
 			huh.NewSelect[accountOpt]().Title("Account").Key("account").
-				Height(6).Options(accountOpts...),
+				Height(transactionFormHeight).Options(accountOpts...),
 			huh.NewInput().Title("Payee").Key("payee").Description("The payee for the transaction").
 				Validate(func(s string) error {
 					if s == "" {
@@ -220,7 +220,7 @@ func (m model) newInsertTransactionForm() *huh.Form {
 				}),
 			huh.NewInput().Title("Date").Key("date").Description("Enter the date in YYYY-MM-DD format").
 				Validate(func(s string) error {
-					if len(s) != 10 {
+					if len(s) != transactionDateLength {
 						return errors.New("date must be in YYYY-MM-DD format")
 					}
 					if _, err := time.Parse("2006-01-02", s); err != nil {
@@ -229,7 +229,7 @@ func (m model) newInsertTransactionForm() *huh.Form {
 					return nil
 				}),
 			huh.NewSelect[int64]().Title("Category").Key("category").
-				Height(8).Options(categoryOpts...),
+				Height(categoryFormHeight).Options(categoryOpts...),
 		),
 		// second group contains optional fields
 		huh.NewGroup(
@@ -461,23 +461,23 @@ type transactionsStats struct {
 func (t transactionsStats) View(theme Theme) string {
 	pending := lipgloss.NewStyle().
 		Foreground(theme.Muted).
-		MarginRight(2).
+		MarginRight(standardMargin).
 		Render(fmt.Sprintf("%d pending", t.pending))
 
 	uncleared := lipgloss.NewStyle().
 		Foreground(theme.Warning).
-		MarginRight(2).
+		MarginRight(standardMargin).
 		Render(fmt.Sprintf("%d uncleared", t.uncleared))
 
 	cleared := lipgloss.NewStyle().
 		Foreground(theme.Success).
-		MarginRight(2).
+		MarginRight(standardMargin).
 		Render(fmt.Sprintf("%d cleared", t.cleared))
 
 	transactionStatus := lipgloss.JoinHorizontal(lipgloss.Left, pending, uncleared, cleared)
 	return lipgloss.NewStyle().
 		MarginTop(1).
-		MarginLeft(2).
+		MarginLeft(standardMargin).
 		Render(transactionStatus)
 }
 
@@ -646,15 +646,15 @@ func createDetailedTransactionStyles(theme Theme) detailedTransactionStyles {
 		labelStyle: lipgloss.NewStyle().
 			Foreground(theme.Border).
 			Bold(true).
-			Width(20).
+			Width(transactionStatusWidth).
 			Align(lipgloss.Right),
 		valueStyle: lipgloss.NewStyle().
 			Foreground(theme.Text).
-			MarginLeft(2),
+			MarginLeft(standardMargin),
 		containerStyle: lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(theme.Border).
-			Padding(1, 2).
+			Padding(1, standardPadding).
 			Margin(1),
 		statusStyle: lipgloss.NewStyle().
 			Padding(0, 1).
@@ -662,7 +662,7 @@ func createDetailedTransactionStyles(theme Theme) detailedTransactionStyles {
 		instructionStyle: lipgloss.NewStyle().
 			Foreground(theme.SecondaryText).
 			Italic(true).
-			MarginTop(2),
+			MarginTop(standardMargin),
 	}
 }
 

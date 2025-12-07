@@ -19,6 +19,12 @@ import (
 	"golang.org/x/text/language"
 )
 
+const (
+	percentageMultiplier    = 100
+	narrowViewportThreshold = 100
+	defaultViewportHeight   = 20
+)
+
 // Config holds the configuration for the overview model.
 type Config struct {
 	ShowUserInfo bool
@@ -265,7 +271,7 @@ func formatPercentage(amount, total *money.Money) string {
 	if total == nil || total.Amount() == 0 || amount == nil {
 		return "0.0%"
 	}
-	percentage := (float64(amount.Amount()) / float64(total.Amount())) * 100
+	percentage := (float64(amount.Amount()) / float64(total.Amount())) * percentageMultiplier
 	return fmt.Sprintf("%.1f%%", percentage)
 }
 
@@ -410,7 +416,7 @@ func New(cfg Config) Model {
 
 	m := Model{
 		Styles:      styles,
-		Viewport:    viewport.New(0, 20),
+		Viewport:    viewport.New(0, defaultViewportHeight),
 		summary:     Summary{},
 		accountTree: tree.New(),
 		titleCaser:  cases.Title(language.English),
@@ -468,7 +474,7 @@ func (m *Model) UpdateViewport() {
 
 	// Layout: responsive based on viewport width
 	var mainRow string
-	if m.Viewport.Width <= 100 {
+	if m.Viewport.Width <= narrowViewportThreshold {
 		// Narrow: stack all sections vertically
 		log.Debug("narrow viewport detected, using vertical layout")
 		mainRow = lipgloss.NewStyle().Margin(0, 1).Render(
@@ -585,7 +591,7 @@ func (m *Model) summaryHeroView() string {
 	var heroRow string
 
 	// If viewport is narrow, use 2x2 grid layout
-	if m.Viewport.Width <= 100 {
+	if m.Viewport.Width <= narrowViewportThreshold {
 		topRow := lipgloss.JoinHorizontal(lipgloss.Top, incomeBox, "  ", spentBox)
 		bottomRow := lipgloss.JoinHorizontal(lipgloss.Top, netBox, "  ", savingsBox)
 		heroRow = lipgloss.JoinVertical(lipgloss.Left, topRow, bottomRow)
@@ -720,7 +726,7 @@ func (m *Model) updateSummary() {
 	// Calculate savings rate as (net income / total income) * 100
 	var savingsRate float64
 	if totalIncomeEarned.Amount() > 0 {
-		savingsRate = (float64(netIncome.Amount()) / float64(totalIncomeEarned.Amount())) * 100
+		savingsRate = (float64(netIncome.Amount()) / float64(totalIncomeEarned.Amount())) * percentageMultiplier
 	}
 
 	m.summary = Summary{

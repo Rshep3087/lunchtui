@@ -95,7 +95,7 @@ func (r *AIRecommender) RecommendCategory(transaction *lm.Transaction, categorie
 }
 
 // RecommendCategoryCmd is a helper function to create the recommendation command.
-func (m *model) RecommendCategoryCmd(transaction *lm.Transaction) tea.Cmd {
+func (m model) RecommendCategoryCmd(transaction *lm.Transaction) tea.Cmd {
 	log.Debug("RecommendCategoryCmd called", "transaction_id", transaction.ID, "payee", transaction.Payee)
 
 	if m.aiRecommender == nil {

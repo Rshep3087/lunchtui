@@ -9,6 +9,13 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+const (
+	settingColumnWidth     = 30
+	valueColumnWidth       = 40
+	descriptionColumnWidth = 50
+	minMaskLength          = 4
+)
+
 // Colors represents the customizable color configuration.
 type Colors struct {
 	// Primary accent color used for highlights, selected items, and key bindings
@@ -58,9 +65,9 @@ type Model struct {
 func New(colors Colors) Model {
 	configTable := table.New(
 		table.WithColumns([]table.Column{
-			{Title: "Setting", Width: 30},
-			{Title: "Value", Width: 40},
-			{Title: "Description", Width: 50},
+			{Title: "Setting", Width: settingColumnWidth},
+			{Title: "Value", Width: valueColumnWidth},
+			{Title: "Description", Width: descriptionColumnWidth},
 		}),
 	)
 
@@ -93,11 +100,11 @@ func maskSensitiveValue(value string) string {
 		return "(not set)"
 	}
 
-	if len(value) <= 4 {
+	if len(value) <= minMaskLength {
 		return strings.Repeat("*", len(value))
 	}
 
-	return value[:4] + strings.Repeat("*", len(value)-4)
+	return value[:minMaskLength] + strings.Repeat("*", len(value)-minMaskLength)
 }
 
 // SetConfig sets the configuration data for the view.

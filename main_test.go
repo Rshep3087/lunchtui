@@ -274,7 +274,9 @@ func TestSwitchPeriodType(t *testing.T) {
 
 func TestOverviewUserDisplay(t *testing.T) {
 	// Create an overview model
-	overview := overview.New(overview.Config{})
+	overview := overview.New(overview.Config{
+		ShowUserInfo: true,
+	})
 
 	// Create mock user data
 	mockUser := &lm.User{

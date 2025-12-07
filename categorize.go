@@ -8,7 +8,7 @@ import (
 	"github.com/charmbracelet/log"
 )
 
-func (m *model) newCategorizeTransactionForm(t transactionItem) *huh.Form {
+func (m model) newCategorizeTransactionForm(t transactionItem) *huh.Form {
 	opts := make([]huh.Option[int64], len(m.categories))
 	for i, c := range m.categories {
 		opts[i] = huh.NewOption(c.Name, c.ID)
@@ -27,12 +27,12 @@ func (m *model) newCategorizeTransactionForm(t transactionItem) *huh.Form {
 	}
 
 	form := huh.NewForm(huh.NewGroup(selectField))
-	form.SubmitCmd = func() tea.Msg { return submitCategoryForm(*m, t) }
+	form.SubmitCmd = func() tea.Msg { return submitCategoryForm(m, t) }
 
 	return form
 }
 
-func (m *model) getCategoryDescription() string {
+func (m model) getCategoryDescription() string {
 	log.Debug("getCategoryDescription called",
 		"is_loading", m.isLoadingRecommendation,
 		"has_recommendation", m.aiRecommendation != nil,

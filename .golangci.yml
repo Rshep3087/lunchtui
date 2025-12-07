@@ -365,11 +365,24 @@ linters:
         - '.*\.PaddingRight'
         - '.*\.PaddingTop'
         - '.*\.PaddingBottom'
+        - '.*\.WithHeight'
+        - '.*\.WithWidth'
+        - '.*\.SetSize'
+        - 'viewport\.New'
+        - 'lipgloss\.NewStyle'
+        - 'table\.New'
+        - 'make'
 
     nakedret:
       # Make an issue if func has more lines of code than this setting, and it has naked returns.
       # Default: 30
       max-func-lines: 0
+
+    unparam:
+      # Inspect exported functions.
+      # Set to false to disable reporting unused parameters for exported functions.
+      # Default: false
+      check-exported: false
 
     nolintlint:
       # Exclude following linters from requiring an explanation.
@@ -472,3 +485,8 @@ linters:
           - gosec
           - noctx
           - wrapcheck
+      # Bubbletea message handlers follow a consistent signature pattern
+      - path: '(handlers|categorize)\.go'
+        text: 'result.*is always nil'
+        linters:
+          - unparam
