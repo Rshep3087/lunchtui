@@ -108,15 +108,15 @@ func accountsListRun(cmd *cobra.Command, _ []string) error {
 	// Output based on format
 	switch outputFormat {
 	case jsonOutputFormat:
-		return outputJSON(accounts)
+		return outputJSON(cmd, accounts)
 	case tableOutputFormat:
-		return outputAccountsTable(accounts)
+		return outputAccountsTable(cmd, accounts)
 	default:
 		return errors.New("unsupported output format")
 	}
 }
 
-func outputAccountsTable(accounts []Account) error {
+func outputAccountsTable(cmd *cobra.Command, accounts []Account) error {
 	// Create table
 	t := createStyledTable(
 		"ID",
@@ -154,7 +154,7 @@ func outputAccountsTable(accounts []Account) error {
 	}
 
 	// Print the table
-	fmt.Println(t)
+	fmt.Fprintln(cmd.OutOrStdout(), t)
 
 	return nil
 }

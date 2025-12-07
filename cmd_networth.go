@@ -66,9 +66,9 @@ func networthGetRun(cmd *cobra.Command, _ []string) error {
 
 	switch outputFormat {
 	case jsonOutputFormat:
-		return outputJSON(netWorthData.ToJSON())
+		return outputJSON(cmd, netWorthData.ToJSON())
 	case tableOutputFormat:
-		return outputNetWorthTable(netWorthData)
+		return outputNetWorthTable(cmd, netWorthData)
 	default:
 		return errors.New("unsupported output format")
 	}
@@ -245,31 +245,31 @@ func sortNetWorthBreakdown(breakdown *NetWorthBreakdown) {
 	}
 }
 
-func outputNetWorthTable(data *NetWorthData) error {
-	fmt.Printf("Net Worth: %s\n\n", data.NetWorth.Display())
+func outputNetWorthTable(cmd *cobra.Command, data *NetWorthData) error {
+	fmt.Fprintf(cmd.OutOrStdout(), "Net Worth: %s\n\n", data.NetWorth.Display())
 
 	if data.Breakdown != nil {
 		if len(data.Breakdown.Assets) > 0 {
-			fmt.Println("ASSETS:")
-			printAccountCategoriesTable(data.Breakdown.Assets, false)
-			fmt.Println()
+			fmt.Fprintln(cmd.OutOrStdout(), "ASSETS:")
+			printAccountCategoriesTable(cmd, data.Breakdown.Assets, false)
+			fmt.Fprintln(cmd.OutOrStdout())
 		}
 
 		if len(data.Breakdown.Liabilities) > 0 {
-			fmt.Println("LIABILITIES:")
-			printAccountCategoriesTable(data.Breakdown.Liabilities, true)
-			fmt.Println()
+			fmt.Fprintln(cmd.OutOrStdout(), "LIABILITIES:")
+			printAccountCategoriesTable(cmd, data.Breakdown.Liabilities, true)
+			fmt.Fprintln(cmd.OutOrStdout())
 		}
 
-		fmt.Printf("Total Assets:      %s\n", data.TotalAssets.Display())
-		fmt.Printf("Total Liabilities: %s\n", data.TotalLiabilities.Display())
-		fmt.Printf("Net Worth:         %s\n", data.NetWorth.Display())
+		fmt.Fprintf(cmd.OutOrStdout(), "Total Assets:      %s\n", data.TotalAssets.Display())
+		fmt.Fprintf(cmd.OutOrStdout(), "Total Liabilities: %s\n", data.TotalLiabilities.Display())
+		fmt.Fprintf(cmd.OutOrStdout(), "Net Worth:         %s\n", data.NetWorth.Display())
 	}
 
 	return nil
 }
 
-func printAccountCategoriesTable(accountsByType map[string][]*AccountSummary, isLiability bool) {
+func printAccountCategoriesTable(cmd *cobra.Command, accountsByType map[string][]*AccountSummary, isLiability bool) {
 	var types []string
 	for accountType := range accountsByType {
 		types = append(types, accountType)
@@ -285,9 +285,9 @@ func printAccountCategoriesTable(accountsByType map[string][]*AccountSummary, is
 		// Calculate total for this category
 		total := calculateCategoryTotal(accounts)
 		if isLiability {
-			fmt.Printf("  %s: -%s\n", accountType, total.Display())
+			fmt.Fprintf(cmd.OutOrStdout(), "  %s: -%s\n", accountType, total.Display())
 		} else {
-			fmt.Printf("  %s: %s\n", accountType, total.Display())
+			fmt.Fprintf(cmd.OutOrStdout(), "  %s: %s\n", accountType, total.Display())
 		}
 
 		// Print individual accounts if there are multiple
@@ -297,7 +297,7 @@ func printAccountCategoriesTable(accountsByType map[string][]*AccountSummary, is
 				if isLiability {
 					displayAmount = "-" + displayAmount
 				}
-				fmt.Printf("    %s: %s\n", account.GetDisplayName(), displayAmount)
+				fmt.Fprintf(cmd.OutOrStdout(), "    %s: %s\n", account.GetDisplayName(), displayAmount)
 			}
 		}
 	}

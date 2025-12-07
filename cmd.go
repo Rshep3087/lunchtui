@@ -204,13 +204,13 @@ func Execute() {
 }
 
 // Utility functions for output formatting.
-func outputJSON(data any) error {
+func outputJSON(cmd *cobra.Command, data any) error {
 	jsonData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
 	}
 
-	fmt.Println(string(jsonData))
+	fmt.Fprintln(cmd.OutOrStdout(), string(jsonData))
 	return nil
 }
 

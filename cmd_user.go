@@ -50,15 +50,15 @@ func userGetRun(cmd *cobra.Command, _ []string) error {
 	// Output based on format
 	switch outputFormat {
 	case jsonOutputFormat:
-		return outputJSON(user)
+		return outputJSON(cmd, user)
 	case tableOutputFormat:
-		return outputUserTable(user)
+		return outputUserTable(cmd, user)
 	default:
 		return errors.New("unsupported output format")
 	}
 }
 
-func outputUserTable(user *lm.User) error {
+func outputUserTable(cmd *cobra.Command, user *lm.User) error {
 	// Create table
 	t := createStyledTable("FIELD", "VALUE")
 
@@ -86,7 +86,7 @@ func outputUserTable(user *lm.User) error {
 	}
 
 	// Print the table
-	fmt.Println(t)
+	fmt.Fprintln(cmd.OutOrStdout(), t)
 
 	return nil
 }
