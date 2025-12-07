@@ -23,6 +23,7 @@ const (
 	percentageMultiplier    = 100
 	narrowViewportThreshold = 100
 	defaultViewportHeight   = 20
+	maxLen                  = 40
 )
 
 // Config holds the configuration for the overview model.
@@ -169,11 +170,14 @@ func (m *Model) addUngroupedCategoriesToTree(spendingTree *tree.Tree, data *spen
 		total := data.categoryTotals[categoryID]
 		if category != nil && total != nil && total.Amount() > 0 {
 			percentage := formatPercentage(total, data.totalSpending)
-			bar := m.renderBarChart(total, data.totalSpending, barMaxWidth)
+			bar := m.renderGroupBarChart(total, data.totalSpending, barMaxWidth)
+			categoryName := truncateString(category.Name, maxLen)
 
-			categoryText := fmt.Sprintf("%-20s %s %10s %12s",
-				category.Name,
-				bar,
+			// Pad the bar to fixed width so amounts and percentages align
+			paddedBar := fmt.Sprintf("%-*s", barMaxWidth, bar)
+			categoryText := fmt.Sprintf("%-40s %s %15s %8s",
+				categoryName,
+				paddedBar,
 				total.Display(),
 				percentage,
 			)
@@ -197,8 +201,13 @@ func (m *Model) addGroupedCategoriesToTree(spendingTree *tree.Tree, data *spendi
 
 		groupPercentage := formatPercentage(groupTotal, data.totalSpending)
 		groupBar := m.renderGroupBarChart(groupTotal, data.totalSpending, barMaxWidth)
-		groupText := fmt.Sprintf("▼ %-18s %s %10s %12s",
-			groupName, groupBar, groupTotal.Display(), groupPercentage)
+		groupNameWithPrefix := "▼ " + groupName
+		groupNameTruncated := truncateString(groupNameWithPrefix, maxLen)
+
+		// Pad the bar to fixed width so amounts and percentages align
+		paddedGroupBar := fmt.Sprintf("%-*s", barMaxWidth, groupBar)
+		groupText := fmt.Sprintf("%-40s %s %15s %8s",
+			groupNameTruncated, paddedGroupBar, groupTotal.Display(), groupPercentage)
 		groupTree := tree.New().Root(groupText)
 
 		m.sortCategoriesByTotal(categoriesInGroup, data.categoryTotals)
@@ -208,8 +217,13 @@ func (m *Model) addGroupedCategoriesToTree(spendingTree *tree.Tree, data *spendi
 			if category != nil && total != nil && total.Amount() > 0 {
 				catPercentage := formatPercentage(total, groupTotal) // % of group
 				catBar := m.renderBarChart(total, groupTotal, barMaxWidth)
-				categoryText := fmt.Sprintf("  %-18s %s %10s %12s",
-					category.Name, catBar, total.Display(), catPercentage)
+				categoryNameWithIndent := "  " + category.Name
+				categoryNameTruncated := truncateString(categoryNameWithIndent, maxLen)
+
+				// Pad the bar to fixed width so amounts and percentages align
+				paddedCatBar := fmt.Sprintf("%-*s", barMaxWidth, catBar)
+				categoryText := fmt.Sprintf("%-40s %s %15s %8s",
+					categoryNameTruncated, paddedCatBar, total.Display(), catPercentage)
 				groupTree.Child(categoryText)
 			}
 		}
@@ -273,6 +287,18 @@ func formatPercentage(amount, total *money.Money) string {
 	}
 	percentage := (float64(amount.Amount()) / float64(total.Amount())) * percentageMultiplier
 	return fmt.Sprintf("%.1f%%", percentage)
+}
+
+// truncateString truncates a string to maxLen, adding "..." if truncated.
+func truncateString(s string, maxLen int) string {
+	const elipseLen = 3
+	if len(s) <= maxLen {
+		return s
+	}
+	if maxLen <= elipseLen {
+		return s[:maxLen]
+	}
+	return s[:maxLen-elipseLen] + "..."
 }
 
 func (m *Model) calculateNetWorth() *money.Money {
