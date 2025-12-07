@@ -352,6 +352,19 @@ linters:
         - os.WriteFile
         - prometheus.ExponentialBuckets.*
         - prometheus.LinearBuckets
+        # UI/styling functions - ignore magic numbers for widths, margins, padding
+        - '.*\.Width'
+        - '.*\.Height'
+        - '.*\.Margin'
+        - '.*\.MarginLeft'
+        - '.*\.MarginRight'
+        - '.*\.MarginTop'
+        - '.*\.MarginBottom'
+        - '.*\.Padding'
+        - '.*\.PaddingLeft'
+        - '.*\.PaddingRight'
+        - '.*\.PaddingTop'
+        - '.*\.PaddingBottom'
 
     nakedret:
       # Make an issue if func has more lines of code than this setting, and it has naked returns.
