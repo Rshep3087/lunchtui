@@ -67,16 +67,16 @@ func (m *Model) SetRecurringExpenses(re []*lunchmoney.RecurringExpense) {
 	m.recurringExpenses.SetRows(rows)
 }
 
-func (m Model) Init() tea.Cmd {
+func (m *Model) Init() tea.Cmd {
 	return nil
 }
 
-func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
+func (m *Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	var cmd tea.Cmd
 	m.recurringExpenses, cmd = m.recurringExpenses.Update(msg)
-	return m, cmd
+	return *m, cmd
 }
 
-func (m Model) View() string {
+func (m *Model) View() string {
 	return m.recurringExpenses.View()
 }

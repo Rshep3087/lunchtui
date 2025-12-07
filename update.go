@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
@@ -140,7 +139,7 @@ func (m model) createInsertTransactionCmd() tea.Cmd {
 			return m.transactions.NewStatusMessage("Transaction not submitted")
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), transactionLoadTimeout)
 		defer cancel()
 
 		transaction, err := m.buildTransactionFromForm()

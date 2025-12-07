@@ -427,13 +427,13 @@ func New(cfg Config) Model {
 	return m
 }
 
-func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
+func (m *Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	var cmd tea.Cmd
 	m.Viewport, cmd = m.Viewport.Update(msg)
-	return m, cmd
+	return *m, cmd
 }
 
-func (m Model) View() string {
+func (m *Model) View() string {
 	return m.Viewport.View()
 }
 

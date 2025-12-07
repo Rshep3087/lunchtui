@@ -144,18 +144,18 @@ func (m *Model) SetConfig(config Config) {
 }
 
 // Init initializes the config view.
-func (m Model) Init() tea.Cmd {
+func (m *Model) Init() tea.Cmd {
 	return nil
 }
 
 // Update handles updates to the config view.
-func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
+func (m *Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	var cmd tea.Cmd
 	m.configTable, cmd = m.configTable.Update(msg)
-	return m, cmd
+	return *m, cmd
 }
 
 // View renders the config view.
-func (m Model) View() string {
+func (m *Model) View() string {
 	return m.configTable.View()
 }

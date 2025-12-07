@@ -150,7 +150,11 @@ func setupDebugLogging(config Config) (func(), error) {
 		return nil, err
 	}
 	log.SetLevel(log.DebugLevel)
-	return func() { f.Close() }, nil
+	return func() {
+		if err := f.Close(); err != nil {
+			log.Error("failed to close log file", "error", err)
+		}
+	}, nil
 }
 
 func initializeAIRecommender(config Config) *AIRecommender {

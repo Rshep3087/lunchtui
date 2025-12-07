@@ -48,7 +48,7 @@ func (p *AnthropicProvider) RecommendCategory(
 
 	response, err := p.client.Messages.New(ctx, anthropic.MessageNewParams{
 		Model:     "claude-3-haiku-20240307", // Use faster, cheaper model for categorization
-		MaxTokens: 150,                       // Keep response short and focused
+		MaxTokens: anthropicMaxTokens,        // Keep response short and focused
 		Messages: []anthropic.MessageParam{
 			anthropic.NewUserMessage(anthropic.NewTextBlock(prompt)),
 		},
@@ -164,8 +164,8 @@ func (p *AnthropicProvider) parseResponse(response string, categories []*lm.Cate
 	// Clamp confidence to 0-100 range
 	if result.Confidence < 0 {
 		result.Confidence = 0
-	} else if result.Confidence > 100 {
-		result.Confidence = 100
+	} else if result.Confidence > maxConfidenceScore {
+		result.Confidence = maxConfidenceScore
 	}
 
 	return &CategoryRecommendation{

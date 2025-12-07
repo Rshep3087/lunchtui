@@ -1,5 +1,17 @@
 package main
 
+import "time"
+
+// Timeout and limit constants.
+const (
+	aiRecommendationTimeout     = 30 * time.Second
+	categoryServiceTimeout      = 10 * time.Second
+	transactionLoadTimeout      = 10 * time.Second
+	budgetStatusMessageLifetime = 3 * time.Second
+	anthropicMaxTokens          = 150
+	maxConfidenceScore          = 100
+)
+
 // Period types.
 const (
 	monthlyPeriodType = "month"
