@@ -118,7 +118,17 @@ func accountsListRun(cmd *cobra.Command, _ []string) error {
 
 func outputAccountsTable(accounts []Account) error {
 	// Create table
-	t := createStyledTable("ID", "NAME", "TYPE", "SUBTYPE", "BALANCE", "CURRENCY", "INSTITUTION", "STATUS", "ACCOUNT TYPE")
+	t := createStyledTable(
+		"ID",
+		"NAME",
+		"TYPE",
+		"SUBTYPE",
+		"BALANCE",
+		"CURRENCY",
+		"INSTITUTION",
+		"STATUS",
+		"ACCOUNT TYPE",
+	)
 
 	// Add accounts to table
 	for _, account := range accounts {

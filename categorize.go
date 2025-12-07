@@ -144,6 +144,7 @@ func updateCategorizeTransaction(msg tea.Msg, m *model) (tea.Model, tea.Cmd) {
 
 	return m, tea.Batch(cmds...)
 }
+
 func categorizeTransactionView(m model) string {
 	return m.categoryForm.View()
 }

@@ -91,16 +91,19 @@ func (nw *NetWorthData) ToJSON() *NetWorthJSONSummary {
 
 		for category, accounts := range nw.Breakdown.Liabilities {
 			for _, account := range accounts {
-				summary.Breakdown.Liabilities[category] = append(summary.Breakdown.Liabilities[category], &AccountJSONSummary{
-					ID:              account.ID,
-					Name:            account.Name,
-					DisplayName:     account.DisplayName,
-					Type:            account.Type,
-					Subtype:         account.Subtype,
-					Amount:          "-" + account.Amount.Display(),
-					InstitutionName: account.InstitutionName,
-					AccountType:     account.AccountType,
-				})
+				summary.Breakdown.Liabilities[category] = append(
+					summary.Breakdown.Liabilities[category],
+					&AccountJSONSummary{
+						ID:              account.ID,
+						Name:            account.Name,
+						DisplayName:     account.DisplayName,
+						Type:            account.Type,
+						Subtype:         account.Subtype,
+						Amount:          "-" + account.Amount.Display(),
+						InstitutionName: account.InstitutionName,
+						AccountType:     account.AccountType,
+					},
+				)
 			}
 		}
 	}

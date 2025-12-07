@@ -267,10 +267,13 @@ func (m model) generateAccountOptions() []huh.Option[accountOpt] {
 	accountOpts := make([]huh.Option[accountOpt], 0, len(m.plaidAccounts)+len(m.assets)+1)
 	accountOpts = append(accountOpts, huh.NewOption("Cash", accountOpt{}))
 	for _, account := range m.plaidAccounts {
-		accountOpts = append(accountOpts, huh.NewOption(unescapeDisplayName(account.Name, account.DisplayName), accountOpt{
-			ID:   account.ID,
-			Type: "plaid",
-		}))
+		accountOpts = append(
+			accountOpts,
+			huh.NewOption(unescapeDisplayName(account.Name, account.DisplayName), accountOpt{
+				ID:   account.ID,
+				Type: "plaid",
+			}),
+		)
 	}
 
 	for _, asset := range m.assets {
@@ -518,7 +521,11 @@ func updateDetailedTransaction(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		case "c":
-			log.Debug("detailed transaction 'c' key pressed for categorization", "transaction_id", m.currentTransaction.t.ID)
+			log.Debug(
+				"detailed transaction 'c' key pressed for categorization",
+				"transaction_id",
+				m.currentTransaction.t.ID,
+			)
 
 			// Clear previous AI recommendation state
 			m.aiRecommendation = nil

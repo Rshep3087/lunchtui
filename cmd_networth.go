@@ -96,7 +96,15 @@ func calculateNetWorthData(
 
 	// Process assets and plaid accounts
 	processAssets(assets, currency, &netWorth, &totalAssets, &totalLiabilities, breakdown, includeBreakdown)
-	processPlaidAccounts(plaidAccounts, currency, &netWorth, &totalAssets, &totalLiabilities, breakdown, includeBreakdown)
+	processPlaidAccounts(
+		plaidAccounts,
+		currency,
+		&netWorth,
+		&totalAssets,
+		&totalLiabilities,
+		breakdown,
+		includeBreakdown,
+	)
 
 	// Sort breakdown by amount (descending)
 	if includeBreakdown {

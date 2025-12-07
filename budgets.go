@@ -15,7 +15,7 @@ type budgetItem struct {
 	category *lm.Category
 }
 
-// Implement list.Item interface for budgetItem.
+// Title implements list.Item interface for budgetItem.
 func (b budgetItem) Title() string {
 	return b.b.CategoryName
 }

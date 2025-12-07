@@ -49,7 +49,8 @@ func init() {
 	rootCmd.PersistentFlags().Bool("debits-as-negative", false, "show debits as negative numbers")
 	rootCmd.PersistentFlags().Bool("hide-pending-transactions", false,
 		"hide pending transactions from all transaction lists")
-	rootCmd.PersistentFlags().String("anthropic-api-key", "", "Anthropic API key for AI-powered category recommendations")
+	rootCmd.PersistentFlags().
+		String("anthropic-api-key", "", "Anthropic API key for AI-powered category recommendations")
 	rootCmd.PersistentFlags().String("api-base-url", "",
 		"the base URL for the Lunch Money API (defaults to library default)")
 

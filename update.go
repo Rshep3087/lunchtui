@@ -104,6 +104,9 @@ func (m model) handleSessionState(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case loading:
 		m.loadingSpinner, cmd = m.loadingSpinner.Update(msg)
 		return m, cmd
+	case errorState:
+		// Error state is static - quit is handled by global key handler
+		return m, nil
 	}
 	return m, nil
 }

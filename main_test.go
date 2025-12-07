@@ -217,6 +217,7 @@ func TestRetrievePreviousPeriod(t *testing.T) {
 		})
 	}
 }
+
 func TestSwitchPeriodType(t *testing.T) {
 	tests := []struct {
 		name              string
@@ -484,7 +485,10 @@ func TestNotesEditing(t *testing.T) {
 		}
 
 		if updatedM.notesInput.Value() != "Original notes" {
-			t.Errorf("Expected notes input to be pre-filled with 'Original notes', got '%s'", updatedM.notesInput.Value())
+			t.Errorf(
+				"Expected notes input to be pre-filled with 'Original notes', got '%s'",
+				updatedM.notesInput.Value(),
+			)
 		}
 	})
 

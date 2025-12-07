@@ -2,9 +2,8 @@ package overview
 
 import (
 	"fmt"
-	"strconv"
-
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/Rhymond/go-money"
@@ -437,6 +436,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 func (m Model) View() string {
 	return m.Viewport.View()
 }
+
 func (m *Model) SetSize(width, height int) {
 	m.setSize(width, height)
 	m.UpdateViewport()
@@ -682,7 +682,7 @@ func (m *Model) updateSummary() {
 		return
 	}
 
-	var totalIncomeEarned, totalSpent = money.New(0, m.currency), money.New(0, m.currency)
+	totalIncomeEarned, totalSpent := money.New(0, m.currency), money.New(0, m.currency)
 
 	for _, t := range m.transactions {
 		category := m.categories[t.CategoryID]

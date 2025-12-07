@@ -38,7 +38,13 @@ func (p *AnthropicProvider) RecommendCategory(
 ) (*CategoryRecommendation, error) {
 	prompt := p.buildPrompt(transaction, categories)
 
-	log.Debug("sending categorization request to Anthropic", "transaction_id", transaction.ID, "payee", transaction.Payee)
+	log.Debug(
+		"sending categorization request to Anthropic",
+		"transaction_id",
+		transaction.ID,
+		"payee",
+		transaction.Payee,
+	)
 
 	response, err := p.client.Messages.New(ctx, anthropic.MessageNewParams{
 		Model:     "claude-3-haiku-20240307", // Use faster, cheaper model for categorization
@@ -47,7 +53,6 @@ func (p *AnthropicProvider) RecommendCategory(
 			anthropic.NewUserMessage(anthropic.NewTextBlock(prompt)),
 		},
 	})
-
 	if err != nil {
 		log.Error("failed to call Anthropic API", "error", err)
 		return nil, fmt.Errorf("failed to call Anthropic API: %w", err)
