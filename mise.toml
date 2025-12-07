@@ -42,5 +42,5 @@ run = [
 ]
 
 [tasks.lint]
-description = "Run golangci-lint with fixes and AI-friendly output"
-run = "golangci-lint run --fix --output.json.path=stdout"
+description = "Run golangci-lint with fixes"
+run = "golangci-lint run --fix"

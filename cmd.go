@@ -54,7 +54,7 @@ func init() {
 		"the base URL for the Lunch Money API (defaults to library default)")
 
 	// root comand flags
-	rootCmd.Flags().BoolVar(&showUserInfo, "show-user-info", true, "show user information in the overview")
+	rootCmd.Flags().BoolVar(&showUserInfo, "show-user-info", false, "show user information in the overview")
 	_ = viper.BindPFlag("show_user_info", rootCmd.Flags().Lookup("show-user-info"))
 
 	// Bind flags to viper

@@ -61,10 +61,12 @@ type spendingData struct {
 	groupCategories     map[int64][]int64 // group_id -> []category_ids
 	groupNames          map[int64]string  // group_id -> group_name
 	ungroupedCategories []int64           // categories with GroupID == 0
+	totalSpending       *money.Money      // total spending for percentage calculations
 }
 
 func (m *Model) CalculateSpendingBreakdown() *tree.Tree {
 	spendingTree := tree.New()
+	spendingTree.Enumerator(tree.RoundedEnumerator)
 	spendingTree.Root("Categories")
 
 	data := m.collectSpendingData()
@@ -81,6 +83,7 @@ func (m *Model) collectSpendingData() *spendingData {
 		groupCategories:     make(map[int64][]int64),
 		groupNames:          make(map[int64]string),
 		ungroupedCategories: make([]int64, 0),
+		totalSpending:       money.New(0, m.currency),
 	}
 
 	// First pass: collect group information
@@ -111,6 +114,9 @@ func (m *Model) processTransaction(t *lm.Transaction, data *spendingData) {
 	}
 
 	amount = amount.Absolute()
+
+	// Track total spending for percentage calculations
+	data.totalSpending, _ = data.totalSpending.Add(amount)
 
 	// Initialize category total if not exists
 	if _, exists := data.categoryTotals[category.ID]; !exists {
@@ -151,11 +157,21 @@ func (m *Model) sortCategoriesByTotal(categoryIDs []int64, categoryTotals map[in
 
 func (m *Model) addUngroupedCategoriesToTree(spendingTree *tree.Tree, data *spendingData) {
 	m.sortCategoriesByTotal(data.ungroupedCategories, data.categoryTotals)
+	const barMaxWidth = 12
+
 	for _, categoryID := range data.ungroupedCategories {
 		category := m.categories[categoryID]
 		total := data.categoryTotals[categoryID]
 		if category != nil && total != nil && total.Amount() > 0 {
-			categoryText := fmt.Sprintf("%s %s", category.Name, total.Display())
+			percentage := formatPercentage(total, data.totalSpending)
+			bar := m.renderBarChart(total, data.totalSpending, barMaxWidth)
+
+			categoryText := fmt.Sprintf("%-20s %s %10s %12s",
+				category.Name,
+				bar,
+				total.Display(),
+				percentage,
+			)
 			spendingTree.Child(categoryText)
 		}
 	}
@@ -163,6 +179,7 @@ func (m *Model) addUngroupedCategoriesToTree(spendingTree *tree.Tree, data *spen
 
 func (m *Model) addGroupedCategoriesToTree(spendingTree *tree.Tree, data *spendingData) {
 	sortedGroupIDs := m.getSortedGroupIDs(data)
+	const barMaxWidth = 12
 
 	for _, groupID := range sortedGroupIDs {
 		groupName := data.groupNames[groupID]
@@ -173,21 +190,24 @@ func (m *Model) addGroupedCategoriesToTree(spendingTree *tree.Tree, data *spendi
 			continue
 		}
 
-		// Create group header with total
-		groupText := fmt.Sprintf("▼ %s %s", groupName, groupTotal.Display())
+		groupPercentage := formatPercentage(groupTotal, data.totalSpending)
+		groupBar := m.renderGroupBarChart(groupTotal, data.totalSpending, barMaxWidth)
+		groupText := fmt.Sprintf("▼ %-18s %s %10s %12s",
+			groupName, groupBar, groupTotal.Display(), groupPercentage)
 		groupTree := tree.New().Root(groupText)
 
-		// Sort and add categories within group
 		m.sortCategoriesByTotal(categoriesInGroup, data.categoryTotals)
 		for _, categoryID := range categoriesInGroup {
 			category := m.categories[categoryID]
 			total := data.categoryTotals[categoryID]
 			if category != nil && total != nil && total.Amount() > 0 {
-				categoryText := fmt.Sprintf("%s %s", category.Name, total.Display())
+				catPercentage := formatPercentage(total, groupTotal) // % of group
+				catBar := m.renderBarChart(total, groupTotal, barMaxWidth)
+				categoryText := fmt.Sprintf("  %-18s %s %10s %12s",
+					category.Name, catBar, total.Display(), catPercentage)
 				groupTree.Child(categoryText)
 			}
 		}
-
 		spendingTree.Child(groupTree)
 	}
 }
@@ -209,6 +229,45 @@ func (m *Model) getSortedGroupIDs(data *spendingData) []int64 {
 		return -x // Descending order
 	})
 	return sortedGroupIDs
+}
+
+func (m *Model) renderBarChart(amount, total *money.Money, maxWidth int) string {
+	if total == nil || total.Amount() == 0 || amount == nil {
+		return ""
+	}
+
+	percentage := float64(amount.Amount()) / float64(total.Amount())
+	barWidth := int(percentage * float64(maxWidth))
+
+	if barWidth < 1 && percentage > 0 {
+		barWidth = 1 // Show at least 1 char for non-zero amounts
+	}
+
+	return strings.Repeat("█", barWidth)
+}
+
+func (m *Model) renderGroupBarChart(amount, total *money.Money, maxWidth int) string {
+	if total == nil || total.Amount() == 0 || amount == nil {
+		return ""
+	}
+
+	percentage := float64(amount.Amount()) / float64(total.Amount())
+	barWidth := int(percentage * float64(maxWidth))
+
+	if barWidth < 1 && percentage > 0 {
+		barWidth = 1 // Show at least 1 char for non-zero amounts
+	}
+
+	// Use a visually distinct character for group bars (equals sign creates a clear difference)
+	return strings.Repeat("=", barWidth)
+}
+
+func formatPercentage(amount, total *money.Money) string {
+	if total == nil || total.Amount() == 0 || amount == nil {
+		return "0.0%"
+	}
+	percentage := (float64(amount.Amount()) / float64(total.Amount())) * 100
+	return fmt.Sprintf("%.1f%%", percentage)
 }
 
 func (m *Model) calculateNetWorth() *money.Money {
@@ -276,6 +335,7 @@ type TransactionMetrics struct {
 type Styles struct {
 	IncomeStyle    lipgloss.Style
 	SpentStyle     lipgloss.Style
+	WarningStyle   lipgloss.Style // For non-zero pending/unreviewed counts
 	TreeRootStyle  lipgloss.Style
 	AssetTypeStyle lipgloss.Style
 	AccountStyle   lipgloss.Style
@@ -288,11 +348,12 @@ func defaultStyles() Styles {
 	return Styles{
 		IncomeStyle:        lipgloss.NewStyle().Foreground(lipgloss.Color("#00ff00")),
 		SpentStyle:         lipgloss.NewStyle().Foreground(lipgloss.Color("#ff0000")),
+		WarningStyle:       lipgloss.NewStyle().Foreground(lipgloss.Color("#ffa500")),
 		TreeRootStyle:      lipgloss.NewStyle().Foreground(lipgloss.Color("#828282")),
 		AssetTypeStyle:     lipgloss.NewStyle().Foreground(lipgloss.Color("#bbbbbb")),
 		AccountStyle:       lipgloss.NewStyle().Foreground(lipgloss.Color("#d29b1d")),
 		SummaryStyle:       lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(0, 1),
-		SectionHeaderStyle: lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#ffffff")),
+		SectionHeaderStyle: lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#00ffff")),
 	}
 }
 
@@ -300,6 +361,7 @@ func stylesFromColors(colors Colors) Styles {
 	return Styles{
 		IncomeStyle:        lipgloss.NewStyle().Foreground(colors.Income),
 		SpentStyle:         lipgloss.NewStyle().Foreground(colors.Expense),
+		WarningStyle:       lipgloss.NewStyle().Foreground(lipgloss.Color("#ffa500")),
 		TreeRootStyle:      lipgloss.NewStyle().Foreground(colors.TreeRoot),
 		AssetTypeStyle:     lipgloss.NewStyle().Foreground(colors.AssetType),
 		AccountStyle:       lipgloss.NewStyle().Foreground(colors.Account),
@@ -353,9 +415,7 @@ func New(cfg Config) Model {
 		summary:     Summary{},
 		accountTree: tree.New(),
 		titleCaser:  cases.Title(language.English),
-		cfg: Config{
-			ShowUserInfo: true,
-		},
+		cfg:         cfg,
 	}
 
 	m.accountTree.Root(m.Styles.TreeRootStyle.Render("Accounts"))
@@ -390,62 +450,48 @@ func (m *Model) setSize(width, height int) {
 
 func (m *Model) UpdateViewport() {
 	netWorth := m.calculateNetWorth()
-	accountTreeContent := lipgloss.JoinVertical(lipgloss.Top,
-		m.Styles.SectionHeaderStyle.Render("Accounts Overview"),
-		lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			Padding(0, 1).
-			Render(
-				lipgloss.JoinVertical(lipgloss.Top,
-					lipgloss.NewStyle().MarginBottom(1).Render(m.accountTree.String()),
-					lipgloss.NewStyle().
-						MarginTop(1).Render(fmt.Sprintf("Estimated Net Worth: %s", m.Styles.IncomeStyle.Render(netWorth.Display()))),
-				),
-			),
-	)
 
-	var spendingBreakdownData string
-	m.spendingBreakdown = m.CalculateSpendingBreakdown()
-	// if there are no children in the spending breakdown, display a message
-	// otherwise, render the spending breakdown tree
-	spendingBreakdownData = m.spendingBreakdown.String()
-	if m.spendingBreakdown.Children().Length() == 0 || strings.TrimSpace(spendingBreakdownData) == "" {
-		spendingBreakdownData = "No spending data available\nfor this period."
-	}
+	// Build hero row
+	heroRow := m.summaryHeroView()
 
-	spendingBreakdown := lipgloss.JoinVertical(lipgloss.Top,
-		m.Styles.SectionHeaderStyle.Render("Spending Breakdown"),
-		lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			Padding(0, 1).
-			Render(spendingBreakdownData),
-	)
+	// Build main content sections
+	accountTreeContent := m.buildAccountTreeSection(netWorth)
+	spendingBreakdown := m.buildSpendingBreakdownSection()
 
+	// Build left column
 	var leftColumn []string
 	if m.cfg.ShowUserInfo {
 		log.Debug("showing user info in overview")
 		leftColumn = append(leftColumn, m.userInfoView())
 	}
 	leftColumn = append(leftColumn, m.transactionMetricsView())
-	leftColumn = append(leftColumn, m.summaryView())
 
-	mainContent := lipgloss.JoinHorizontal(lipgloss.Top,
-		lipgloss.NewStyle().Margin(0, 1, 0, 1).
-			Render(lipgloss.JoinVertical(lipgloss.Left, leftColumn...)),
-		lipgloss.NewStyle().Margin(0, 1, 0, 1).Render(accountTreeContent),
-		lipgloss.NewStyle().Margin(0, 1, 0, 1).Render(spendingBreakdown),
-	)
-
-	if m.Viewport.Width <= 122 {
-		leftColumn = append(leftColumn, spendingBreakdown)
-		log.Debug("narrow viewport detected, adjusting layout")
-		mainContent = lipgloss.JoinHorizontal(lipgloss.Top,
-			lipgloss.JoinVertical(lipgloss.Left, leftColumn...),
-			accountTreeContent,
+	// Layout: responsive based on viewport width
+	var mainRow string
+	if m.Viewport.Width <= 100 {
+		// Narrow: stack all sections vertically
+		log.Debug("narrow viewport detected, using vertical layout")
+		mainRow = lipgloss.NewStyle().Margin(0, 1).Render(
+			lipgloss.JoinVertical(lipgloss.Left,
+				append(leftColumn, accountTreeContent, spendingBreakdown)...,
+			))
+	} else {
+		// Wide: three columns
+		mainRow = lipgloss.JoinHorizontal(lipgloss.Top,
+			lipgloss.NewStyle().Margin(0, 1).Render(
+				lipgloss.JoinVertical(lipgloss.Left, leftColumn...)),
+			lipgloss.NewStyle().Margin(0, 1).Render(accountTreeContent),
+			lipgloss.NewStyle().Margin(0, 1).Render(spendingBreakdown),
 		)
 	}
 
-	m.Viewport.SetContent(mainContent)
+	// Compose: hero at top, main row below
+	finalContent := lipgloss.JoinVertical(lipgloss.Left,
+		heroRow,
+		lipgloss.NewStyle().MarginTop(1).Render(mainRow),
+	)
+
+	m.Viewport.SetContent(finalContent)
 }
 
 func (m *Model) userInfoView() string {
@@ -471,11 +517,13 @@ func (m *Model) userInfoView() string {
 		b.WriteString(fmt.Sprintf("API Key: %s", m.user.APIKeyLabel))
 	}
 
-	padded := lipgloss.NewStyle().PaddingBottom(1)
-
-	return padded.Render(lipgloss.JoinVertical(lipgloss.Top,
+	return lipgloss.NewStyle().PaddingBottom(1).Render(lipgloss.JoinVertical(lipgloss.Top,
 		m.Styles.SectionHeaderStyle.Render("User Info"),
-		m.Styles.SummaryStyle.Render(b.String()),
+		lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("#444444")).
+			Padding(0, 1).
+			Render(b.String()),
 	))
 }
 
@@ -483,50 +531,130 @@ func (m *Model) transactionMetricsView() string {
 	var b strings.Builder
 
 	b.WriteString(fmt.Sprintf("Total: %d\n", m.transactionMetrics.total))
-	b.WriteString(fmt.Sprintf("Pending: %s\n", m.Styles.SpentStyle.Render(strconv.Itoa(m.transactionMetrics.pending))))
-	b.WriteString(fmt.Sprintf("Unreviewed: %s", m.Styles.SpentStyle.Render(strconv.Itoa(m.transactionMetrics.unreviewed))))
+
+	// Green if 0 (good), orange if > 0 (needs attention)
+	pendingStyle := m.getMetricStyle(m.transactionMetrics.pending)
+	b.WriteString(fmt.Sprintf("Pending: %s\n", pendingStyle.Render(strconv.Itoa(m.transactionMetrics.pending))))
+
+	unreviewedStyle := m.getMetricStyle(m.transactionMetrics.unreviewed)
+	b.WriteString(fmt.Sprintf("Unreviewed: %s", unreviewedStyle.Render(strconv.Itoa(m.transactionMetrics.unreviewed))))
 
 	return lipgloss.NewStyle().PaddingBottom(1).Render(lipgloss.JoinVertical(lipgloss.Top,
 		m.Styles.SectionHeaderStyle.Render("Transaction Metrics"),
-		m.Styles.SummaryStyle.Render(b.String()),
+		lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("#444444")).
+			Padding(0, 1).
+			Render(b.String()),
 	))
 }
 
-func (m *Model) summaryView() string {
+func (m *Model) getMetricStyle(count int) lipgloss.Style {
+	if count == 0 {
+		return m.Styles.IncomeStyle // Green = inbox zero = good
+	}
+	return m.Styles.WarningStyle // Orange = action needed
+}
+
+func (m *Model) summaryHeroView() string {
 	if m.summary.totalIncomeEarned.Currency() == nil ||
 		m.summary.totalSpent.Currency() == nil ||
 		m.summary.netIncome.Currency() == nil {
-		return lipgloss.NewStyle().PaddingBottom(1).Render(lipgloss.JoinVertical(lipgloss.Top,
-			m.Styles.SectionHeaderStyle.Render("Period Summary"),
-			m.Styles.SummaryStyle.Render("No data available"),
-		))
+		return ""
 	}
 
-	var b strings.Builder
+	incomeBox := m.createMetricBox("INCOME", m.summary.totalIncomeEarned.Display(), m.Styles.IncomeStyle)
+	spentBox := m.createMetricBox("SPENT", m.summary.totalSpent.Display(), m.Styles.SpentStyle)
 
-	b.WriteString(fmt.Sprintf("Income: %s\n", m.Styles.IncomeStyle.Render(m.summary.totalIncomeEarned.Display())))
-	b.WriteString(fmt.Sprintf("Spent: %s\n", m.Styles.SpentStyle.Render(m.summary.totalSpent.Display())))
+	var netStyle lipgloss.Style
 	if m.summary.netIncome.IsNegative() {
-		b.WriteString(fmt.Sprintf("Net Income: %s\n", m.Styles.SpentStyle.Render(m.summary.netIncome.Display())))
+		netStyle = m.Styles.SpentStyle
 	} else {
-		b.WriteString(fmt.Sprintf("Net Income: %s\n", m.Styles.IncomeStyle.Render(m.summary.netIncome.Display())))
+		netStyle = m.Styles.IncomeStyle
 	}
+	netBox := m.createMetricBox("NET", m.summary.netIncome.Display(), netStyle)
 
-	// Display savings rate
+	var savingsStyle lipgloss.Style
 	if m.summary.savingsRate >= 0 {
-		b.WriteString(fmt.Sprintf(
-			"Savings Rate: %s", m.Styles.IncomeStyle.Render(fmt.Sprintf("%.1f%%", m.summary.savingsRate)),
-		))
+		savingsStyle = m.Styles.IncomeStyle
 	} else {
-		b.WriteString(fmt.Sprintf(
-			"Savings Rate: %s", m.Styles.SpentStyle.Render(fmt.Sprintf("%.1f%%", m.summary.savingsRate)),
-		))
+		savingsStyle = m.Styles.SpentStyle
+	}
+	savingsBox := m.createMetricBox("SAVINGS", fmt.Sprintf("%.1f%%", m.summary.savingsRate), savingsStyle)
+
+	var heroRow string
+
+	// If viewport is narrow, use 2x2 grid layout
+	if m.Viewport.Width <= 100 {
+		topRow := lipgloss.JoinHorizontal(lipgloss.Top, incomeBox, "  ", spentBox)
+		bottomRow := lipgloss.JoinHorizontal(lipgloss.Top, netBox, "  ", savingsBox)
+		heroRow = lipgloss.JoinVertical(lipgloss.Left, topRow, bottomRow)
+	} else {
+		// Wide viewport: all 4 boxes in a single row
+		heroRow = lipgloss.JoinHorizontal(lipgloss.Top,
+			incomeBox, "  ",
+			spentBox, "  ",
+			netBox, "  ",
+			savingsBox,
+		)
 	}
 
-	return lipgloss.NewStyle().PaddingBottom(1).Render(lipgloss.JoinVertical(lipgloss.Top,
-		lipgloss.NewStyle().Bold(true).Render("Period Summary"),
-		m.Styles.SummaryStyle.Render(b.String()),
-	))
+	return lipgloss.NewStyle().
+		Width(m.Viewport.Width).
+		Align(lipgloss.Center).
+		Render(heroRow)
+}
+
+func (m *Model) createMetricBox(label, value string, valueStyle lipgloss.Style) string {
+	labelStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#888888"))
+
+	// Combine label and value on the same line with a separator
+	content := fmt.Sprintf("%s %s", labelStyle.Render(label+":"), valueStyle.Bold(true).Render(value))
+
+	boxStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("#444444")).
+		Padding(0, 1)
+
+	return boxStyle.Render(content)
+}
+
+func (m *Model) buildAccountTreeSection(netWorth *money.Money) string {
+	return lipgloss.JoinVertical(lipgloss.Top,
+		m.Styles.SectionHeaderStyle.Render("Accounts Overview"),
+		lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("#444444")).
+			Padding(0, 1).
+			Render(
+				lipgloss.JoinVertical(lipgloss.Top,
+					lipgloss.NewStyle().MarginBottom(1).Render(m.accountTree.String()),
+					lipgloss.NewStyle().
+						MarginTop(1).
+						Render(fmt.Sprintf("Estimated Net Worth: %s", netWorth.Display())),
+				),
+			),
+	)
+}
+
+func (m *Model) buildSpendingBreakdownSection() string {
+	spendingTree := m.CalculateSpendingBreakdown()
+	var content string
+	if spendingTree != nil && spendingTree.Children().Length() > 0 {
+		content = spendingTree.String()
+	} else {
+		content = "No spending data available for this period"
+	}
+
+	return lipgloss.JoinVertical(lipgloss.Top,
+		m.Styles.SectionHeaderStyle.Render("Spending Breakdown"),
+		lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("#444444")).
+			Padding(0, 1).
+			Render(content),
+	)
 }
 
 func (m *Model) updateTransactionMetrics() {
@@ -613,6 +741,7 @@ type accountItem struct {
 func (m *Model) updateAccountTree() {
 	log.Debug("updating account tree")
 	m.accountTree = tree.New()
+	m.accountTree.Enumerator(tree.RoundedEnumerator)
 	m.accountTree.Root(m.Styles.TreeRootStyle.Render("Accounts"))
 
 	// Combine both plaid accounts and assets into a single map by type
