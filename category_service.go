@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"time"
 
 	lm "github.com/icco/lunchmoney"
 
@@ -26,7 +25,7 @@ func (cs *CategoryService) GetCategories(ctx context.Context) ([]*lm.Category, e
 
 // GetCategoriesCmd fetches categories asynchronously for TUI use.
 func (cs *CategoryService) GetCategoriesCmd() tea.Msg {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), categoryServiceTimeout)
 	defer cancel()
 
 	ca, err := cs.GetCategories(ctx)

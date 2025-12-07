@@ -7,6 +7,14 @@ import (
 	"github.com/icco/lunchmoney"
 )
 
+const (
+	merchantWidth    = 20
+	descriptionWidth = 30
+	repeatsWidth     = 10
+	billingDayWidth  = 12
+	amountWidth      = 10
+)
+
 type Colors struct {
 	Primary string
 }
@@ -18,11 +26,11 @@ type Model struct {
 func New(colors Colors) Model {
 	recurringExpenses := table.New(
 		table.WithColumns([]table.Column{
-			{Title: "Merchant", Width: 20},
-			{Title: "Description", Width: 30},
-			{Title: "Repeats", Width: 10},
-			{Title: "Billing Day", Width: 12},
-			{Title: "Amount", Width: 10},
+			{Title: "Merchant", Width: merchantWidth},
+			{Title: "Description", Width: descriptionWidth},
+			{Title: "Repeats", Width: repeatsWidth},
+			{Title: "Billing Day", Width: billingDayWidth},
+			{Title: "Amount", Width: amountWidth},
 		}),
 	)
 
@@ -67,16 +75,16 @@ func (m *Model) SetRecurringExpenses(re []*lunchmoney.RecurringExpense) {
 	m.recurringExpenses.SetRows(rows)
 }
 
-func (m Model) Init() tea.Cmd {
+func (m *Model) Init() tea.Cmd {
 	return nil
 }
 
-func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
+func (m *Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	var cmd tea.Cmd
 	m.recurringExpenses, cmd = m.recurringExpenses.Update(msg)
-	return m, cmd
+	return *m, cmd
 }
 
-func (m Model) View() string {
+func (m *Model) View() string {
 	return m.recurringExpenses.View()
 }

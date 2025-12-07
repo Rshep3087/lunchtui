@@ -13,7 +13,7 @@ type styles struct {
 
 func createStyles(theme Theme) styles {
 	return styles{
-		docStyle: lipgloss.NewStyle().Margin(1, 2),
+		docStyle: lipgloss.NewStyle().Margin(1, standardMargin),
 		titleStyle: lipgloss.NewStyle().Foreground(
 			lipgloss.AdaptiveColor{Light: "#000000", Dark: string(theme.Primary)},
 		).Bold(true),

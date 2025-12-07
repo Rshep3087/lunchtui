@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/log"
@@ -73,7 +72,7 @@ func (r *AIRecommender) RecommendCategory(transaction *lm.Transaction, categorie
 	return func() tea.Msg {
 		log.Debug("AIRecommender recommendation command executing", "transaction_id", transaction.ID)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), aiRecommendationTimeout)
 		defer cancel()
 
 		recommendation, err := r.provider.RecommendCategory(ctx, transaction, categories)
@@ -96,7 +95,7 @@ func (r *AIRecommender) RecommendCategory(transaction *lm.Transaction, categorie
 }
 
 // RecommendCategoryCmd is a helper function to create the recommendation command.
-func (m *model) RecommendCategoryCmd(transaction *lm.Transaction) tea.Cmd {
+func (m model) RecommendCategoryCmd(transaction *lm.Transaction) tea.Cmd {
 	log.Debug("RecommendCategoryCmd called", "transaction_id", transaction.ID, "payee", transaction.Payee)
 
 	if m.aiRecommender == nil {

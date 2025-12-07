@@ -67,18 +67,19 @@ func (m model) handleWindowSize(msg tea.WindowSizeMsg) (tea.Model, tea.Cmd) {
 	m.overview.Viewport.Height = msg.Height - takenHeight
 
 	m.transactions.SetSize(msg.Width-h, msg.Height-v-takenHeight)
-	m.budgets.SetSize(msg.Width-h, msg.Height-v-3)
-	m.configView.SetSize(msg.Width-h, msg.Height-v-3)
-	m.recurringExpenses.SetSize(msg.Width-h, msg.Height-v-3)
+	m.budgets.SetSize(msg.Width-h, msg.Height-v-standardVerticalOffset)
+	m.configView.SetSize(msg.Width-h, msg.Height-v-standardVerticalOffset)
+	m.recurringExpenses.SetSize(msg.Width-h, msg.Height-v-standardVerticalOffset)
 
 	m.help.Width = msg.Width
 
 	if m.categoryForm != nil {
-		m.categoryForm = m.categoryForm.WithHeight(msg.Height - 5).WithWidth(msg.Width)
+		m.categoryForm = m.categoryForm.WithHeight(msg.Height - categorizeFormHeightOffset).WithWidth(msg.Width)
 	}
 
 	if m.insertTransactionForm != nil {
-		m.insertTransactionForm = m.insertTransactionForm.WithHeight(msg.Height - 6).WithWidth(msg.Width)
+		m.insertTransactionForm = m.insertTransactionForm.WithHeight(msg.Height - insertFormHeightOffset).
+			WithWidth(msg.Width)
 	}
 
 	return m, nil

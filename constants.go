@@ -1,5 +1,35 @@
 package main
 
+import "time"
+
+// Timeout and limit constants.
+const (
+	aiRecommendationTimeout      = 30 * time.Second
+	categoryServiceTimeout       = 10 * time.Second
+	transactionLoadTimeout       = 10 * time.Second
+	budgetStatusMessageLifetime  = 3 * time.Second
+	transactionStatusMsgLifetime = 3 * time.Second
+	anthropicMaxTokens           = 150
+	maxConfidenceScore           = 100
+)
+
+// UI layout constants.
+const (
+	standardMargin             = 2
+	standardPadding            = 2
+	standardVerticalOffset     = 3
+	categorizeFormHeightOffset = 5
+	insertFormHeightOffset     = 6
+	transactionFormHeight      = 6
+	categoryFormHeight         = 8
+	transactionDateLength      = 10
+)
+
+// Table column width constants.
+const (
+	transactionStatusWidth = 20
+)
+
 // Period types.
 const (
 	monthlyPeriodType = "month"

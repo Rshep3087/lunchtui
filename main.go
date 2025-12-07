@@ -150,7 +150,11 @@ func setupDebugLogging(config Config) (func(), error) {
 		return nil, err
 	}
 	log.SetLevel(log.DebugLevel)
-	return func() { f.Close() }, nil
+	return func() {
+		if closeErr := f.Close(); closeErr != nil {
+			log.Error("failed to close log file", "error", closeErr)
+		}
+	}, nil
 }
 
 func initializeAIRecommender(config Config) *AIRecommender {
@@ -274,7 +278,7 @@ func createTransactionList(delegate list.DefaultDelegate, tlKeyMap *transactionL
 	transactionList := list.New([]list.Item{}, delegate, 0, 0)
 	transactionList.SetShowTitle(false)
 	transactionList.DisableQuitKeybindings()
-	transactionList.StatusMessageLifetime = 3 * time.Second
+	transactionList.StatusMessageLifetime = transactionStatusMsgLifetime
 	transactionList.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{
 			tlKeyMap.categorizeTransaction,

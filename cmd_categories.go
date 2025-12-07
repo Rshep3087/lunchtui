@@ -73,15 +73,15 @@ func (c *categoriesListCommand) run(cmd *cobra.Command, _ []string) error {
 	// Output based on format
 	switch outputFormat {
 	case jsonOutputFormat:
-		return outputJSON(categories)
+		return outputJSON(cmd, categories)
 	case tableOutputFormat:
-		return outputCategoriesTable(categories)
+		return outputCategoriesTable(cmd, categories)
 	default:
 		return errors.New("unsupported output format")
 	}
 }
 
-func outputCategoriesTable(categories []*lm.Category) error {
+func outputCategoriesTable(cmd *cobra.Command, categories []*lm.Category) error {
 	// Create table
 	t := createStyledTable(
 		"ID", "NAME", "DESCRIPTION", "IS INCOME", "EXCLUDE FROM BUDGET", "EXCLUDE FROM TOTALS", "IS GROUP",
@@ -105,7 +105,7 @@ func outputCategoriesTable(categories []*lm.Category) error {
 	}
 
 	// Print the table
-	fmt.Println(t)
+	fmt.Fprintln(cmd.OutOrStdout(), t)
 
 	return nil
 }

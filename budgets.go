@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -15,7 +14,7 @@ type budgetItem struct {
 	category *lm.Category
 }
 
-// Implement list.Item interface for budgetItem.
+// Title implements list.Item interface for budgetItem.
 func (b budgetItem) Title() string {
 	return b.b.CategoryName
 }
@@ -64,7 +63,7 @@ func (b budgetItem) FilterValue() string {
 func createBudgetList(delegate list.DefaultDelegate) list.Model {
 	budgetList := list.New([]list.Item{}, delegate, 0, 0)
 	budgetList.SetShowTitle(false)
-	budgetList.StatusMessageLifetime = 3 * time.Second
+	budgetList.StatusMessageLifetime = budgetStatusMessageLifetime
 	return budgetList
 }
 

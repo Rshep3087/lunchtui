@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
@@ -104,6 +103,9 @@ func (m model) handleSessionState(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case loading:
 		m.loadingSpinner, cmd = m.loadingSpinner.Update(msg)
 		return m, cmd
+	case errorState:
+		// Error state is static - quit is handled by global key handler
+		return m, nil
 	}
 	return m, nil
 }
@@ -137,7 +139,7 @@ func (m model) createInsertTransactionCmd() tea.Cmd {
 			return m.transactions.NewStatusMessage("Transaction not submitted")
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), transactionLoadTimeout)
 		defer cancel()
 
 		transaction, err := m.buildTransactionFromForm()

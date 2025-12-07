@@ -49,12 +49,13 @@ func init() {
 	rootCmd.PersistentFlags().Bool("debits-as-negative", false, "show debits as negative numbers")
 	rootCmd.PersistentFlags().Bool("hide-pending-transactions", false,
 		"hide pending transactions from all transaction lists")
-	rootCmd.PersistentFlags().String("anthropic-api-key", "", "Anthropic API key for AI-powered category recommendations")
+	rootCmd.PersistentFlags().
+		String("anthropic-api-key", "", "Anthropic API key for AI-powered category recommendations")
 	rootCmd.PersistentFlags().String("api-base-url", "",
 		"the base URL for the Lunch Money API (defaults to library default)")
 
 	// root comand flags
-	rootCmd.Flags().BoolVar(&showUserInfo, "show-user-info", true, "show user information in the overview")
+	rootCmd.Flags().BoolVar(&showUserInfo, "show-user-info", false, "show user information in the overview")
 	_ = viper.BindPFlag("show_user_info", rootCmd.Flags().Lookup("show-user-info"))
 
 	// Bind flags to viper
@@ -203,13 +204,13 @@ func Execute() {
 }
 
 // Utility functions for output formatting.
-func outputJSON(data any) error {
+func outputJSON(cmd *cobra.Command, data any) error {
 	jsonData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
 	}
 
-	fmt.Println(string(jsonData))
+	fmt.Fprintln(cmd.OutOrStdout(), string(jsonData))
 	return nil
 }
 

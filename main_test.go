@@ -217,6 +217,7 @@ func TestRetrievePreviousPeriod(t *testing.T) {
 		})
 	}
 }
+
 func TestSwitchPeriodType(t *testing.T) {
 	tests := []struct {
 		name              string
@@ -273,7 +274,9 @@ func TestSwitchPeriodType(t *testing.T) {
 
 func TestOverviewUserDisplay(t *testing.T) {
 	// Create an overview model
-	overview := overview.New(overview.Config{})
+	overview := overview.New(overview.Config{
+		ShowUserInfo: true,
+	})
 
 	// Create mock user data
 	mockUser := &lm.User{
@@ -484,7 +487,10 @@ func TestNotesEditing(t *testing.T) {
 		}
 
 		if updatedM.notesInput.Value() != "Original notes" {
-			t.Errorf("Expected notes input to be pre-filled with 'Original notes', got '%s'", updatedM.notesInput.Value())
+			t.Errorf(
+				"Expected notes input to be pre-filled with 'Original notes', got '%s'",
+				updatedM.notesInput.Value(),
+			)
 		}
 	})
 

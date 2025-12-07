@@ -22,12 +22,22 @@ func advancePeriod(m *model) (tea.Model, tea.Cmd) {
 		// Budget loading doesn't block UI, stay in budgets state
 		m.sessionState = budgets
 		return m, m.getBudgets
-	default:
+	case overviewState,
+		transactions,
+		detailedTransaction,
+		categorizeTransaction,
+		insertTransaction,
+		loading,
+		recurringExpenses,
+		configView,
+		errorState:
 		// All other states need to wait for transactions to load
 		m.sessionState = loading
 		m.loadingState.unset("transactions")
 		return m, m.getTransactions
 	}
+	// Unreachable - all states are handled above
+	return m, nil
 }
 
 // retrievePreviousPeriod retrieves the previous period by one month or year depending on the period type.
@@ -48,12 +58,22 @@ func retrievePreviousPeriod(m *model) (tea.Model, tea.Cmd) {
 		// Budget loading doesn't block UI, stay in budgets state
 		m.sessionState = budgets
 		return m, m.getBudgets
-	default:
+	case overviewState,
+		transactions,
+		detailedTransaction,
+		categorizeTransaction,
+		insertTransaction,
+		loading,
+		recurringExpenses,
+		configView,
+		errorState:
 		// All other states need to wait for transactions to load
 		m.sessionState = loading
 		m.loadingState.unset("transactions")
 		return m, m.getTransactions
 	}
+	// Unreachable - all states are handled above
+	return m, nil
 }
 
 func switchPeriodType(m *model) (tea.Model, tea.Cmd) {
@@ -71,10 +91,20 @@ func switchPeriodType(m *model) (tea.Model, tea.Cmd) {
 		// Budget loading doesn't block UI, stay in budgets state
 		m.sessionState = budgets
 		return m, m.getBudgets
-	default:
+	case overviewState,
+		transactions,
+		detailedTransaction,
+		categorizeTransaction,
+		insertTransaction,
+		loading,
+		recurringExpenses,
+		configView,
+		errorState:
 		// All other states need to wait for transactions to load
 		m.sessionState = loading
 		m.loadingState.unset("transactions")
 		return m, m.getTransactions
 	}
+	// Unreachable - all states are handled above
+	return m, nil
 }
