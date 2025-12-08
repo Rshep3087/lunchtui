@@ -44,7 +44,7 @@ jobs:
         queries: +security-and-quality
 
     - name: Set up mise
-      uses: jdx/mise-action@v2
+      uses: jdx/mise-action@v3
 
     - name: Autobuild
       uses: github/codeql-action/autobuild@v4
