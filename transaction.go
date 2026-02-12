@@ -318,9 +318,9 @@ func categorizeTrans(m *model) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(m.categoryForm.Init(), tea.WindowSize())
 }
 
-func submitCategoryForm(m model, t transactionItem) tea.Msg {
+func submitCategoryForm(f *huh.Form, m model, t transactionItem) tea.Msg {
 	ctx := context.Background()
-	categoryValue := m.categoryForm.Get("category")
+	categoryValue := f.Get("category")
 	cid64, isCategoryValueValid := categoryValue.(int64)
 	if !isCategoryValueValid {
 		log.Debug("invalid category value", "value", categoryValue)
