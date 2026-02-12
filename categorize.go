@@ -27,7 +27,7 @@ func (m model) newCategorizeTransactionForm(t transactionItem) *huh.Form {
 	}
 
 	form := huh.NewForm(huh.NewGroup(selectField))
-	form.SubmitCmd = func() tea.Msg { return submitCategoryForm(m, t) }
+	form.SubmitCmd = func() tea.Msg { return submitCategoryForm(form, m, t) }
 
 	return form
 }
