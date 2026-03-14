@@ -1,6 +1,6 @@
 module github.com/Rshep3087/lunchtui
 
-go 1.24.4
+go 1.25.0
 
 require (
 	github.com/Rhymond/go-money v1.0.15
@@ -16,7 +16,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	golang.org/x/net v0.48.0
-	golang.org/x/sync v0.19.0
+	golang.org/x/sync v0.20.0
 	golang.org/x/text v0.32.0
 )
 
