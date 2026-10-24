@@ -537,16 +537,16 @@ func (m *Model) userInfoView() string {
 	var b strings.Builder
 
 	if m.user.BudgetName != "" {
-		b.WriteString(fmt.Sprintf("Budget: %s\n", m.user.BudgetName))
+		fmt.Fprintf(&b, "Budget: %s\n", m.user.BudgetName)
 	}
 	if m.user.UserName != "" {
-		b.WriteString(fmt.Sprintf("User: %s\n", m.user.UserName))
+		fmt.Fprintf(&b, "User: %s\n", m.user.UserName)
 	}
 	if m.user.PrimaryCurrency != "" {
-		b.WriteString(fmt.Sprintf("Currency: %s\n", m.user.PrimaryCurrency))
+		fmt.Fprintf(&b, "Currency: %s\n", m.user.PrimaryCurrency)
 	}
 	if m.user.APIKeyLabel != "" {
-		b.WriteString(fmt.Sprintf("API Key: %s", m.user.APIKeyLabel))
+		fmt.Fprintf(&b, "API Key: %s", m.user.APIKeyLabel)
 	}
 
 	return lipgloss.NewStyle().PaddingBottom(1).Render(lipgloss.JoinVertical(lipgloss.Top,
@@ -562,14 +562,14 @@ func (m *Model) userInfoView() string {
 func (m *Model) transactionMetricsView() string {
 	var b strings.Builder
 
-	b.WriteString(fmt.Sprintf("Total: %d\n", m.transactionMetrics.total))
+	fmt.Fprintf(&b, "Total: %d\n", m.transactionMetrics.total)
 
 	// Green if 0 (good), orange if > 0 (needs attention)
 	pendingStyle := m.getMetricStyle(m.transactionMetrics.pending)
-	b.WriteString(fmt.Sprintf("Pending: %s\n", pendingStyle.Render(strconv.Itoa(m.transactionMetrics.pending))))
+	fmt.Fprintf(&b, "Pending: %s\n", pendingStyle.Render(strconv.Itoa(m.transactionMetrics.pending)))
 
 	unreviewedStyle := m.getMetricStyle(m.transactionMetrics.unreviewed)
-	b.WriteString(fmt.Sprintf("Unreviewed: %s", unreviewedStyle.Render(strconv.Itoa(m.transactionMetrics.unreviewed))))
+	fmt.Fprintf(&b, "Unreviewed: %s", unreviewedStyle.Render(strconv.Itoa(m.transactionMetrics.unreviewed)))
 
 	return lipgloss.NewStyle().PaddingBottom(1).Render(lipgloss.JoinVertical(lipgloss.Top,
 		m.Styles.SectionHeaderStyle.Render("Transaction Metrics"),

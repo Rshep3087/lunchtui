@@ -198,9 +198,9 @@ func (m model) buildTransactionFromForm() (lm.InsertTransaction, error) {
 
 	if account.ID != 0 {
 		switch account.Type {
-		case "plaid":
+		case plaidAccountType:
 			transaction.PlaidAccountID = ptr(account.ID)
-		case "asset":
+		case assetAccountType:
 			transaction.AssetID = ptr(account.ID)
 		}
 	}

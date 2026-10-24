@@ -271,7 +271,7 @@ func (m model) generateAccountOptions() []huh.Option[accountOpt] {
 			accountOpts,
 			huh.NewOption(unescapeDisplayName(account.Name, account.DisplayName), accountOpt{
 				ID:   account.ID,
-				Type: "plaid",
+				Type: plaidAccountType,
 			}),
 		)
 	}
@@ -279,7 +279,7 @@ func (m model) generateAccountOptions() []huh.Option[accountOpt] {
 	for _, asset := range m.assets {
 		accountOpts = append(accountOpts, huh.NewOption(unescapeDisplayName(asset.Name, ""), accountOpt{
 			ID:   asset.ID,
-			Type: "asset",
+			Type: assetAccountType,
 		}))
 	}
 	return accountOpts
