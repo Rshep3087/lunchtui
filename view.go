@@ -29,7 +29,7 @@ func (m model) View() string {
 	case configView:
 		b.WriteString(m.configView.View())
 	case loading:
-		b.WriteString(fmt.Sprintf("%s Loading data...", m.loadingSpinner.View()))
+		fmt.Fprintf(&b, "%s Loading data...", m.loadingSpinner.View())
 	case errorState:
 		b.WriteString(m.styles.errorStyle.Render(fmt.Sprintf("%s - 'q' to quit", m.errorMsg)))
 		return m.styles.docStyle.Render(b.String())

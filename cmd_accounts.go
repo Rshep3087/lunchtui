@@ -34,7 +34,7 @@ func convertAssetToAccount(asset *lm.Asset) Account {
 		Currency:        asset.Currency,
 		InstitutionName: asset.InstitutionName,
 		Status:          asset.Status,
-		AccountType:     "asset",
+		AccountType:     assetAccountType,
 	}
 }
 
@@ -49,7 +49,7 @@ func convertPlaidAccountToAccount(plaidAccount *lm.PlaidAccount) Account {
 		Currency:        plaidAccount.Currency,
 		InstitutionName: plaidAccount.InstitutionName,
 		Status:          plaidAccount.Status,
-		AccountType:     "plaid",
+		AccountType:     plaidAccountType,
 	}
 }
 

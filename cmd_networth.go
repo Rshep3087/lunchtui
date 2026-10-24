@@ -199,7 +199,7 @@ func addAccountToBreakdown(categoryMap map[string][]*AccountSummary, asset *lm.A
 		Subtype:         asset.SubtypeName,
 		Amount:          amount,
 		InstitutionName: asset.InstitutionName,
-		AccountType:     "asset",
+		AccountType:     assetAccountType,
 	})
 }
 
@@ -218,7 +218,7 @@ func addPlaidAccountToBreakdown(
 		Subtype:         account.Subtype,
 		Amount:          amount,
 		InstitutionName: account.InstitutionName,
-		AccountType:     "plaid",
+		AccountType:     plaidAccountType,
 	})
 }
 

@@ -49,6 +49,12 @@ const (
 	creditCardSubtype = "credit card"
 )
 
+// Account source type constants.
+const (
+	assetAccountType = "asset"
+	plaidAccountType = "plaid"
+)
+
 // Session states.
 type sessionState int
 
